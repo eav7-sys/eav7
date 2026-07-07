@@ -1,0 +1,13 @@
+node_modules/
+data/
+wallet-*.json
+*.wallet.json
+.DS_Store
+
+# segredos — nunca commitar
+.env
+.env.*
+*.key
+*.pem
+secrets/
+eav7.env

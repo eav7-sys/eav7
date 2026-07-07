@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0c12" id="meta-theme" />
+  <link rel="icon" href="/icon.svg" />
+  <title>EAV7 — Explorer & Wallet</title>
+  <script>
+    (function () {
+      try {
+        var th = localStorage.getItem('eav7-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', th);
+        var m = document.getElementById('meta-theme');
+        if (m) m.setAttribute('content', th === 'light' ? '#eceaf6' : '#0b0c12');
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

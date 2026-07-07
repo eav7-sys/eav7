@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0c12" id="meta-theme">
+<title>EAV7 — Plataforma de Mineração</title>
+<script>
+  (function () { try { var th = localStorage.getItem('eav7-theme') || 'dark'; document.documentElement.setAttribute('data-theme', th); var m = document.getElementById('meta-theme'); if (m) m.setAttribute('content', th === 'light' ? '#eceaf6' : '#0b0c12'); } catch (e) {} })();
+</script>
+<style>html{background:#0b0c12}html[data-theme="light"]{background:#eceaf6}body{background:#0b0c12}html[data-theme="light"] body{background:#eceaf6}</style>
+<link rel="icon" href="/icon.svg">
+<link rel="stylesheet" href="/css/eav7.css?v=4">
+<style>
+  .hero { margin-bottom: 20px; }
+  .hero h1 { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+  .hero .lede { color: var(--muted); font-size: 13px; max-width: 560px; margin-top: 4px; }
+  .msg { margin-top: 10px; font-size: 12.5px; word-break: break-all; }
+  .ok { color: var(--ok); } .muted2 { color: var(--muted); }
+  .alert { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .alert:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="inner">
+  <div class="brand" onclick="location.href='/app'">
+    <svg class="mark" viewBox="0 0 40 40"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a5cf0"/><stop offset="1" stop-color="#6336C4"/></linearGradient></defs><path d="M20 2 L35 11 V29 L20 38 L5 29 V11 Z" fill="url(#lg)" fill-opacity=".16" stroke="url(#lg)" stroke-width="1.6"/><text x="20" y="25.5" text-anchor="middle" font-family="ui-monospace,monospace" font-size="13" font-weight="800" fill="url(#lg)">E7</text></svg>
+    <div><div class="word"><b>EAV7</b> <span>Mineração</span></div><div class="tag">protocolo eav20</div></div>
+  </div>
+  <nav class="mainnav">
+    <a href="/app" class="active">Mineração</a>
+    <a href="/explorer">Explorador</a>
+    <a href="/wallet">Carteira</a>
+  </nav>
+  <div style="flex:1"></div>
+  <span class="pill"><span id="dot" class="dot"></span><span id="netpill">conectando…</span></span>
+</div></div>
+
+<div class="wrap">
+  <div class="hero fade-in">
+    <h1>Plataforma de mineração</h1>
+    <div class="lede">Segurança pós-quântica <b>eav7-hybrid-1</b> · vigilância 24h por IA · DPoS com blocos de 1s. Crie sua carteira e faça stake para minerar.</div>
+  </div>
+
+  <div class="tiles fade-in">
+    <div class="tile"><div class="k">Altura</div><div class="v" id="t-height">—</div></div>
+    <div class="tile"><div class="k">Recompensa/bloco</div><div class="v" id="t-reward">—</div></div>
+    <div class="tile"><div class="k">Tempo de bloco</div><div class="v" id="t-btime">—</div></div>
+    <div class="tile"><div class="k">Mineradores</div><div class="v" id="t-vals">—</div></div>
+    <div class="tile"><div class="k">Mempool</div><div class="v" id="t-mempool">—</div></div>
+    <div class="tile"><div class="k">Oráculos IA</div><div class="v" id="t-ai">—</div></div>
+    <div class="tile"><div class="k">Alertas segurança</div><div class="v" id="t-alerts">—</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div class="card glow"><h2>Últimos blocos <span class="muted" style="font-weight:400;font-size:12px">hashes E7 · 64 chars (padrão Tron)</span></h2>
+        <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Hash</th><th>Minerador</th><th>Txs</th><th>Hora</th></tr></thead><tbody id="blocks"></tbody></table></div></div>
+
+      <div class="card"><h2>Mineradores / validadores <span class="muted" style="font-weight:400;font-size:12px">DPoS · stake mín. 1.000</span></h2>
+        <div class="tbl-wrap"><table><thead><tr><th>Endereço</th><th>Stake</th></tr></thead><tbody id="validators"></tbody></table></div></div>
+
+      <div class="card"><h2>Sentinela de segurança <span class="badge info">IA · 24h</span></h2>
+        <div id="alerts" class="muted">nenhum alerta — rode <span class="mono">eav7 ai sentinel</span> para ativar a vigilância</div></div>
+    </div>
+
+    <div>
+      <div class="card glow"><h2>Carteira</h2>
+        <p class="muted">Crie sua carteira E7 self-custodial (a chave é gerada e fica só no seu navegador) na <a href="/wallet">carteira web</a>, ou gere uma carteira nativa pós-quântica pela CLI: <span class="mono">eav7 wallet new</span>.</p>
+        <div class="row mt"><button onclick="location.href='/wallet'" style="flex:1">Abrir carteira</button></div>
+      </div>
+
+      <div class="card"><h2>MetaMask / Trust Wallet · EAVM</h2>
+        <p class="muted">Adicione a EAV7 com 1 clique (a carteira pede confirmação):</p>
+        <div class="row mt"><button onclick="addToWallet('metamask')" style="flex:1">Adicionar à MetaMask</button><button class="ghost" onclick="addToWallet('trust')" style="flex:1">Adicionar à Trust</button></div>
+        <div class="msg" id="add-out"></div>
+        <p class="muted" style="margin-top:10px">Ou manualmente:</p>
+        <pre id="tw-config">Nome da rede : EAV7
+URL do RPC   : http://SEU_IP:7070
+Chain ID     : 72020
+Símbolo      : EAV7</pre>
+        <p class="muted">Ou use a <a href="/wallet">carteira web própria</a> (endereço E7, assina no navegador).</p></div>
+
+      <div class="card"><h2>Seu endereço EAV7 (E7) ↔ MetaMask (0x)</h2>
+        <p class="muted">A MetaMask/Trust mostra o <span class="mono">0x</span>; on-chain o saldo vive no <span class="mono">E7</span> correspondente — é a <b>mesma conta</b>. Veja o seu:</p>
+        <div class="row mt"><button onclick="showMyE7()" style="flex:1">Ler da minha carteira</button></div>
+        <div class="row mt" style="margin-top:8px"><input id="conv-in" class="fld" placeholder="ou cole um 0x… para converter" style="flex:1;min-width:0"><button class="ghost" onclick="convertAddr()">Converter</button></div>
+        <div class="msg" id="conv-out"></div></div>
+
+      <div class="card"><h2>Como minerar</h2>
+        <pre># 1. rode seu nó minerador
+node bin/eav7.js mine --port 6071 \
+  --peers http://127.0.0.1:6070
+
+# 2. tenha EAV7 na carteira e faça stake
+node bin/eav7.js stake \
+  --wallet data/node-6071/validator-wallet.json \
+  --amount 1000
+
+# stake ≥ 100 zera taxas · ≥ 1000 = minerador (16 EAV7/bloco)</pre></div>
+
+      <div class="card"><h2>Tokens EAV20</h2>
+        <div class="tbl-wrap"><table><thead><tr><th>Símbolo</th><th>Nome</th><th>Holders</th></tr></thead><tbody id="tokens"></tbody></table></div></div>
+
+      <div class="card"><h2>Ponte cross-chain</h2>
+        <div id="bridge" class="muted">nenhuma transferência ainda — use <span class="mono">eav7 bridge out</span></div></div>
+    </div>
+  </div>
+
+  <div class="foot">EAV7 · protocolo eav20 · tokenomics padrão Tron (100 bi, 6 decimais, 16 EAV7/bloco) · blocos de 1s</div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let EAVM_CFG = null; // config do EAVM (chainId/rpcUrl) pré-carregado pelo refresh, p/ o botão
+// EIP-6963: descobre TODAS as carteiras (resolve o conflito MetaMask vs Trust quando
+// as duas extensões disputam o window.ethereum). Cada anúncio traz info.rdns + provider.
+const WALLETS = [];
+window.addEventListener('eip6963:announceProvider', (e) => { if (e.detail?.provider) WALLETS.push(e.detail); });
+window.dispatchEvent(new Event('eip6963:requestProvider'));
+const fmt = (e7) => { const v = BigInt(e7 ?? 0), w = v / 1000000n, f = (v % 1000000n).toString().padStart(6, '0').replace(/0+$/, ''); return Number(w).toLocaleString('pt-BR') + (f ? ',' + f : ''); };
+const short = (h) => h ? h.slice(0, 12) + '…' : '—';
+const hora = (ts) => new Date(ts).toLocaleTimeString('pt-BR');
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+async function refresh() {
+  try {
+    const s = await (await fetch('/status')).json();
+    $('dot').className = 'dot on';
+    $('netpill').textContent = `altura ${s.height}`;
+    $('t-height').textContent = s.height.toLocaleString('pt-BR');
+    $('t-reward').innerHTML = fmt(s.blockReward) + ' <small>EAV7</small>';
+    $('t-btime').innerHTML = (s.blockTimeMs / 1000) + 's <small>(Tron: 3s)</small>';
+    $('t-vals').textContent = s.validators;
+    $('t-mempool').textContent = s.mempool;
+    $('t-ai').innerHTML = (s.ai?.oracles ?? 0) + ' <small>· ' + (s.ai?.pendingTasks ?? 0) + ' tarefas</small>';
+    $('t-alerts').textContent = s.security?.alerts ?? 0;
+    if (s.eavm) {
+      EAVM_CFG = s.eavm; // guardado p/ o botão adicionar rede (sem await perdendo o clique)
+      const rpc = s.eavm.rpcUrl || `${location.protocol}//${location.hostname}:${s.eavm.rpcPort}`;
+      $('tw-config').textContent = `Nome da rede : EAV7\nURL do RPC   : ${rpc}\nChain ID     : ${s.eavm.chainId}\nSímbolo      : EAV7 (18 casas)`;
+    }
+
+    const blocks = await (await fetch('/blocks?limit=12')).json();
+    $('blocks').innerHTML = blocks.map((b) => `<tr><td>${b.height}</td><td class="hash">${short(b.hash)}</td><td class="hash">${short(b.producer)}</td><td>${b.txCount}</td><td class="muted">${hora(b.timestamp)}</td></tr>`).join('');
+
+    const vals = await (await fetch('/validators')).json();
+    $('validators').innerHTML = vals.current.map((v) => `<tr><td class="hash">${esc(v.address)}</td><td>${fmt(v.staked)} EAV7</td></tr>`).join('') || '<tr><td colspan="2" class="muted">nenhum validador</td></tr>';
+
+    const alerts = await (await fetch('/security/alerts')).json();
+    if (alerts.length) $('alerts').innerHTML = alerts.slice(0, 8).map((a) => `<div class="alert"><span class="badge ${esc(a.severity)}">${esc(a.severity)}</span> <b>${esc(a.kind)}</b> <span class="muted">${hora(a.at)}</span><br><span class="muted">${esc(String(a.message).slice(0, 300))}</span></div>`).join('');
+
+    const tokens = await (await fetch('/tokens')).json();
+    $('tokens').innerHTML = tokens.map((t) => `<tr><td><b>${esc(t.symbol)}</b></td><td>${esc(t.name)}</td><td>${t.holders}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">nenhum token — eav7 token create</td></tr>';
+
+    const bridge = await (await fetch('/bridge/transfers')).json();
+    if (bridge.length) $('bridge').innerHTML = bridge.slice(-6).reverse().map((t) => `<div style="margin-bottom:6px"><span class="badge ${esc(t.direction === 'OUT' ? 'BRIDGE_OUT' : 'BRIDGE_IN')}">${esc(t.direction)}</span> ${fmt(t.amount)} → <b>${esc(t.targetChain ?? t.sourceChain)}</b> <span class="badge">${esc(t.status)}</span></div>`).join('');
+  } catch { $('dot').className = 'dot'; $('netpill').textContent = 'offline'; }
+}
+
+// Com várias carteiras injetadas, window.ethereum pode ser uma que NÃO implementa
+// wallet_addEthereumChain — escolhe a MetaMask/Trust entre os provedores disponíveis.
+function pickProvider(prefer) {
+  window.dispatchEvent(new Event('eip6963:requestProvider')); // re-descobre
+  const byRdns = (m) => WALLETS.find((w) => (w.info?.rdns || '').includes(m))?.provider;
+  const byName = (m) => WALLETS.find((w) => (w.info?.name || '').toLowerCase().includes(m))?.provider;
+  const mm = byRdns('io.metamask') || byName('metamask');
+  const tw = byRdns('com.trustwallet') || byName('trust');
+  if (prefer === 'metamask' && mm) return mm;
+  if (prefer === 'trust' && tw) return tw;
+  if (mm) return mm;
+  if (tw) return tw;
+  const eth = window.ethereum; // legado (sem EIP-6963)
+  if (!eth) return null;
+  const list = Array.isArray(eth.providers) ? eth.providers : [eth];
+  return list.find((p) => p && p.isMetaMask) || list.find((p) => p && (p.isTrust || p.isTrustWallet)) || eth;
+}
+function manualHint(cfg) {
+  const rpc = cfg.rpcUrl || `${location.protocol}//${location.hostname}:${cfg.rpcPort ?? 7075}`;
+  return `<span class="muted">Sua carteira não adiciona a rede por 1 clique. Adicione <b>manualmente</b> (Configurações → Redes → Adicionar rede):</span>
+    <pre style="margin-top:8px;white-space:pre-wrap">Nome da rede : EAV7
+URL do RPC   : ${esc(rpc)}
+Chain ID     : ${Number(cfg.chainId ?? 72020)}
+Símbolo      : EAV7
+Casas decimais: 18
+Explorador   : ${location.origin}/explorer</pre>`;
+}
+async function addToWallet(prefer) {
+  const out = $('add-out');
+  const cfg = EAVM_CFG || {};
+  const provider = pickProvider(prefer);
+  if (!provider) {
+    const dapp = location.host + location.pathname;
+    out.innerHTML = `<span class="muted">Nenhuma carteira detectada neste navegador. Abra dentro da carteira:</span>
+      <div class="row mt"><a class="btn" style="flex:1" href="https://metamask.app.link/dapp/${dapp}">Abrir na MetaMask</a>
+      <a class="btn ghost" style="flex:1" href="https://link.trustwallet.com/open_url?url=${encodeURIComponent(location.href)}">Abrir na Trust</a></div>
+      <div style="margin-top:10px">${manualHint(cfg)}</div>`;
+    return;
+  }
+  const rpcUrl = cfg.rpcUrl || `${location.protocol}//${location.hostname}:${cfg.rpcPort ?? 7075}`;
+  const params = [{
+    chainId: '0x' + Number(cfg.chainId ?? 72020).toString(16),
+    chainName: 'EAV7',
+    nativeCurrency: { name: 'EAV7', symbol: 'EAV7', decimals: 18 },
+    rpcUrls: [rpcUrl],
+    blockExplorerUrls: [location.origin + '/explorer'],
+    iconUrls: [location.origin + '/icon.png'],
+  }];
+  try {
+    // chamada direta no clique (SEM await antes) — preserva o "user gesture".
+    await provider.request({ method: 'wallet_addEthereumChain', params });
+    out.innerHTML = '<span class="ok">rede EAV7 adicionada! ✅</span>';
+  } catch (e) {
+    // -32601 = método inexistente (carteira não suporta) → instrução manual.
+    if (e && (e.code === -32601 || /does not exist|not available|not supported/i.test(e.message || ''))) {
+      out.innerHTML = manualHint(cfg);
+    } else if (e && e.code === 4001) {
+      out.innerHTML = '<span class="muted">adição cancelada.</span>';
+    } else {
+      out.innerHTML = `<span class="muted">não adicionado: ${esc(e.message || e)}</span><div style="margin-top:8px">${manualHint(cfg)}</div>`;
+    }
+  }
+}
+window.addToWallet = addToWallet;
+
+async function convertFor(addr) {
+  const out = $('conv-out');
+  addr = String(addr || '').trim();
+  if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) { out.innerHTML = '<span class="muted">endereço 0x inválido (0x + 40 hex)</span>'; return; }
+  try {
+    const r = await (await fetch('/eavm/address/' + addr)).json();
+    if (r.error) { out.innerHTML = `<span class="muted">${esc(r.error)}</span>`; return; }
+    out.innerHTML = `<div>MetaMask (0x): <span class="mono">${esc(r.eavm)}</span></div>
+      <div style="margin-top:4px">EAV7 nativo (E7): <b class="mono">${esc(r.eav7)}</b></div>
+      <div class="muted" style="margin-top:6px">É a MESMA conta. Na MetaMask/Trust você usa o 0x; no explorer e na cadeia aparece o E7. <a onclick="location.href='/explorer#/address/${esc(r.eavm)}'">ver no explorer</a></div>`;
+  } catch (e) { out.innerHTML = `<span class="muted">erro: ${esc(e.message || e)}</span>`; }
+}
+async function showMyE7() {
+  const out = $('conv-out');
+  const p = pickProvider();
+  if (!p) { out.innerHTML = '<span class="muted">nenhuma carteira detectada — cole seu 0x no campo acima</span>'; return; }
+  try {
+    const accts = await p.request({ method: 'eth_requestAccounts' });
+    if (!accts || !accts[0]) { out.innerHTML = '<span class="muted">nenhuma conta conectada</span>'; return; }
+    await convertFor(accts[0]);
+  } catch (e) { out.innerHTML = `<span class="muted">não foi possível ler da carteira: ${esc(e.message || e)}</span>`; }
+}
+async function convertAddr() { await convertFor($('conv-in').value); }
+window.showMyE7 = showMyE7; window.convertAddr = convertAddr;
+refresh(); setInterval(refresh, 2500);
+</script>
+</body>
+</html>

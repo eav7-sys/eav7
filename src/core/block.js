@@ -1,0 +1,101 @@
+import { CHAIN } from '../config.js';
+import { eavHash, canonical, merkleRoot } from '../crypto/hash.js';
+import {
+  SIGNATURE_SCHEME,
+  addressFromPublicKeys,
+  hybridSign,
+  hybridVerify,
+} from '../crypto/keys.js';
+
+export const GENESIS_PREVIOUS_HASH =
+  CHAIN.HASH_PREFIX + '0'.repeat(CHAIN.HASH_LENGTH - CHAIN.HASH_PREFIX.length);
+const GENESIS_SIGNATURE = 'GENESIS';
+
+export function blockCore(block) {
+  const { signature, pqSignature, hash, transactions, ...core } = block;
+  return core;
+}
+
+export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(), transactions = [] }) {
+  const core = {
+    protocol: CHAIN.PROTOCOL,
+    version: CHAIN.PROTOCOL_VERSION,
+    scheme: SIGNATURE_SCHEME,
+    height,
+    timestamp,
+    previousHash,
+    txRoot: merkleRoot(transactions.map((tx) => tx.id)),
+    txCount: transactions.length,
+    producer: addressFromPublicKeys(wallet.publicKeyPem, wallet.pqPublicKeyPem),
+    publicKey: wallet.publicKeyPem,
+    pqPublicKey: wallet.pqPublicKeyPem,
+  };
+  const payload = canonical(core);
+  const { signature, pqSignature } = hybridSign(wallet, payload);
+  return { ...core, signature, pqSignature, hash: eavHash(payload + signature + pqSignature), transactions };
+}
+
+// Bloco gênese: sem produtor real; carrega as alocações e stakes iniciais da rede.
+export function buildGenesisBlock({ timestamp, balances, stakes, bridgeRelayers = [] }) {
+  const core = {
+    protocol: CHAIN.PROTOCOL,
+    version: CHAIN.PROTOCOL_VERSION,
+    scheme: SIGNATURE_SCHEME,
+    height: 0,
+    timestamp,
+    previousHash: GENESIS_PREVIOUS_HASH,
+    txRoot: merkleRoot([]),
+    txCount: 0,
+    producer: 'GENESIS',
+    publicKey: null,
+    pqPublicKey: null,
+    genesis: { balances, stakes, bridgeRelayers },
+  };
+  const payload = canonical(core);
+  return {
+    ...core,
+    signature: GENESIS_SIGNATURE,
+    pqSignature: GENESIS_SIGNATURE,
+    hash: eavHash(payload + GENESIS_SIGNATURE + GENESIS_SIGNATURE),
+    transactions: [],
+  };
+}
+
+// Integridade interna do bloco (hash, merkle, dupla assinatura do produtor).
+// Regras de encadeamento (altura, previousHash, slot DPoS) ficam na Blockchain.
+export function verifyBlockIntegrity(block) {
+  if (!block || typeof block !== 'object') return 'bloco ausente';
+  if (block.protocol !== CHAIN.PROTOCOL) return `protocolo inválido (esperado ${CHAIN.PROTOCOL})`;
+  if (block.scheme !== SIGNATURE_SCHEME) return `esquema de assinatura inválido (esperado ${SIGNATURE_SCHEME})`;
+  if (!Number.isSafeInteger(block.height) || block.height < 0) return 'altura inválida';
+  if (!Number.isSafeInteger(block.timestamp) || block.timestamp <= 0) return 'timestamp inválido';
+  if (!Array.isArray(block.transactions)) return 'lista de transações inválida';
+  if (block.txCount !== block.transactions.length) return 'txCount não confere';
+  if (block.txRoot !== merkleRoot(block.transactions.map((tx) => tx?.id))) return 'txRoot não confere';
+
+  const payload = canonical(blockCore(block));
+  if (block.hash !== eavHash(payload + block.signature + block.pqSignature)) return 'hash do bloco não confere';
+
+  if (block.height === 0) {
+    if (block.signature !== GENESIS_SIGNATURE || block.producer !== 'GENESIS') return 'bloco gênese malformado';
+    if (!block.genesis || typeof block.genesis !== 'object') return 'alocações da gênese ausentes';
+    return null;
+  }
+
+  let derived;
+  try {
+    derived = addressFromPublicKeys(block.publicKey, block.pqPublicKey);
+  } catch {
+    return 'chave pública do produtor inválida';
+  }
+  if (derived !== block.producer) return 'produtor não corresponde às chaves públicas';
+  const valid = hybridVerify({
+    publicKeyPem: block.publicKey,
+    pqPublicKeyPem: block.pqPublicKey,
+    payload,
+    signature: block.signature,
+    pqSignature: block.pqSignature,
+  });
+  if (!valid) return 'assinatura híbrida do produtor inválida';
+  return null;
+}

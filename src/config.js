@@ -1,0 +1,185 @@
+// Parâmetros do protocolo eav20 — rede EAV7.
+//
+// Tokenomics no padrão da Tron:
+//   • supply gênese de 100 bilhões (como o TRX), 6 decimais
+//   • recompensa de bloco de 16 EAV7 para o minerador/produtor (como os 16 TRX)
+//   • até 27 validadores ativos (como os 27 Super Representatives)
+//   • blocos de 1s — 3x mais rápido que os 3s da Tron
+//   • stake zera as taxas (equivalente ao modelo de bandwidth por freeze da Tron)
+//
+// Valores monetários são BigInt na menor unidade "e7" (1 EAV7 = 1_000_000 e7),
+// serializados como strings decimais dentro de transações e blocos.
+const UNIT = 1_000_000n;
+
+export const CHAIN = {
+  NAME: 'EAV7',
+  PROTOCOL: 'eav20',
+  PROTOCOL_VERSION: 1,
+  HASH_PREFIX: 'E7',
+  SYMBOL: 'EAV7',
+  DECIMALS: 6,
+  UNIT,
+
+  HASH_LENGTH: 64, // mesmo comprimento do txid da Tron, sempre iniciando com E7
+  ADDRESS_LENGTH: 34, // mesmo comprimento do endereço da Tron, sempre iniciando com E7
+
+  BLOCK_TIME_MS: 1_000,
+  MAX_TXS_PER_BLOCK: 500,
+  // Tolerância de relógio reduzida a ~1 slot: junto com a regra de "um bloco por
+  // slot" (blockchain.addBlock) impede grinding de timestamp / farm de recompensa.
+  MAX_CLOCK_DRIFT_MS: 2_000,
+  // Tolerância para aceitar um bloco cujo slot esteja levemente à frente do
+  // relógio do receptor (skew de relógio + latência de propagação entre nós).
+  // Pequena o bastante para não permitir roubo de um slot inteiro (< 1 slot).
+  SLOT_FUTURE_TOLERANCE_MS: 400,
+  // A PARTIR desta altura, um bloco só é válido se produzido pelo produtor EXATO
+  // do slot (round-robin) — impede um validador bizantino de produzir fora de turno
+  // e forjar uma cadeia mais longa (achado C1 da auditoria). Blocos ANTES dela são
+  // grandfathered (só exige ser validador ativo), para o replay do histórico —
+  // produzido sob regras anteriores — continuar válido sem hard-fork destrutivo.
+  STRICT_PRODUCER_HEIGHT: 49_500,
+  // Um validador não produz se um peer estiver mais de N blocos à frente (ele
+  // está atrasado e produziria um fork). O nó da ponta sempre produz.
+  PRODUCE_LAG_TOLERANCE: 5,
+  // Janela (em blocos) para procurar o ancestral comum ao reorganizar um topo
+  // divergente. Generosa o bastante para cobrir forks longos acumulados em
+  // incidentes de rede, mantendo-se abaixo de MAX_SYNC_BLOCKS.
+  REORG_WINDOW: 5_000,
+
+  MAX_VALIDATORS: 27,
+  MIN_VALIDATOR_STAKE: 1_000n * UNIT,
+  MIN_ORACLE_STAKE: 500n * UNIT,
+  FEE_EXEMPT_STAKE: 100n * UNIT, // stake >= 100 EAV7 => transações com taxa zero
+
+  BLOCK_REWARD: 16n * UNIT,
+  // Emissão com halving (estilo Bitcoin): a recompensa de bloco cai pela metade
+  // a cada intervalo, limitando a inflação de longo prazo. ~4 anos a 1 bloco/s.
+  HALVING_INTERVAL_BLOCKS: 126_144_000,
+  GENESIS_SUPPLY: 100_000_000_000n * UNIT,
+  GENESIS_STAKE: 10_000n * UNIT,
+
+  // Ponte: nº mínimo de relayers autorizados distintos que devem atestar um
+  // depósito de origem antes da liberação (quórum M-de-N). 1 = comportamento atual.
+  BRIDGE_MIN_ATTESTATIONS: 1,
+
+  // Rate limit por IP (usa CF-Connecting-IP atrás da Cloudflare).
+  RATE_LIMIT_WINDOW_MS: 10_000,
+  RATE_LIMIT_MAX: 240,
+
+  MAX_DATA_BYTES: 64 * 1024,
+  MAX_AI_PROMPT_BYTES: 8 * 1024,
+  MAX_AI_OUTPUT_BYTES: 32 * 1024,
+  // Prazo após o qual o solicitante pode reaver o escrow de uma tarefa de IA
+  // não atendida (AI_REFUND), evitando fundos presos.
+  AI_TASK_TIMEOUT_MS: 60 * 60_000,
+
+  // Limites anti-DoS (mempool, rede, RPC, respostas).
+  MAX_MEMPOOL: 5_000,
+  MAX_FUTURE_NONCE_GAP: 64,
+  MAX_PEERS: 64,
+  MAX_RPC_BATCH: 50,
+  MAX_CHAIN_PAGE: 2_000,
+  MAX_SYNC_BLOCKS: 10_000, // teto de blocos baixados por ciclo de sync (anti-OOM)
+  MAX_SYNC_PAGE_BYTES: 100_000_000, // teto de bytes por página /chain lida de um peer (anti-OOM, H-4)
+  MAX_TX_SCAN: 20_000, // teto de blocos varridos por consulta de transações
+  MAX_ALERT_CONTEXT_BYTES: 2_048,
+
+  // EAVM — protocolo de contas externas próprio da EAV7 (MetaMask / Trust
+  // Wallet via "rede customizada"). Essas carteiras exibem a moeda nativa com
+  // 18 decimais; EAV7 usa 6 — 1 EAV7 = 10^18 unidades EAVM = 10^6 e7.
+  EAVM_CHAIN_ID: 72020,
+  EAVM_WEI_PER_E7: 10n ** 12n,
+
+  // ---- Modelo de recurso "Energia" (estilo Tron) ----
+  // Cada conta tem energia GRÁTIS + energia por STAKE; a energia usada regenera
+  // ao longo de REGEN_BLOCKS. Se falta energia para uma transação, ela QUEIMA
+  // EAV7 (deflacionário) proporcional à energia em falta — a "taxa mais cara sem
+  // energia". O campo `fee` da transação é o LIMITE de queima que o remetente
+  // autoriza (feeLimit, como na Tron).
+  ENERGY: {
+    FREE: 10, // energia grátis por conta (regenera) — evita atrito de onboarding
+    PER_STAKED_EAV7: 1, // +1 de energia por EAV7 (inteiro) travado
+    REGEN_BLOCKS: 86_400, // energia usada volta a 100% em ~24h (1 bloco/s)
+    BURN_PER_ENERGY: 20_000n, // e7 queimados por unidade de energia em falta (0,02 EAV7)
+    COST: {
+      TRANSFER: 1, STAKE: 1, UNSTAKE: 1, EAVM_TRANSFER: 1,
+      TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
+      AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
+      BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
+      EAVM_DEPLOY: 10, EAVM_CALL: 5, // custo BASE; a execução da VM soma gás/energia dinâmico
+    },
+  },
+  MAX_FEE_LIMIT: 100n * UNIT, // teto do limite de taxa autorizável (anti-erro de digitação)
+
+  // ---- EAVM (VM de contratos) ----
+  GAS_PER_ENERGY: 100, // 100 unidades de gás da VM = 1 de energia (contratos usam gás abundante)
+  MAX_EAVM_GAS: 30_000_000, // teto de gás por execução (anti-loop infinito / DoS)
+  MAX_CONTRACT_BYTES: 24_576, // tamanho máximo do bytecode de runtime (EIP-170)
+
+  // Tabela de referência de custo por tipo (usada como LIMITE padrão de queima na
+  // carteira/CLI = custo de energia × BURN_PER_ENERGY). Mantida para compat.
+  FEES: {
+    TRANSFER: 10_000n, // 0.01 EAV7
+    STAKE: 10_000n,
+    UNSTAKE: 10_000n,
+    TOKEN_CREATE: 10n * UNIT,
+    TOKEN_TRANSFER: 20_000n,
+    TOKEN_APPROVE: 10_000n,
+    TOKEN_TRANSFER_FROM: 20_000n,
+    AI_TASK: 50_000n,
+    AI_RESULT: 0n,
+    ORACLE_REGISTER: 10_000n,
+    BRIDGE_OUT: 20_000n,
+    BRIDGE_IN: 0n,
+    BRIDGE_SETTLE: 0n,
+    AI_REFUND: 0n,
+    EAVM_TRANSFER: 10_000n,
+    EAVM_DEPLOY: 200_000n, // limite de queima padrão (0.2 EAV7); execução pesada exige limite maior
+    EAVM_CALL: 100_000n,
+  },
+};
+
+export const TX_TYPES = Object.freeze(Object.keys(CHAIN.FEES));
+
+// Normaliza um valor monetário (bigint | number inteiro | string decimal) para BigInt.
+export function parseAmount(value, field = 'valor') {
+  if (typeof value === 'bigint') {
+    if (value < 0n) throw new Error(`${field} não pode ser negativo`);
+    return value;
+  }
+  if (typeof value === 'number') {
+    if (!Number.isSafeInteger(value) || value < 0) throw new Error(`${field} inválido: ${value}`);
+    return BigInt(value);
+  }
+  if (isAmountString(value)) return BigInt(value);
+  throw new Error(`${field} inválido: ${value}`);
+}
+
+export function isAmountString(value) {
+  return typeof value === 'string' && value.length <= 30 && /^(0|[1-9]\d*)$/.test(value);
+}
+
+export function amountToString(value, field) {
+  return parseAmount(value, field).toString();
+}
+
+// e7 (BigInt) -> string humana em EAV7, ex.: 16000000n -> "16"
+export function formatEav7(e7) {
+  const value = parseAmount(e7);
+  const whole = value / UNIT;
+  const frac = value % UNIT;
+  if (frac === 0n) return whole.toString();
+  return `${whole}.${frac.toString().padStart(6, '0').replace(/0+$/, '')}`;
+}
+
+// string humana em EAV7 (ex.: "12.5") -> e7 (BigInt)
+export function eav7ToE7(text, field = 'valor') {
+  const match = String(text).trim().match(/^(\d+)(?:[.,](\d{1,6}))?$/);
+  if (!match) throw new Error(`${field} inválido: ${text} (use até 6 casas decimais)`);
+  return BigInt(match[1]) * UNIT + BigInt((match[2] ?? '0').padEnd(6, '0'));
+}
+
+// JSON.stringify com suporte a BigInt (serializado como string decimal).
+export function toJson(value, space) {
+  return JSON.stringify(value, (_, v) => (typeof v === 'bigint' ? v.toString() : v), space);
+}

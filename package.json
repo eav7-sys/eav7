@@ -1,0 +1,17 @@
+{
+  "name": "eav7-blockchain",
+  "version": "0.1.0",
+  "description": "EAV7 — blockchain DPoS com protocolo eav20, endereços E7 e camada nativa de integração com IA",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "eav7": "./bin/eav7.js"
+  },
+  "scripts": {
+    "start": "node bin/eav7.js node start",
+    "test": "node --test"
+  }
+}

@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0c12" id="meta-theme">
+<title>Carteira EAV7</title>
+<script>
+  (function () { try { var th = localStorage.getItem('eav7-theme') || 'dark'; document.documentElement.setAttribute('data-theme', th); var m = document.getElementById('meta-theme'); if (m) m.setAttribute('content', th === 'light' ? '#eceaf6' : '#0b0c12'); } catch (e) {} })();
+</script>
+<style>html{background:#0b0c12}html[data-theme="light"]{background:#eceaf6}body{background:#0b0c12}html[data-theme="light"] body{background:#eceaf6}</style>
+<link rel="icon" href="/icon.svg">
+<link rel="stylesheet" href="/css/eav7.css?v=4">
+<style>
+  .hero-card { background: linear-gradient(150deg, rgba(99, 54, 196, .3), rgba(138, 92, 240, .1) 60%, var(--surface)); border: 1px solid rgba(138, 92, 240, .36); }
+  .bal { font-size: clamp(30px, 8vw, 44px); font-weight: 800; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; margin: 2px 0 2px; line-height: 1.05; overflow-wrap: anywhere; }
+  .bal small { font-size: 17px; color: var(--muted); font-weight: 600; letter-spacing: 0; }
+  .addr-row { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; word-break: break-all; margin-top: 8px; }
+  .addr-row .lbl { color: var(--muted); flex: none; }
+  .copy { cursor: pointer; color: var(--gold); font-size: 11px; flex: none; border: 1px solid var(--border); border-radius: 7px; padding: 2px 7px; }
+  .copy:hover { background: var(--surface-hover); }
+  .msg { margin-top: 12px; font-size: 12.5px; word-break: break-all; }
+  .ok { color: var(--ok); } .err { color: var(--accent); }
+  .hidden { display: none; }
+  .brandbig { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .actions button { flex: 1; min-width: 110px; }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="inner">
+  <div class="brand" onclick="location.href='/wallet'">
+    <svg class="mark" viewBox="0 0 40 40"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a5cf0"/><stop offset="1" stop-color="#6336C4"/></linearGradient></defs><path d="M20 2 L35 11 V29 L20 38 L5 29 V11 Z" fill="url(#lg)" fill-opacity=".16" stroke="url(#lg)" stroke-width="1.6"/><text x="20" y="25.5" text-anchor="middle" font-family="ui-monospace,monospace" font-size="13" font-weight="800" fill="url(#lg)">E7</text></svg>
+    <div><div class="word"><b>EAV7</b> <span>Carteira</span></div><div class="tag">self-custodial</div></div>
+  </div>
+  <nav class="mainnav">
+    <a href="/wallet" class="active">Carteira</a>
+    <a href="/explorer">Explorador</a>
+    <a href="/app">Mineração</a>
+  </nav>
+  <div style="flex:1"></div>
+  <span class="pill"><span id="dot" class="dot"></span><span id="net">conectando…</span></span>
+</div></div>
+
+<div class="wrap-narrow">
+  <!-- sem carteira -->
+  <div id="setup" class="card glow fade-in">
+    <div class="brandbig"><h1 class="page">Sua carteira EAV7</h1></div>
+    <p class="muted">A chave é gerada e assinada <b>no seu navegador</b> e guardada só neste dispositivo. Endereço no padrão <b>E7</b>, compatível com a rede EAV7 via EAVM.</p>
+    <div class="row actions mt">
+      <button onclick="novaCarteira()">Criar nova carteira</button>
+      <button class="ghost" onclick="mostrarImport()">Importar chave</button>
+    </div>
+    <div id="importbox" class="hidden">
+      <label>Chave privada (0x… 64 hex)</label>
+      <input class="fld" id="impkey" placeholder="0x…">
+      <div class="row mt"><button onclick="importar()">Importar</button></div>
+    </div>
+    <div class="warnbox">⚠️ Faça backup da chave privada — quem tiver a chave controla os fundos. A chave é cifrada com sua senha antes de ser guardada neste navegador.</div>
+  </div>
+
+  <!-- carteira cifrada: desbloquear -->
+  <div id="unlock" class="card glow fade-in hidden">
+    <div class="brandbig"><h1 class="page">Desbloquear carteira</h1></div>
+    <p class="muted">Há uma carteira cifrada neste navegador. Informe a senha para desbloquear.</p>
+    <label>Senha</label>
+    <input class="fld" id="unlockpw" type="password" placeholder="senha" onkeydown="if(event.key==='Enter')desbloquear()">
+    <div class="row mt">
+      <button onclick="desbloquear()">Desbloquear</button>
+      <button class="ghost" onclick="sair()">Apagar carteira</button>
+    </div>
+    <div class="msg" id="unlockmsg"></div>
+  </div>
+
+  <!-- com carteira -->
+  <div id="account" class="hidden">
+    <div class="card hero-card glow fade-in">
+      <span class="pill" id="rolepill">conta EAV7</span>
+      <div class="bal"><span id="bal">0</span> <small>EAV7</small></div>
+      <div class="muted" id="staked" style="font-size:12.5px;margin-top:2px"></div>
+      <div id="energywrap" style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+          <span class="muted">⚡ Energia</span><span id="energylbl" class="mono">—</span>
+        </div>
+        <div style="height:6px;border-radius:6px;background:rgba(127,127,127,.18);overflow:hidden">
+          <div id="energybar" style="height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,#22c55e,#84cc16);transition:width .4s ease"></div>
+        </div>
+        <div class="muted" id="energyhint" style="font-size:11px;margin-top:4px"></div>
+      </div>
+      <div class="addr-row"><span class="lbl">E7</span><span id="e7">—</span><span class="copy" onclick="copiar('e7')">copiar</span></div>
+      <div class="addr-row"><span class="lbl">0x</span><span id="evm">—</span><span class="copy" onclick="copiar('evm')">copiar</span></div>
+      <div class="row actions mt">
+        <button class="ghost" onclick="atualizar()">Atualizar</button>
+        <button class="ghost" onclick="backup()">Backup</button>
+      </div>
+      <div class="msg" id="acctmsg"></div>
+    </div>
+
+    <div class="card fade-in"><h2>Stake <span class="muted" style="font-weight:400;font-size:12px">≥100 zera taxas · ≥1.000 = minerador (16 EAV7/bloco)</span></h2>
+      <label>Valor (EAV7)</label>
+      <input class="fld" id="stakeamt" placeholder="ex.: 1000" inputmode="decimal">
+      <div class="row mt">
+        <button id="stakebtn" onclick="stake()">Fazer stake</button>
+        <button id="unstakebtn" class="ghost" onclick="unstake()">Remover stake</button>
+      </div>
+      <div class="msg" id="stakemsg"></div>
+    </div>
+
+    <div class="card fade-in"><h2>Enviar EAV7</h2>
+      <label>Destino (0x… da carteira EAVM/MetaMask)</label>
+      <input class="fld" id="to" placeholder="0x…">
+      <label>Valor (EAV7)</label>
+      <input class="fld" id="amt" placeholder="ex.: 12.5" inputmode="decimal">
+      <div class="row mt"><button id="sendbtn" onclick="enviar()" style="flex:1">Assinar e enviar</button></div>
+      <div class="msg" id="sendmsg"></div>
+    </div>
+
+    <div class="card fade-in"><h2>Tokens EAV20</h2>
+      <div id="tokens" class="muted">nenhum token neste endereço</div>
+    </div>
+
+    <div class="card fade-in"><h2>MetaMask / Trust Wallet</h2>
+      <p class="muted">Adicione a rede EAV7 à sua carteira EVM com 1 clique:</p>
+      <div class="row mt"><button onclick="addToWallet('metamask')" style="flex:1">Adicionar à MetaMask</button><button class="ghost" onclick="addToWallet('trust')" style="flex:1">Adicionar à Trust</button></div>
+      <div class="msg" id="add-out"></div>
+    </div>
+
+    <div class="row actions">
+      <button class="ghost" onclick="location.href='/explorer'">Explorador</button>
+      <button class="ghost" onclick="sair()">Sair / trocar</button>
+    </div>
+  </div>
+
+  <div class="foot">EAV7 · protocolo eav20 · a chave nunca sai deste navegador</div>
+</div>
+
+<script type="module">
+import { createAccount, accountFromPrivate, buildSignedTx, encryptKey, decryptKey, EAVM_STAKE_ADDRESS, EAVM_UNSTAKE_ADDRESS } from '/js/eav7-wallet.js';
+const $ = (id) => document.getElementById(id);
+const KEY = 'eav7-wallet-vault'; // armazena o cofre cifrado (JSON), nunca a chave em claro
+const WEI = 10n ** 12n;
+let acct = null, chainId = 72020, EAVM_CFG = null;
+// EIP-6963: descobre todas as carteiras (resolve conflito MetaMask vs Trust)
+const WALLETS = [];
+window.addEventListener('eip6963:announceProvider', (e) => { if (e.detail?.provider) WALLETS.push(e.detail); });
+window.dispatchEvent(new Event('eip6963:requestProvider'));
+const fmt = (e7) => { const v = BigInt(e7 ?? 0), w = v / 1000000n, f = (v % 1000000n).toString().padStart(6, '0').replace(/0+$/, ''); return Number(w).toLocaleString('pt-BR') + (f ? ',' + f : ''); };
+const is0x = (a) => /^0x[0-9a-fA-F]{40}$/.test(a);
+const isE7 = (a) => /^E7[0-9A-F]{32}$/.test(a);
+// escapa saída para innerHTML (defesa contra XSS, mesmo que a origem seja o nó)
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function eav7ToWei(t) { const m = String(t).trim().match(/^(\d+)(?:[.,](\d{1,6}))?$/); if (!m) throw new Error('valor inválido (até 6 casas)'); return (BigInt(m[1]) * 1000000n + BigInt((m[2] ?? '0').padEnd(6, '0'))) * WEI; }
+function hasVault() { return Boolean(localStorage.getItem(KEY)); }
+
+async function net() { try { const s = await (await fetch('/status')).json(); chainId = s.eavm?.chainId ?? 72020; EAVM_CFG = s.eavm || null; $('dot').className = 'dot on'; $('net').textContent = `${s.chain} · altura ${s.height}`; } catch { $('dot').className = 'dot'; $('net').textContent = 'nó offline'; } }
+function render() {
+  const unlocked = Boolean(acct);
+  const locked = !unlocked && hasVault();
+  $('setup').classList.toggle('hidden', unlocked || locked);
+  $('unlock').classList.toggle('hidden', !locked);
+  $('account').classList.toggle('hidden', !unlocked);
+  if (unlocked) { $('e7').textContent = acct.eav7; $('evm').textContent = acct.evm; atualizar(); }
+}
+async function saveVault(privateKey) {
+  const pw = prompt('Crie uma senha para cifrar sua carteira neste navegador:');
+  if (!pw) throw new Error('senha obrigatória');
+  if (prompt('Confirme a senha:') !== pw) throw new Error('as senhas não conferem');
+  localStorage.setItem(KEY, JSON.stringify(await encryptKey(privateKey, pw)));
+}
+
+window.novaCarteira = async () => {
+  try { const a = createAccount(); await saveVault(a.privateKey); acct = a; render(); }
+  catch (e) { alert('erro: ' + e.message); }
+};
+window.mostrarImport = () => $('importbox').classList.toggle('hidden');
+window.importar = async () => {
+  try { const a = accountFromPrivate($('impkey').value.trim()); await saveVault(a.privateKey); acct = a; render(); }
+  catch (e) { alert('erro: ' + e.message); }
+};
+window.desbloquear = async () => {
+  $('unlockmsg').textContent = 'desbloqueando…';
+  try {
+    const blob = JSON.parse(localStorage.getItem(KEY));
+    const priv = await decryptKey(blob, $('unlockpw').value);
+    acct = accountFromPrivate(priv);
+    $('unlockpw').value = ''; $('unlockmsg').textContent = ''; render();
+  } catch { $('unlockmsg').innerHTML = '<span class="err">senha incorreta</span>'; }
+};
+window.sair = () => { if (confirm('Apagar a carteira deste navegador? Tenha o backup da chave!')) { localStorage.removeItem(KEY); acct = null; render(); } };
+window.backup = () => {
+  if (!confirm('O backup contém a chave privada em texto puro. Guarde em local seguro. Continuar?')) return;
+  const blob = new Blob([JSON.stringify({ chain: 'EAV7', ...acct }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `eav7-${acct.eav7.slice(0, 10)}.json`; a.click();
+};
+window.copiar = (id) => { navigator.clipboard?.writeText($(id).textContent); };
+window.atualizar = async () => {
+  try {
+    const a = await (await fetch('/address/' + acct.evm)).json();
+    $('bal').textContent = fmt(a.balance);
+    $('staked').innerHTML = (BigInt(a.staked || 0) > 0n ? `em stake: <b>${esc(fmt(a.staked))} EAV7</b>` : '') + (a.feeExempt ? ' <span class="ok">· sem taxas</span>' : '');
+    $('rolepill').textContent = a.isValidator ? 'validador' : (a.oracle ? 'oráculo' : 'conta EAV7');
+    const en = a.energy || { available: 0, max: 0 };
+    const pct = en.max > 0 ? Math.round((en.available / en.max) * 100) : 0;
+    $('energylbl').textContent = `${en.available} / ${en.max}`;
+    $('energybar').style.width = pct + '%';
+    $('energyhint').innerHTML = a.feeExempt
+      ? 'validador/oráculo — isento de taxa'
+      : `${pct}% disponível · fazer stake aumenta a energia; sem energia, a taxa é queimada em EAV7`;
+    const tks = Object.entries(a.tokens || {});
+    $('tokens').innerHTML = tks.length ? tks.map(([id, t]) => `<div class="mono">${esc(t.symbol)}: <b>${esc(t.balance)}</b> <span class="muted">(${esc(id.slice(0, 10))}…)</span></div>`).join('') : '<span class="muted">nenhum token neste endereço</span>';
+  } catch (e) { $('acctmsg').innerHTML = `<span class="err">erro: ${esc(e.message)}</span>`; }
+};
+// exibe o id da tx só se for um hash hex válido (defesa extra contra resposta forjada)
+const safeId = (id) => (/^E7[0-9A-F]{4,}$/.test(id) ? id.slice(0, 20) + '…' : '(id inválido)');
+async function opNativa(sysAddress, valorId, msgId, btnId, label) {
+  const btn = $(btnId); btn.disabled = true; $(msgId).textContent = 'assinando no navegador…';
+  try {
+    const valueWei = eav7ToWei($(valorId).value);
+    if (valueWei <= 0n) throw new Error('informe um valor positivo');
+    const acc = await (await fetch('/address/' + acct.evm)).json();
+    const raw = buildSignedTx({ privateKey: acct.privateKey, nonce: acc.nonce, to: sysAddress, valueWei, chainId });
+    const r = await fetch('/eavm/tx', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ raw }) });
+    const b = await r.json();
+    if (!r.ok || b.accepted === false) throw new Error(b.error ?? b.reason ?? 'recusada');
+    $(msgId).innerHTML = `<span class="ok">${esc(label)} enviado! id ${esc(safeId(b.id))} — confirma no próximo bloco</span>`;
+    $(valorId).value = ''; setTimeout(atualizar, 2500);
+  } catch (e) { $(msgId).innerHTML = `<span class="err">${esc(e.message)}</span>`; } finally { btn.disabled = false; }
+}
+window.stake = () => opNativa(EAVM_STAKE_ADDRESS, 'stakeamt', 'stakemsg', 'stakebtn', 'Stake');
+window.unstake = () => opNativa(EAVM_UNSTAKE_ADDRESS, 'stakeamt', 'stakemsg', 'unstakebtn', 'Unstake');
+
+window.enviar = async () => {
+  const btn = $('sendbtn'); btn.disabled = true; $('sendmsg').textContent = 'assinando no navegador…';
+  try {
+    let to = $('to').value.trim();
+    if (isE7(to)) throw new Error('informe o 0x do destino (a carteira web assina no modelo EAVM)');
+    if (!is0x(to)) throw new Error('destino deve ser 0x… (conta EAVM/MetaMask)');
+    const valueWei = eav7ToWei($('amt').value);
+    const acc = await (await fetch('/address/' + acct.evm)).json();
+    const raw = buildSignedTx({ privateKey: acct.privateKey, nonce: acc.nonce, to, valueWei, chainId });
+    const r = await fetch('/eavm/tx', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ raw }) });
+    const b = await r.json();
+    if (!r.ok || b.accepted === false) throw new Error(b.error ?? b.reason ?? 'recusada');
+    $('sendmsg').innerHTML = `<span class="ok">enviada! id ${esc(safeId(b.id))} — confirma no próximo bloco</span>`;
+    $('amt').value = ''; setTimeout(atualizar, 2500);
+  } catch (e) { $('sendmsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; } finally { btn.disabled = false; }
+};
+function pickProvider(prefer) {
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
+  const byRdns = (m) => WALLETS.find((w) => (w.info?.rdns || '').includes(m))?.provider;
+  const byName = (m) => WALLETS.find((w) => (w.info?.name || '').toLowerCase().includes(m))?.provider;
+  const mm = byRdns('io.metamask') || byName('metamask');
+  const tw = byRdns('com.trustwallet') || byName('trust');
+  if (prefer === 'metamask' && mm) return mm;
+  if (prefer === 'trust' && tw) return tw;
+  if (mm) return mm;
+  if (tw) return tw;
+  const eth = window.ethereum;
+  if (!eth) return null;
+  const list = Array.isArray(eth.providers) ? eth.providers : [eth];
+  return list.find((p) => p && p.isMetaMask) || list.find((p) => p && (p.isTrust || p.isTrustWallet)) || eth;
+}
+function manualHint(cfg) {
+  const rpc = cfg.rpcUrl || `${location.protocol}//${location.hostname}:${cfg.rpcPort ?? 7075}`;
+  return `<span class="muted">Sua carteira não adiciona a rede por 1 clique. Adicione <b>manualmente</b>:</span>
+    <pre style="margin-top:8px;white-space:pre-wrap">Nome da rede : EAV7\nURL do RPC   : ${esc(rpc)}\nChain ID     : ${Number(cfg.chainId ?? 72020)}\nSímbolo      : EAV7\nCasas decimais: 18\nExplorador   : ${location.origin}/explorer</pre>`;
+}
+window.addToWallet = async (prefer) => {
+  const out = $('add-out');
+  const cfg = EAVM_CFG || {};
+  const provider = pickProvider(prefer);
+  if (!provider) {
+    const dapp = location.host + location.pathname;
+    out.innerHTML = `<span class="muted">Nenhuma carteira detectada (aqui você já pode usar a carteira web nativa acima):</span>
+      <div class="row mt"><a class="btn" style="flex:1" href="https://metamask.app.link/dapp/${dapp}">Abrir na MetaMask</a>
+      <a class="btn ghost" style="flex:1" href="https://link.trustwallet.com/open_url?url=${encodeURIComponent(location.href)}">Abrir na Trust</a></div>
+      <div style="margin-top:10px">${manualHint(cfg)}</div>`;
+    return;
+  }
+  const rpcUrl = cfg.rpcUrl || `${location.protocol}//${location.hostname}:${cfg.rpcPort ?? 7075}`;
+  const params = [{
+    chainId: '0x' + Number(cfg.chainId ?? 72020).toString(16),
+    chainName: 'EAV7',
+    nativeCurrency: { name: 'EAV7', symbol: 'EAV7', decimals: 18 },
+    rpcUrls: [rpcUrl],
+    blockExplorerUrls: [location.origin + '/explorer'],
+    iconUrls: [location.origin + '/icon.png'],
+  }];
+  try {
+    await provider.request({ method: 'wallet_addEthereumChain', params });
+    out.innerHTML = '<span class="ok">rede EAV7 adicionada! ✅</span>';
+  } catch (e) {
+    if (e && (e.code === -32601 || /does not exist|not available|not supported/i.test(e.message || ''))) {
+      out.innerHTML = manualHint(cfg);
+    } else if (e && e.code === 4001) {
+      out.innerHTML = '<span class="muted">adição cancelada.</span>';
+    } else {
+      out.innerHTML = `<span class="muted">não adicionado: ${esc(e.message || e)}</span><div style="margin-top:8px">${manualHint(cfg)}</div>`;
+    }
+  }
+};
+net(); render(); setInterval(net, 5000);
+</script>
+</body>
+</html>
