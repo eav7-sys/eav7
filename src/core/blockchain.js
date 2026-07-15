@@ -163,7 +163,7 @@ export class Blockchain {
     return validators[this.slotFor(timestamp) % validators.length].address;
   }
 
-  addBlock(block, { now = Date.now() } = {}) {
+  addBlock(block, { now = Date.now(), presim = null } = {}) {
     if (!this.hasGenesis()) throw new Error('cadeia sem bloco gênese');
     const err = verifyBlockIntegrity(block);
     if (err) throw new Error(err);
@@ -212,27 +212,18 @@ export class Blockchain {
       }
     }
 
-    const sim = this.state.clone();
-    let fees = 0n;
-    const seen = new Set();
-    const blockLogs = []; // #33: eventos EAVM deste bloco, para o índice node-local
-    for (const tx of block.transactions) {
-      const txErr = verifyTransaction(tx);
-      if (txErr) throw new Error(`transação ${tx?.id ?? '?'} inválida: ${txErr}`);
-      if (seen.has(tx.id) || this.txIndex.has(tx.id)) throw new Error(`transação duplicada: ${tx.id}`);
-      seen.add(tx.id);
-      fees += sim.applyTransaction(tx, block.height, block.timestamp, (lg) => blockLogs.push({ ...lg, blockHeight: block.height }));
-    }
-    const reward = this.blockReward(block.height, sim);
-    sim.distributeBlockReward(block.producer, reward + fees); // comissão + partilha c/ eleitores
-    sim.totalMinted += reward; // contabiliza a emissão (para o supply real) — M1
-    sim.blockTick(block.height); // aplica governança madura + poda estado (por bloco)
+    // Aplica o bloco a um estado clonado — A MENOS que produceBlock já tenha aplicado e
+    // passado `presim` (evita clonar + aplicar + computar a raiz DUAS vezes no produtor).
+    let sim, blockLogs;
+    if (presim) { sim = presim.sim; blockLogs = presim.logs; }
+    else { sim = this.state.clone(); blockLogs = []; this.#simulate(sim, block, blockLogs); }
 
     // #1: acima do fork, o header commita o stateRoot (Merkle do estado APÓS o bloco).
     // Recalculamos do estado simulado e exigimos igualdade — qualquer divergência de
     // saldo/stake/ponte/contrato entre nós é detectada aqui (hoje o consenso não valida
     // estado). Roda inclusive no replay de disco: é a checagem que pega corrupção.
-    if (block.height >= CHAIN.STATEROOT_HEIGHT) {
+    // Com presim (produceBlock), a raiz já foi computada do MESMO sim → não recomputa.
+    if (!presim && block.height >= CHAIN.STATEROOT_HEIGHT) {
       const computed = computeStateRoot(sim);
       if (computed !== block.stateRoot) {
         throw new Error(`stateRoot não confere (esperado ${computed}, recebido ${block.stateRoot})`);
@@ -256,6 +247,25 @@ export class Blockchain {
     this.#slideTail();
     this.#maybeSnapshot();
     return block;
+  }
+
+  // Caminho ÚNICO de aplicação de um bloco a um estado clonado `sim`: valida cada tx,
+  // deduplica, aplica, credita a recompensa (comissão + eleitores) e roda o tick. Coleta
+  // os eventos EAVM em `blockLogs`. Usado por addBlock e por produceBlock.
+  #simulate(sim, block, blockLogs) {
+    let fees = 0n;
+    const seen = new Set();
+    for (const tx of block.transactions) {
+      const txErr = verifyTransaction(tx);
+      if (txErr) throw new Error(`transação ${tx?.id ?? '?'} inválida: ${txErr}`);
+      if (seen.has(tx.id) || this.txIndex.has(tx.id)) throw new Error(`transação duplicada: ${tx.id}`);
+      seen.add(tx.id);
+      fees += sim.applyTransaction(tx, block.height, block.timestamp, blockLogs ? (lg) => blockLogs.push({ ...lg, blockHeight: block.height }) : null);
+    }
+    const reward = this.blockReward(block.height, sim);
+    sim.distributeBlockReward(block.producer, reward + fees); // comissão + partilha c/ eleitores
+    sim.totalMinted += reward; // contabiliza a emissão (para o supply real) — M1
+    sim.blockTick(block.height); // aplica governança madura + poda estado (por bloco)
   }
 
   // Re-executa um bloco JÁ VALIDADO sobre um estado (sem clone, sem verificação):
@@ -311,30 +321,15 @@ export class Blockchain {
       throw new Error(`slot pertence a ${expected ?? 'ninguém'}, não a ${producer}`);
     }
     const height = this.head.height + 1;
-    // #1: acima do fork, simulamos o bloco para obter o stateRoot pós-estado e
-    // commitá-lo no header (entra no hash + assinatura). O addBlock recalcula e
-    // confere — se divergir, nem produzimos um bloco inválido.
-    let stateRoot = null;
-    if (height >= CHAIN.STATEROOT_HEIGHT) {
-      const sim = this.state.clone();
-      let fees = 0n;
-      for (const tx of transactions) fees += sim.applyTransaction(tx, height, timestamp);
-      const reward = this.blockReward(height, sim);
-      sim.distributeBlockReward(producer, reward + fees);
-      sim.totalMinted += reward;
-      sim.blockTick(height);
-      stateRoot = computeStateRoot(sim);
-    }
-    const block = buildBlock(wallet, {
-      height,
-      previousHash: this.head.hash,
-      timestamp,
-      transactions,
-      stateRoot,
-    });
-    // Valida o próprio bloco contra o relógio real (não contra o timestamp do
-    // bloco), para que as checagens de slot-futuro e drift não fiquem nulas.
-    return this.addBlock(block, { now: Date.now() });
+    // Aplica UMA vez: obtém o stateRoot pós-estado para o header e REUSA o mesmo `sim`
+    // no addBlock (via presim), em vez de clonar+aplicar+computar a raiz duas vezes.
+    const sim = this.state.clone();
+    const blockLogs = [];
+    this.#simulate(sim, { height, producer, timestamp, transactions }, blockLogs);
+    const stateRoot = height >= CHAIN.STATEROOT_HEIGHT ? computeStateRoot(sim) : null;
+    const block = buildBlock(wallet, { height, previousHash: this.head.hash, timestamp, transactions, stateRoot });
+    // Valida o próprio bloco contra o relógio real (slot-futuro/drift) e commita o `sim` já pronto.
+    return this.addBlock(block, { now: Date.now(), presim: { sim, logs: blockLogs } });
   }
 
   getBlock(ref) {
