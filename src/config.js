@@ -166,6 +166,7 @@ export const CHAIN = {
   MAX_SYNC_BLOCKS: 10_000, // teto de blocos baixados por ciclo de sync (anti-OOM)
   MAX_SYNC_PAGE_BYTES: 16_000_000, // teto de bytes por página /chain lida de um peer (anti-OOM, H-4/L6). 2000 blocos típicos cabem folgado; corta a pressão de memória em sync multi-peer.
   MAX_TX_SCAN: 20_000, // teto de blocos varridos por consulta de transações
+  MAX_LOG_INDEX: 100_000, // eventos EAVM mantidos no índice node-local (ring buffer, /logs)
   MAX_ALERT_CONTEXT_BYTES: 2_048,
 
   // EAVM — protocolo de contas externas próprio da EAV7 (MetaMask / Trust

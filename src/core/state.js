@@ -605,7 +605,7 @@ export class State {
 
   // Aplica uma transação já validada de forma stateless. Lança Error se as
   // regras de estado forem violadas. Retorna a taxa cobrada (BigInt).
-  applyTransaction(tx, height = 0, blockTs = 0) {
+  applyTransaction(tx, height = 0, blockTs = 0, logSink = null) {
     // L3: valida o nonce ANTES de materializar a conta (não cria conta-fantasma
     // no clone reusado quando a tx lança). L2: reafirma o teto do fee no estado.
     const curNonce = this.accounts[tx.from]?.nonce ?? 0;
@@ -1531,6 +1531,8 @@ export class State {
         // cobrir, reverte atomicamente o mundo de contratos antes de lançar.
         if (acc.balance < fee) { vm.world.revert(0); throw new Error('saldo insuficiente'); }
         acc.balance -= fee;
+        // #33: emite os eventos (LOGs) da execução para o índice NODE-LOCAL (não-consenso).
+        if (logSink && vm.logs?.length) for (const lg of vm.logs) logSink({ txId: tx.id, address: lg.address, topics: lg.topics, data: lg.data });
         break;
       }
 

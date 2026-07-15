@@ -409,6 +409,24 @@ async function handle(node, req, res) {
     send(res, 200, { address, height: blockchain.height, stateRoot: head.stateRoot, encodedAccount: proof.encodedAccount, path: proof.path });
     return;
   }
+  // #33: consulta de eventos/logs do EAVM (filtro por address e topic), mais novos primeiro.
+  if (GET && parts[0] === 'logs' && parts.length === 1) {
+    const addr = url.searchParams.get('address')?.toLowerCase();
+    const topic = url.searchParams.get('topic')?.toLowerCase();
+    const from = intParam(url.searchParams.get('from'), 0);
+    const limit = Math.min(Math.max(intParam(url.searchParams.get('limit'), 100), 1), 1000);
+    const out = [];
+    for (let i = blockchain.logIndex.length - 1; i >= 0 && out.length < limit; i--) {
+      const lg = blockchain.logIndex[i];
+      if (lg.blockHeight < from) continue;
+      if (addr && String(lg.address).toLowerCase() !== addr) continue;
+      if (topic && !(lg.topics ?? []).some((t) => String(t).toLowerCase() === topic)) continue;
+      out.push(lg);
+    }
+    send(res, 200, { logs: out });
+    return;
+  }
+
   // EAV-NS: resolve um nome legível para o endereço-alvo.
   if (GET && parts[0] === 'name' && parts.length === 2) {
     const rec = state.names?.[String(parts[1]).toLowerCase()];

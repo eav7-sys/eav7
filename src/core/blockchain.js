@@ -67,6 +67,7 @@ export class Blockchain {
     this.txIndex = new Map(); // txId -> altura do bloco
     this.addressTxIndex = new Map(); // endereço -> [alturas de blocos com tx desse endereço] (asc)
     this.blocksWithTxs = []; // alturas (asc) de blocos que contêm ≥1 transação (feed global de txs)
+    this.logIndex = []; // #33: eventos EAVM (ring buffer node-local, NÃO-consenso) para /logs
     this.store = null;
     if (dataDir) {
       mkdirSync(dataDir, { recursive: true });
@@ -214,12 +215,13 @@ export class Blockchain {
     const sim = this.state.clone();
     let fees = 0n;
     const seen = new Set();
+    const blockLogs = []; // #33: eventos EAVM deste bloco, para o índice node-local
     for (const tx of block.transactions) {
       const txErr = verifyTransaction(tx);
       if (txErr) throw new Error(`transação ${tx?.id ?? '?'} inválida: ${txErr}`);
       if (seen.has(tx.id) || this.txIndex.has(tx.id)) throw new Error(`transação duplicada: ${tx.id}`);
       seen.add(tx.id);
-      fees += sim.applyTransaction(tx, block.height, block.timestamp);
+      fees += sim.applyTransaction(tx, block.height, block.timestamp, (lg) => blockLogs.push({ ...lg, blockHeight: block.height }));
     }
     const reward = this.blockReward(block.height, sim);
     sim.distributeBlockReward(block.producer, reward + fees); // comissão + partilha c/ eleitores
@@ -247,6 +249,10 @@ export class Blockchain {
     this.hashIndex.set(block.hash, block.height);
     for (const tx of block.transactions) this.txIndex.set(tx.id, block.height);
     this.#indexAddressTxs(block);
+    if (blockLogs.length) { // #33: índice node-local de logs (ring buffer)
+      this.logIndex.push(...blockLogs);
+      if (this.logIndex.length > CHAIN.MAX_LOG_INDEX) this.logIndex.splice(0, this.logIndex.length - CHAIN.MAX_LOG_INDEX);
+    }
     this.#slideTail();
     this.#maybeSnapshot();
     return block;
