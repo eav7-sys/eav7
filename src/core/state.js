@@ -58,6 +58,9 @@ export class State {
     // amount, matureAt }] — stake dessteikado esperando o período.
     this.slashed = {};
     this.unbonding = [];
+    // Vesting (evolução): id -> { beneficiary, total, claimed, start, cliff, duration }.
+    // Fundos travados que liberam linearmente após o cliff; o beneficiário resgata o vested.
+    this.vesting = {};
   }
 
   getAccount(address) {
@@ -187,6 +190,15 @@ export class State {
     } else {
       throw new Error(`tipo de operação multisig não suportado: ${op.type}`);
     }
+  }
+
+  // Quanto de um vesting já venceu na altura `height`: 0 antes do cliff; linear entre
+  // start e start+duration; total ao fim. Determinístico (só inteiros).
+  vestedAmount(v, height) {
+    const total = BigInt(v.total);
+    if (height < v.start + v.cliff) return 0n;
+    if (height >= v.start + v.duration) return total;
+    return (total * BigInt(height - v.start)) / BigInt(v.duration);
   }
 
   // Total de votos que um eleitor alocou (soma da sua entrada em `votes`).
@@ -331,6 +343,7 @@ export class State {
     copy.proposals = structuredClone(this.proposals);
     copy.slashed = structuredClone(this.slashed);
     copy.unbonding = structuredClone(this.unbonding);
+    copy.vesting = structuredClone(this.vesting);
     return copy;
   }
 
@@ -343,6 +356,14 @@ export class State {
     }
     for (const address of genesis.bridgeRelayers ?? []) {
       this.bridgeRelayers[address] = true;
+    }
+    // Vesting semeado na gênese: distribuição de time/investidor nasce VESTIDA (não líquida).
+    // { id, beneficiary, total, cliff, duration } — start = 0 (o gênese).
+    for (const v of genesis.vesting ?? []) {
+      this.vesting[v.id] = {
+        beneficiary: v.beneficiary, total: BigInt(v.total).toString(), claimed: '0',
+        start: 0, cliff: Number(v.cliff) || 0, duration: Number(v.duration) || 1,
+      };
     }
     for (const [chain, committee] of Object.entries(genesis.bridgeSourceCommittees ?? {})) {
       this.bridgeSourceCommittees[chain.toUpperCase()] = {
@@ -570,6 +591,37 @@ export class State {
           rec[c] = a.toString();
         }
         this.votes[tx.from] = rec;
+        break;
+      }
+
+      // Vesting: trava `amount` para um beneficiário com cliff + liberação linear.
+      case 'VESTING_CREATE': {
+        if (height < CHAIN.VESTING_HEIGHT) throw new Error('vesting ainda não ativo');
+        const beneficiary = tx.data?.beneficiary;
+        if (!isValidAddress(beneficiary)) throw new Error('beneficiário inválido');
+        if (amount <= 0n) throw new Error('valor de vesting deve ser positivo');
+        const cliff = Number(tx.data?.cliffBlocks ?? 0);
+        const duration = Number(tx.data?.durationBlocks);
+        if (!Number.isSafeInteger(duration) || duration <= 0 || duration > CHAIN.MAX_VESTING_BLOCKS) throw new Error('duração inválida');
+        if (!Number.isSafeInteger(cliff) || cliff < 0 || cliff > duration) throw new Error('cliff inválido');
+        if (acc.balance < amount + fee) throw new Error('saldo insuficiente para travar o vesting');
+        acc.balance -= amount + fee;
+        this.vesting[tx.id] = { beneficiary, total: amount.toString(), claimed: '0', start: height, cliff, duration };
+        break;
+      }
+
+      case 'VESTING_CLAIM': {
+        if (height < CHAIN.VESTING_HEIGHT) throw new Error('vesting ainda não ativo');
+        const v = this.vesting[tx.data?.vestingId];
+        if (!v) throw new Error('vesting inexistente');
+        if (v.beneficiary !== tx.from) throw new Error('só o beneficiário resgata');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        const claimable = this.vestedAmount(v, height) - BigInt(v.claimed);
+        if (claimable <= 0n) throw new Error('nada a resgatar ainda (cliff/linear)');
+        acc.balance -= fee;
+        v.claimed = (BigInt(v.claimed) + claimable).toString();
+        this.credit(tx.from, claimable);
+        if (BigInt(v.claimed) >= BigInt(v.total)) delete this.vesting[tx.data.vestingId]; // poda ao terminar
         break;
       }
 

@@ -180,6 +180,7 @@ export const CHAIN = {
       PERMISSION_UPDATE: 2, MULTISIG_PROPOSE: 2, MULTISIG_APPROVE: 1,
       DELEGATE_RESOURCE: 1, UNDELEGATE_RESOURCE: 1,
       GOV_PROPOSE: 2, GOV_VOTE: 1, SLASH_DOUBLE_SIGN: 8, BRIDGE_COMMITTEE_UPDATE: 2, // SLASH custa (2 verifies híbridos) — anti-spam
+      VESTING_CREATE: 2, VESTING_CLAIM: 1,
       TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
       AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
       BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
@@ -193,6 +194,11 @@ export const CHAIN = {
   // staked − delegadoOut + delegadoIn: delegar cede RECURSO a outra conta sem perder
   // poder de voto (dApps patrocinam taxas). No gênese novo = 0 (ativo já).
   RESOURCE_HEIGHT: 1_600_000,
+  // Vesting / time-lock (evolução): trava fundos para um beneficiário com cliff + liberação
+  // LINEAR ao longo de durationBlocks. Ideal para distribuição de time/investidor no gênese
+  // (nasce vestido, não líquido). No gênese novo = 0 (ativo já).
+  VESTING_HEIGHT: 1_650_000,
+  MAX_VESTING_BLOCKS: 315_360_000, // ~10 anos a 1 bloco/s (teto de duração)
   BANDWIDTH: {
     FREE: 8_000, // bytes grátis por conta (cobre ~1 tx híbrida; regenera) — a assinatura ML-DSA é grande
     PER_STAKED_EAV7: 256, // +256 bytes de banda por EAV7 travado
@@ -219,6 +225,8 @@ export const CHAIN = {
     GOV_PROPOSE: 50_000n,
     GOV_VOTE: 10_000n,
     SLASH_DOUBLE_SIGN: 20_000n, // limite de queima p/ a denúncia (rate-limit via energia; o prêmio do slash compensa)
+    VESTING_CREATE: 20_000n,
+    VESTING_CLAIM: 10_000n,
     BRIDGE_COMMITTEE_UPDATE: 20_000n,
     PERMISSION_UPDATE: 20_000n,
     MULTISIG_PROPOSE: 20_000n,
@@ -246,6 +254,7 @@ export const CHAIN = {
 export const FORK_HEIGHTS = [
   'STRICT_PRODUCER_HEIGHT', 'CANONICAL_HASH_HEIGHT', 'STATEROOT_HEIGHT', 'BRIDGE_QUORUM_HEIGHT',
   'BRIDGE_PROOF_HEIGHT', 'VOTING_HEIGHT', 'PERMISSIONS_HEIGHT', 'RESOURCE_HEIGHT', 'GOVERNANCE_HEIGHT', 'SLASHING_HEIGHT',
+  'VESTING_HEIGHT',
 ];
 if (process.env.EAV7_GENESIS_ACTIVE === '1') {
   for (const k of FORK_HEIGHTS) CHAIN[k] = 0;

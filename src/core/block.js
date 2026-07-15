@@ -49,7 +49,7 @@ export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(
 }
 
 // Bloco gênese: sem produtor real; carrega as alocações e stakes iniciais da rede.
-export function buildGenesisBlock({ timestamp, balances, stakes, bridgeRelayers = [], bridgeSourceCommittees = {} }) {
+export function buildGenesisBlock({ timestamp, balances, stakes, bridgeRelayers = [], bridgeSourceCommittees = {}, vesting = [] }) {
   const core = {
     protocol: CHAIN.PROTOCOL,
     version: CHAIN.PROTOCOL_VERSION,
@@ -62,7 +62,7 @@ export function buildGenesisBlock({ timestamp, balances, stakes, bridgeRelayers 
     producer: 'GENESIS',
     publicKey: null,
     pqPublicKey: null,
-    genesis: { balances, stakes, bridgeRelayers, bridgeSourceCommittees },
+    genesis: { balances, stakes, bridgeRelayers, bridgeSourceCommittees, vesting },
   };
   const payload = canonical(core);
   return {
