@@ -21,6 +21,15 @@ export function bridgeEventDigest({ sourceChain, sourceTxHash, to, amount, token
   return keccak256(Buffer.from(msg, 'utf8'));
 }
 
+// Digest de HANDOFF de comitê (rotação, (d)): o comitê ATUAL assina isto para autorizar
+// a troca para um NOVO conjunto de membros no próximo epoch. Membros ordenados → o digest
+// independe da ordem em que vêm.
+export function committeeUpdateDigest({ sourceChain, epoch, members, quorum }) {
+  const sorted = [...(members ?? [])].map((m) => String(m).toLowerCase()).sort();
+  const msg = ['EAV7-BRIDGE-COMMITTEE', String(sourceChain).toUpperCase(), String(epoch), String(quorum), ...sorted].join('\x1f');
+  return keccak256(Buffer.from(msg, 'utf8'));
+}
+
 // Conta assinaturas VÁLIDAS e DISTINTAS de membros do comitê sobre o digest.
 // sigs: [{ r, s, recId }] com r/s em string decimal e recId 0..3. Um membro só conta
 // uma vez (dedup por endereço recuperado) — maleabilidade de assinatura não infla a

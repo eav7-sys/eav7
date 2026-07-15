@@ -6,7 +6,7 @@ import { verifyBlockIntegrity } from './block.js';
 import { runEavm, EavmError } from '../eavm/vm.js';
 import { createHost } from '../eavm/host.js';
 import { keccak256 } from '../eavm/keccak.js';
-import { bridgeEventDigest, verifyCommitteeProof } from '../bridge/proof.js';
+import { bridgeEventDigest, verifyCommitteeProof, committeeUpdateDigest } from '../bridge/proof.js';
 
 // Máquina de estado do protocolo eav20. Valores monetários são BigInt.
 // applyTransaction valida TUDO antes de mutar — uma transação que lança erro
@@ -324,6 +324,7 @@ export class State {
       this.bridgeSourceCommittees[chain.toUpperCase()] = {
         members: (committee.members ?? []).map((m) => String(m).toLowerCase()),
         quorum: Number(committee.quorum) || 0,
+        epoch: Number(committee.epoch) || 0, // (d) rotação: incrementa a cada handoff
       };
     }
   }
@@ -921,6 +922,31 @@ export class State {
       // Liberação vinda de outra blockchain. Exige quórum de M-de-N relayers
       // AUTORIZADOS (allowlist da gênese) atestando o MESMO depósito. Cada
       // depósito de origem só é liberado uma vez, e nunca além do travado.
+      // (d) Rotação do comitê da cadeia de origem: o comitê ATUAL assina o handoff para
+      // um NOVO conjunto (epoch+1). Sem isto, um comitê semeado na gênese ficaria eterno
+      // e obsoleto quando os validadores da origem mudassem. Verificado on-chain.
+      case 'BRIDGE_COMMITTEE_UPDATE': {
+        if (height < CHAIN.BRIDGE_PROOF_HEIGHT) throw new Error('rotação de comitê ainda não ativa');
+        const chainKey = String(tx.data?.sourceChain ?? '').toUpperCase();
+        const current = this.bridgeSourceCommittees[chainKey];
+        if (!current || !current.quorum) throw new Error('comitê de origem inexistente');
+        const nc = tx.data?.newCommittee;
+        if (!nc || typeof nc !== 'object') throw new Error('novo comitê inválido');
+        const members = (nc.members ?? []).map((m) => String(m).toLowerCase());
+        const quorum = Number(nc.quorum);
+        if (members.length === 0 || members.length > 200) throw new Error('nº de membros inválido');
+        if (new Set(members).size !== members.length) throw new Error('membros duplicados');
+        if (!Number.isSafeInteger(quorum) || quorum <= 0 || quorum > members.length) throw new Error('quorum inválido');
+        const newEpoch = (current.epoch ?? 0) + 1;
+        const digest = committeeUpdateDigest({ sourceChain: chainKey, epoch: newEpoch, members, quorum });
+        const valid = verifyCommitteeProof(digest, tx.data?.sigs, current);
+        if (valid < current.quorum) throw new Error(`handoff sem quórum do comitê atual (${valid}/${current.quorum})`);
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        this.bridgeSourceCommittees[chainKey] = { members, quorum, epoch: newEpoch };
+        break;
+      }
+
       case 'BRIDGE_IN': {
         if (!this.bridgeRelayers[tx.from]) throw new Error('remetente não é um relayer de ponte autorizado');
         const { sourceChain, sourceTxHash, token } = tx.data;
