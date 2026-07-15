@@ -11,8 +11,9 @@
 import { CHAIN } from '../config.js';
 import { generateKeyPair, walletAddress } from '../crypto/keys.js';
 import { buildTransaction, verifyTransaction } from '../core/transaction.js';
+import { verifyAccountProof, decodeProofBig } from '../core/stateroot.js';
 
-export { generateKeyPair, walletAddress };
+export { generateKeyPair, walletAddress, verifyAccountProof, decodeProofBig };
 
 export class Eav7Client {
   constructor({ url, wallet = null, fetchImpl = fetch } = {}) {
@@ -36,6 +37,17 @@ export class Eav7Client {
   transaction(id) { return this.#get('/tx/' + encodeURIComponent(id)); }
   validators() { return this.#get('/validators'); }
   contract(address) { return this.#get('/contract/' + encodeURIComponent(address)); } // metadados de verificação (#8)
+  proof(address) { return this.#get('/proof/' + encodeURIComponent(address)); } // prova de estado p/ light client
+
+  // Busca a prova, VERIFICA contra a raiz de estado do header e devolve o saldo provado.
+  // `trustedRoot` opcional: se passado, exige que a raiz da prova bata (o cliente já a tem
+  // de um header confiável); senão confia na raiz devolvida pelo nó (verificação de forma).
+  async provenBalance(address, trustedRoot = null) {
+    const p = await this.proof(address);
+    if (trustedRoot && p.stateRoot !== trustedRoot) throw new Error('stateRoot da prova diverge do header confiável');
+    if (!verifyAccountProof(p.stateRoot, p.address, p.encodedAccount, p.path)) throw new Error('prova de estado inválida');
+    return decodeProofBig(p.encodedAccount.balance);
+  }
   async balance(address = this.address) { return BigInt((await this.account(address)).balance); }
   async nextNonce(address = this.address) { return (await this.account(address)).nextNonce; }
 

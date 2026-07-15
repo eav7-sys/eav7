@@ -66,3 +66,59 @@ export function computeStateRoot(state) {
 export function accountLeaf(address, account) {
   return leaf('acct', address, account);
 }
+
+// Caminho de Merkle da folha em `index` até a raiz — espelha o pareamento do merkleRoot
+// (parent = eavHash(esq + dir), último ímpar pareia consigo). Cada passo: { hash: irmão,
+// right: true se ESTA folha é a da esquerda (irmão à direita) }.
+function merklePath(sortedLeaves, index) {
+  const path = [];
+  let level = sortedLeaves;
+  let i = index;
+  while (level.length > 1) {
+    const isLeft = i % 2 === 0;
+    const sib = level[isLeft ? i + 1 : i - 1] ?? level[i];
+    path.push({ hash: sib, right: isLeft });
+    const next = [];
+    for (let j = 0; j < level.length; j += 2) next.push(eavHash(level[j] + (level[j + 1] ?? level[j])));
+    level = next;
+    i = i >> 1;
+  }
+  return path;
+}
+
+// Forma canônica JSON-safe de uma conta (BigInt vira "B<decimal>"), para o light client
+// recomputar a folha sem saber quais campos são BigInt. `decodeProofBig` lê de volta.
+export const encodeAccountForProof = (account) => stable(account);
+export const decodeProofBig = (s) => (typeof s === 'string' && s[0] === 'B' ? BigInt(s.slice(1)) : s);
+
+// Folha de conta a partir da forma ENCODED (o que a prova transporta) — idêntica a
+// accountLeaf(address, account), mas sem exigir os tipos BigInt no cliente.
+export function accountLeafFromEncoded(address, encoded) {
+  return eavHash('acct' + '\x1f' + address + '\x1f' + JSON.stringify(encoded));
+}
+
+// Prova de inclusão de UMA conta no stateRoot: { leaf, encodedAccount, path }. Um light
+// client verifica com verifyStateProof e lê os campos de encodedAccount sem estado cheio.
+export function accountProof(state, address) {
+  const account = state.accounts[address];
+  if (!account) return null;
+  const target = accountLeaf(address, account);
+  const sorted = stateLeaves(state).sort();
+  const idx = sorted.indexOf(target);
+  if (idx < 0) return null;
+  return { leaf: target, encodedAccount: stable(account), path: merklePath(sorted, idx) };
+}
+
+// Recomputa a raiz a partir da folha + caminho e compara. Não precisa do estado inteiro.
+export function verifyStateProof(root, leaf, path) {
+  let h = leaf;
+  for (const step of path ?? []) h = step.right ? eavHash(h + step.hash) : eavHash(step.hash + h);
+  return h === root;
+}
+
+// Verificação completa para o light client: recompõe a folha a partir de (endereço,
+// encodedAccount), confere contra a prova e valida o caminho até a raiz do header.
+export function verifyAccountProof(stateRoot, address, encodedAccount, path) {
+  const leaf = accountLeafFromEncoded(address, encodedAccount);
+  return verifyStateProof(stateRoot, leaf, path);
+}

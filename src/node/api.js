@@ -6,6 +6,7 @@ import { isValidAddress } from '../crypto/keys.js';
 import { tokenView, tokenBalanceOf, EAV20_STANDARD } from '../token/eav20.js';
 import { eavmToE7, isEavmAddress, buildEavmEnvelope } from '../eavm/envelope.js';
 import { createRateLimiter } from './ratelimit.js';
+import { accountProof as stateProof } from '../core/stateroot.js';
 
 const rateLimit = createRateLimiter();
 
@@ -392,6 +393,19 @@ async function handle(node, req, res) {
     } catch (err) {
       send(res, 400, { error: String(err.message || err) });
     }
+    return;
+  }
+  // Prova de estado de uma conta (light client): folha + caminho de Merkle até o
+  // stateRoot do header. O cliente verifica com o SDK sem baixar o estado inteiro.
+  if (GET && parts[0] === 'proof' && parts.length === 2) {
+    let address = parts[1];
+    if (isEavmAddress(address)) address = eavmToE7(address);
+    else if (!isValidAddress(address)) return send(res, 400, { error: 'endereço inválido' });
+    const head = blockchain.head;
+    if (!head?.stateRoot) return send(res, 501, { error: 'stateRoot indisponível nesta altura (fork não ativo)' });
+    const proof = stateProof(state, address);
+    if (!proof) return send(res, 404, { error: 'conta inexistente' });
+    send(res, 200, { address, height: blockchain.height, stateRoot: head.stateRoot, encodedAccount: proof.encodedAccount, path: proof.path });
     return;
   }
   if (GET && parts[0] === 'contract' && parts.length === 2) {
