@@ -384,6 +384,23 @@ async function handle(node, req, res) {
     return;
   }
 
+  // #8: verificação de contratos EAVM (metadados, fora do consenso).
+  if (POST && parts[0] === 'contract' && parts[2] === 'verify' && parts.length === 3) {
+    const body = await readBody(req);
+    try {
+      send(res, 200, node.verifyContract(parts[1], body));
+    } catch (err) {
+      send(res, 400, { error: String(err.message || err) });
+    }
+    return;
+  }
+  if (GET && parts[0] === 'contract' && parts.length === 2) {
+    const rec = node.getVerifiedContract(parts[1]);
+    if (!rec) return send(res, 404, { verified: false, error: 'contrato não verificado' });
+    send(res, 200, { verified: true, ...rec });
+    return;
+  }
+
   if (GET && parts[0] === 'tx' && parts.length === 2) {
     const found = blockchain.getTransaction(parts[1]);
     if (found) return send(res, 200, { status: 'CONFIRMED', ...found });

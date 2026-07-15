@@ -41,6 +41,28 @@ export class Eav7Node {
     this.eavmServer = eavm ? createEavmRpcServer(this) : null;
     this.lastSlot = -1;
     this.productionTimer = null;
+    // Registro de contratos verificados (#8): metadados NÃO-consensuais (fora do stateRoot).
+    // Verificação = o bytecode submetido bate com o código on-chain do contrato.
+    this.verifiedContracts = new Map();
+  }
+
+  // #8: verifica um contrato EAVM conferindo que o bytecode submetido é idêntico ao
+  // código de runtime on-chain; se bater, guarda o source para o explorer exibir.
+  verifyContract(address, { source, language = 'solidity', compiler = '', bytecode }) {
+    const addr = String(address).toLowerCase();
+    const onchain = this.blockchain.state.contracts[addr]?.code;
+    if (!onchain) throw new Error('contrato não encontrado on-chain');
+    const provided = '0x' + String(bytecode ?? '').replace(/^0x/, '').toLowerCase();
+    if (provided !== onchain.toLowerCase()) throw new Error('bytecode não confere com o código on-chain');
+    if (typeof source !== 'string' || source.length === 0 || source.length > 200_000) throw new Error('source inválido (1..200000 chars)');
+    const codeHash = createHash('sha3-256').update(onchain).digest('hex');
+    const record = { address: addr, language: String(language), compiler: String(compiler), source, codeHash, verifiedAt: Date.now() };
+    this.verifiedContracts.set(addr, record);
+    return { verified: true, address: addr, codeHash };
+  }
+
+  getVerifiedContract(address) {
+    return this.verifiedContracts.get(String(address).toLowerCase()) ?? null;
   }
 
   // Autoriza operações administrativas (ex.: escrever alertas). Sem token
