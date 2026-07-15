@@ -191,7 +191,7 @@ export const CHAIN = {
       DELEGATE_RESOURCE: 1, UNDELEGATE_RESOURCE: 1,
       GOV_PROPOSE: 2, GOV_VOTE: 1, SLASH_DOUBLE_SIGN: 8, BRIDGE_COMMITTEE_UPDATE: 2, // SLASH custa (2 verifies híbridos) — anti-spam
       VESTING_CREATE: 2, VESTING_CLAIM: 1,
-      SET_COMMISSION: 1, CLAIM_VOTER_REWARD: 1,
+      SET_COMMISSION: 1, CLAIM_VOTER_REWARD: 1, META_TX: 3,
       TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
       AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
       BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
@@ -210,6 +210,10 @@ export const CHAIN = {
   // (nasce vestido, não líquido). No gênese novo = 0 (ativo já).
   VESTING_HEIGHT: 1_650_000,
   MAX_VESTING_BLOCKS: 315_360_000, // ~10 anos a 1 bloco/s (teto de duração)
+  // Meta-transações (evolução, gasless): um relayer embrulha a tx ASSINADA do usuário num
+  // META_TX e PAGA a taxa; o efeito (TRANSFER/TOKEN_TRANSFER) roda como o usuário, com o
+  // nonce dele. Onboarding sem o usuário ter EAV7. No gênese novo = 0 (ativo já).
+  META_HEIGHT: 1_680_000,
   BANDWIDTH: {
     FREE: 8_000, // bytes grátis por conta (cobre ~1 tx híbrida; regenera) — a assinatura ML-DSA é grande
     PER_STAKED_EAV7: 256, // +256 bytes de banda por EAV7 travado
@@ -240,6 +244,7 @@ export const CHAIN = {
     VESTING_CLAIM: 10_000n,
     SET_COMMISSION: 10_000n,
     CLAIM_VOTER_REWARD: 10_000n,
+    META_TX: 30_000n,
     BRIDGE_COMMITTEE_UPDATE: 20_000n,
     PERMISSION_UPDATE: 20_000n,
     MULTISIG_PROPOSE: 20_000n,
@@ -267,7 +272,7 @@ export const CHAIN = {
 export const FORK_HEIGHTS = [
   'STRICT_PRODUCER_HEIGHT', 'CANONICAL_HASH_HEIGHT', 'STATEROOT_HEIGHT', 'BRIDGE_QUORUM_HEIGHT',
   'BRIDGE_PROOF_HEIGHT', 'VOTING_HEIGHT', 'PERMISSIONS_HEIGHT', 'RESOURCE_HEIGHT', 'GOVERNANCE_HEIGHT', 'SLASHING_HEIGHT',
-  'VESTING_HEIGHT',
+  'VESTING_HEIGHT', 'META_HEIGHT',
 ];
 if (process.env.EAV7_GENESIS_ACTIVE === '1') {
   for (const k of FORK_HEIGHTS) CHAIN[k] = 0;

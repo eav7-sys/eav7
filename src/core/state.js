@@ -3,6 +3,7 @@ import { eavHash, canonical } from '../crypto/hash.js';
 import { isValidAddress, deriveAddressFrom } from '../crypto/keys.js';
 import { validateTokenParams } from '../token/eav20.js';
 import { verifyBlockIntegrity } from './block.js';
+import { verifyTransaction } from './transaction.js';
 import { runEavm, EavmError } from '../eavm/vm.js';
 import { createHost } from '../eavm/host.js';
 import { keccak256 } from '../eavm/keccak.js';
@@ -239,6 +240,29 @@ export class State {
       if (pending > 0n) this.credit(voter, pending);
     }
     (this.voterRewardDebt[voter] ??= {})[validator] = acc;
+  }
+
+  // Aplica só o EFEITO de uma tx patrocinada (meta-tx). Restrito às operações de valor
+  // comuns; o relayer já pagou a taxa. Não mexe em energia/fee do usuário.
+  #applyMetaEffect(inner, fromAcc) {
+    const amount = BigInt(inner.amount);
+    if (inner.type === 'TRANSFER') {
+      if (!isValidAddress(inner.to)) throw new Error('destino inválido');
+      if (amount <= 0n) throw new Error('valor deve ser positivo');
+      if (fromAcc.balance < amount) throw new Error('saldo insuficiente');
+      fromAcc.balance -= amount;
+      this.credit(inner.to, amount);
+    } else if (inner.type === 'TOKEN_TRANSFER') {
+      const token = this.tokens[inner.data?.token];
+      if (!token) throw new Error('token inexistente');
+      if (amount <= 0n) throw new Error('valor do token deve ser positivo');
+      const bal = token.balances[inner.from] ?? 0n;
+      if (bal < amount) throw new Error('saldo do token insuficiente');
+      token.balances[inner.from] = bal - amount;
+      token.balances[inner.to] = (token.balances[inner.to] ?? 0n) + amount;
+    } else {
+      throw new Error(`tipo não patrocinável via meta-tx: ${inner.type}`);
+    }
   }
 
   // Total de votos que um eleitor alocou (soma da sua entrada em `votes`).
@@ -674,6 +698,22 @@ export class State {
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
         acc.balance -= fee;
         this.#settleVoterReward(tx.from, validator);
+        break;
+      }
+
+      // Meta-transação (gasless): o RELAYER (tx.from do META_TX) já pagou a energia/taxa no
+      // topo do applyTransaction. Aqui só aplicamos o EFEITO da tx assinada do usuário, com
+      // o NONCE do usuário (replay protection). O usuário não gasta EAV7 nenhum.
+      case 'META_TX': {
+        if (height < CHAIN.META_HEIGHT) throw new Error('meta-transação ainda não ativa');
+        const inner = tx.data?.inner;
+        if (!inner || typeof inner !== 'object' || inner.type === 'META_TX') throw new Error('inner inválida');
+        const err = verifyTransaction(inner);
+        if (err) throw new Error(`inner inválida: ${err}`);
+        const uAcc = this.getAccount(inner.from);
+        if (inner.nonce !== (uAcc.nonce ?? 0) + 1) throw new Error(`nonce da inner inválido (esperado ${(uAcc.nonce ?? 0) + 1})`);
+        this.#applyMetaEffect(inner, uAcc);
+        uAcc.nonce += 1;
         break;
       }
 
