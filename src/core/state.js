@@ -279,6 +279,14 @@ export class State {
     for (const a of addrs) if (a && bl[a]) throw new Error(`endereço bloqueado neste token: ${a}`);
   }
 
+  // Saldo de token TRANSFERÍVEL de um endereço: total menos o CONGELADO ainda não vencido.
+  #tokenAvailable(token, addr, height) {
+    const bal = token.balances[addr] ?? 0n;
+    const fr = token.frozen?.[addr];
+    if (fr && height < fr.unlockAt) return bal - BigInt(fr.amount);
+    return bal;
+  }
+
   // Aplica só o EFEITO de uma tx patrocinada (meta-tx). Restrito às operações de valor
   // comuns; o relayer já pagou a taxa. Não mexe em energia/fee do usuário.
   #applyMetaEffect(inner, fromAcc) {
@@ -1027,6 +1035,7 @@ export class State {
           mintable: tx.data.mintable === true, // supply pode crescer via TOKEN_MINT
           paused: false,
           blacklist: {},
+          frozen: {}, // addr -> { amount, unlockAt } — saldo congelado (não transferível até unlockAt)
           createdAt: tx.timestamp,
           balances: { [tx.from]: totalSupply },
           allowances: {},
@@ -1040,7 +1049,7 @@ export class State {
         this.#tokenGuard(token, tx.from, tx.to); // pausa + blacklist
         if (amount <= 0n) throw new Error('valor do token deve ser positivo');
         const balance = token.balances[tx.from] ?? 0n;
-        if (balance < amount) throw new Error('saldo do token insuficiente');
+        if (this.#tokenAvailable(token, tx.from, height) < amount) throw new Error('saldo do token insuficiente ou congelado');
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
         acc.balance -= fee;
         token.balances[tx.from] = balance - amount;
@@ -1102,6 +1111,38 @@ export class State {
         token.blacklist ??= {};
         if (tx.data?.blocked === false) delete token.blacklist[target];
         else token.blacklist[target] = true;
+        break;
+      }
+
+      // O HOLDER congela parte do próprio saldo do token até uma altura (freeze estilo Tron):
+      // a parte congelada não é transferível até vencer.
+      case 'TOKEN_FREEZE': {
+        if (height < CHAIN.TOKEN_ADMIN_HEIGHT) throw new Error('admin de token ainda não ativo');
+        const token = this.tokens[tx.data?.token];
+        if (!token) throw new Error('token EAV20 inexistente');
+        const dur = Number(tx.data?.durationBlocks);
+        if (!Number.isSafeInteger(dur) || dur <= 0) throw new Error('duração inválida');
+        if (amount <= 0n) throw new Error('valor a congelar deve ser positivo');
+        token.frozen ??= {};
+        const cur = token.frozen[tx.from];
+        if (cur && height < cur.unlockAt) throw new Error('já há um congelamento ativo nesta conta');
+        if ((token.balances[tx.from] ?? 0n) < amount) throw new Error('saldo do token insuficiente para congelar');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        token.frozen[tx.from] = { amount: amount.toString(), unlockAt: height + dur };
+        break;
+      }
+
+      case 'TOKEN_UNFREEZE': {
+        if (height < CHAIN.TOKEN_ADMIN_HEIGHT) throw new Error('admin de token ainda não ativo');
+        const token = this.tokens[tx.data?.token];
+        if (!token) throw new Error('token EAV20 inexistente');
+        const cur = token.frozen?.[tx.from];
+        if (!cur) throw new Error('nada congelado');
+        if (height < cur.unlockAt) throw new Error('congelamento ainda não venceu');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        delete token.frozen[tx.from];
         break;
       }
 
@@ -1254,7 +1295,7 @@ export class State {
         const allowance = token.allowances[owner]?.[tx.from] ?? 0n;
         if (allowance < amount) throw new Error('allowance insuficiente');
         const ownerBalance = token.balances[owner] ?? 0n;
-        if (ownerBalance < amount) throw new Error('saldo do token insuficiente');
+        if (this.#tokenAvailable(token, owner, height) < amount) throw new Error('saldo do token insuficiente ou congelado');
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
         acc.balance -= fee;
         token.allowances[owner][tx.from] = allowance - amount;

@@ -59,6 +59,26 @@ test('EAV20: pause bloqueia transferências; unpause libera', () => {
   } finally { CHAIN.TOKEN_ADMIN_HEIGHT = saved; }
 });
 
+test('EAV20: freeze trava parte do saldo até vencer; só o livre transfere', () => {
+  const saved = CHAIN.TOKEN_ADMIN_HEIGHT; CHAIN.TOKEN_ADMIN_HEIGHT = 1;
+  try {
+    const { s, owner, oAddr, id } = withToken(false); // owner tem 1000
+    const x = walletAddress(generateKeyPair());
+    // congela 600 por 10 blocos (unlockAt = 5 + 10 = 15)
+    s.applyTransaction(buildTransaction(owner, { type: 'TOKEN_FREEZE', amount: 600n, nonce: 2, data: { token: id, durationBlocks: 10 } }), 5, now());
+    // livre = 1000 - 600 = 400; transferir 500 falha
+    assert.throws(() => s.applyTransaction(buildTransaction(owner, { type: 'TOKEN_TRANSFER', to: x, amount: 500n, nonce: 3, data: { token: id } }), 6, now()), /congelado/);
+    // transferir 300 (<= 400) ok
+    s.applyTransaction(buildTransaction(owner, { type: 'TOKEN_TRANSFER', to: x, amount: 300n, nonce: 3, data: { token: id } }), 6, now());
+    assert.equal(s.tokens[id].balances[x], 300n);
+    // unfreeze antes de vencer falha
+    assert.throws(() => s.applyTransaction(buildTransaction(owner, { type: 'TOKEN_UNFREEZE', nonce: 4, data: { token: id } }), 10, now()), /ainda não venceu/);
+    // após vencer (altura 15), o congelado libera: transferir 600 do restante ok
+    s.applyTransaction(buildTransaction(owner, { type: 'TOKEN_TRANSFER', to: x, amount: 600n, nonce: 4, data: { token: id } }), 15, now());
+    assert.equal(s.tokens[id].balances[x], 900n);
+  } finally { CHAIN.TOKEN_ADMIN_HEIGHT = saved; }
+});
+
 test('EAV20: blacklist bloqueia envio/recebimento; remover libera', () => {
   const saved = CHAIN.TOKEN_ADMIN_HEIGHT; CHAIN.TOKEN_ADMIN_HEIGHT = 1;
   try {
