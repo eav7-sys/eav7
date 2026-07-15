@@ -73,6 +73,10 @@ export const CHAIN = {
   // escalonado nos 3 nós. Todos os nós precisam da MESMA altura antes de a cadeia cruzá-la.
   // Exige ≥3 relayers na gênese para um quórum de maioria (ex.: 2-de-3) ter efeito.
   BRIDGE_QUORUM_HEIGHT: 1_000_000,
+  // A PARTIR desta altura a ponte é TRUSTLESS (#3): BRIDGE_IN só libera com prova do
+  // comitê da cadeia de origem (>= quorum de assinaturas sobre o evento), não mais por
+  // confiança na federação de relayers. Fork COORDENADO; no gênese novo = 0 (ativo já).
+  BRIDGE_PROOF_HEIGHT: 1_300_000,
   // A PARTIR desta altura o hash do bloco deriva SÓ do payload assinado (não das
   // assinaturas), tornando o id do bloco canônico e imune à maleabilidade de assinatura
   // (achado M1). Blocos antes do fork mantêm a fórmula antiga (grandfather). Head de

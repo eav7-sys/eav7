@@ -42,6 +42,7 @@ function stateLeaves(state) {
   for (const [id, t] of Object.entries(state.aiTasks)) leaves.push(leaf('ai', id, t));
   leaves.push(leaf('brg', 'state', state.bridge));
   leaves.push(leaf('brg', 'relayers', state.bridgeRelayers));
+  leaves.push(leaf('brg', 'committees', state.bridgeSourceCommittees ?? {}));
   return leaves;
 }
 

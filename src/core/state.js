@@ -5,6 +5,7 @@ import { validateTokenParams } from '../token/eav20.js';
 import { runEavm, EavmError } from '../eavm/vm.js';
 import { createHost } from '../eavm/host.js';
 import { keccak256 } from '../eavm/keccak.js';
+import { bridgeEventDigest, verifyCommitteeProof } from '../bridge/proof.js';
 
 // Máquina de estado do protocolo eav20. Valores monetários são BigInt.
 // applyTransaction valida TUDO antes de mutar — uma transação que lança erro
@@ -23,6 +24,10 @@ export class State {
     // BRIDGE_SETTLE só são aceitos destes endereços — não do registro
     // permissionless de oráculos.
     this.bridgeRelayers = {};
+    // Comitês das cadeias de ORIGEM (#3): CHAIN -> { members: [endereço eth 0x…],
+    // quorum }. Semeados na gênese/governança. A liberação BRIDGE_IN acima do fork
+    // exige assinaturas de >= quorum destes membros sobre o evento (ponte trustless).
+    this.bridgeSourceCommittees = {};
     // Total de EAV7 (e7) queimado pelo modelo de energia (deflacionário) e total
     // MINTADO em recompensas de bloco. Supply real = GENESIS + minted − burned.
     this.totalBurned = 0n;
@@ -116,6 +121,7 @@ export class State {
     copy.oracles = structuredClone(this.oracles);
     copy.bridge = structuredClone(this.bridge);
     copy.bridgeRelayers = structuredClone(this.bridgeRelayers);
+    copy.bridgeSourceCommittees = structuredClone(this.bridgeSourceCommittees);
     copy.totalBurned = this.totalBurned;
     copy.totalMinted = this.totalMinted;
     copy.contracts = structuredClone(this.contracts);
@@ -131,6 +137,12 @@ export class State {
     }
     for (const address of genesis.bridgeRelayers ?? []) {
       this.bridgeRelayers[address] = true;
+    }
+    for (const [chain, committee] of Object.entries(genesis.bridgeSourceCommittees ?? {})) {
+      this.bridgeSourceCommittees[chain.toUpperCase()] = {
+        members: (committee.members ?? []).map((m) => String(m).toLowerCase()),
+        quorum: Number(committee.quorum) || 0,
+      };
     }
   }
 
@@ -537,7 +549,23 @@ export class State {
           height >= CHAIN.BRIDGE_QUORUM_HEIGHT
             ? Math.max(CHAIN.BRIDGE_MIN_ATTESTATIONS, Math.floor(relayerCount / 2) + 1)
             : CHAIN.BRIDGE_MIN_ATTESTATIONS;
-        const willRelease = attCount >= quorum;
+        // #3 (ponte trustless): acima do fork, a AUTORIDADE é a prova do comitê da
+        // cadeia de origem. O relayer autorizado (anti-spam) apresenta assinaturas do
+        // comitê sobre (to, amount, token, sourceTxHash); >= quorum do comitê libera na
+        // hora — forjar exige as chaves do comitê, não a de um relayer. Sem prova
+        // válida, NÃO libera (falha fechada).
+        let proofRelease = false;
+        if (height >= CHAIN.BRIDGE_PROOF_HEIGHT) {
+          const committee = this.bridgeSourceCommittees[sourceChain.toUpperCase()];
+          if (!committee || !committee.quorum) throw new Error(`sem comitê de origem registrado para ${sourceChain}`);
+          const digest = bridgeEventDigest({ sourceChain, sourceTxHash, to: tx.to, amount, token });
+          const validSigs = verifyCommitteeProof(digest, tx.data?.proof?.sigs, committee);
+          if (validSigs < committee.quorum) {
+            throw new Error(`prova do comitê insuficiente (${validSigs}/${committee.quorum})`);
+          }
+          proofRelease = true;
+        }
+        const willRelease = proofRelease || attCount >= quorum;
         if (willRelease) {
           if (token != null) {
             const t = this.tokens[token];
