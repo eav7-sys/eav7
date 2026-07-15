@@ -67,6 +67,9 @@ export class State {
     this.commission = {};
     this.rewardAccPerVote = {};
     this.voterRewardDebt = {};
+    // Tesouraria (evolução): cofre que recebe TREASURY_PCT da recompensa de bloco e é
+    // gasto por governança (proposta TREASURY_SPEND).
+    this.treasury = 0n;
   }
 
   getAccount(address) {
@@ -211,6 +214,9 @@ export class State {
   // votou nele (via acumulador reward-por-voto, O(1)). Sem votos, o produtor leva tudo
   // (retrocompatível). O `dust` da divisão inteira também vai ao produtor (conserva).
   distributeBlockReward(producer, reward) {
+    // Corte da tesouraria (governável) sai primeiro; o resto vai a comissão + eleitores.
+    const treasuryCut = (reward * BigInt(this.param('TREASURY_PCT'))) / 100n;
+    if (treasuryCut > 0n) { this.treasury += treasuryCut; reward -= treasuryCut; }
     const totalVotes = this.candidateVotes[producer] ?? 0n;
     if (totalVotes <= 0n || reward <= 0n) { this.credit(producer, reward); return; }
     const pct = BigInt(this.commission[producer] ?? CHAIN.DEFAULT_COMMISSION_PCT);
@@ -292,6 +298,16 @@ export class State {
     return { sourceChain: sourceChain.toUpperCase(), members, quorum };
   }
 
+  // Valida um gasto de tesouraria proposto por governança.
+  #validateTreasurySpend(v) {
+    if (!v || typeof v !== 'object') throw new Error('gasto de tesouraria inválido');
+    if (!isValidAddress(v.recipient)) throw new Error('destinatário inválido');
+    let amount;
+    try { amount = BigInt(v.amount); } catch { throw new Error('valor inválido'); }
+    if (amount <= 0n) throw new Error('valor deve ser positivo');
+    return { recipient: v.recipient, amount: amount.toString() };
+  }
+
   // #9: conta votos de validadores ATUAIS numa proposta; ao atingir 2/3+1, aplica o
   // override e marca EXECUTED. Determinístico (validadores e votos são estado).
   #tallyProposal(p, height) {
@@ -320,6 +336,9 @@ export class State {
           const v = p.value;
           const prevEpoch = this.bridgeSourceCommittees[v.sourceChain]?.epoch ?? -1;
           this.bridgeSourceCommittees[v.sourceChain] = { members: v.members, quorum: v.quorum, epoch: prevEpoch + 1 };
+        } else if (p.param === 'TREASURY_SPEND') {
+          const amt = BigInt(p.value.amount); // gasta só se a tesouraria cobre (senão a proposta não tem efeito)
+          if (this.treasury >= amt) { this.treasury -= amt; this.credit(p.value.recipient, amt); }
         } else {
           this.params[p.param] = p.value; // aplica o override (efeito persiste em params)
         }
@@ -381,6 +400,7 @@ export class State {
     copy.commission = structuredClone(this.commission);
     copy.rewardAccPerVote = structuredClone(this.rewardAccPerVote);
     copy.voterRewardDebt = structuredClone(this.voterRewardDebt);
+    copy.treasury = this.treasury;
     return copy;
   }
 
@@ -816,6 +836,8 @@ export class State {
         let value;
         if (param === 'BRIDGE_COMMITTEE') {
           value = this.#validateCommitteeValue(tx.data?.value);
+        } else if (param === 'TREASURY_SPEND') {
+          value = this.#validateTreasurySpend(tx.data?.value);
         } else {
           const spec = CHAIN.GOVERNABLE[param];
           if (!spec) throw new Error(`parâmetro não governável: ${param}`);

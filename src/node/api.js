@@ -305,6 +305,7 @@ async function handle(node, req, res) {
       genesisSupply: CHAIN.GENESIS_SUPPLY,
       minted: state.totalMinted,
       burned: state.totalBurned,
+      treasury: state.treasury ?? 0n, // cofre governável (evolução)
       circulating: CHAIN.GENESIS_SUPPLY + state.totalMinted - state.totalBurned,
       blockReward: blockchain.blockReward(Math.max(blockchain.height + 1, 0)),
       energy: { free: CHAIN.ENERGY.FREE, perStakedEav7: CHAIN.ENERGY.PER_STAKED_EAV7, regenBlocks: CHAIN.ENERGY.REGEN_BLOCKS },

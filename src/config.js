@@ -73,6 +73,9 @@ export const CHAIN = {
   // ajusta a comissão do validador. Sem votos, o produtor leva tudo (retrocompatível).
   DEFAULT_COMMISSION_PCT: 20,
   REWARD_SCALE: 1_000_000_000_000_000_000n, // escala p/ o acumulador não truncar (dust vai ao produtor)
+  // Tesouraria: % da recompensa de bloco desviado para um cofre governável (governança
+  // gasta via proposta TREASURY_SPEND). 0 = desligado (retrocompatível); ajustável por governança.
+  TREASURY_PCT: 0,
   // Permissões de conta / multi-sig (#5, modelo owner/active da Tron). A partir de
   // PERMISSIONS_HEIGHT uma conta pode virar multisig: define { threshold, keys{addr:peso} }
   // e passa a mover fundos/alterar permissão SÓ via propose/approve (M-de-N). No gênese
@@ -97,6 +100,7 @@ export const CHAIN = {
     MAX_VALIDATORS: { kind: 'int', min: 1, max: 101 },
     FEE_EXEMPT_STAKE: { kind: 'bigint', min: 0n, max: 1_000_000n * UNIT },
     MIN_ORACLE_STAKE: { kind: 'bigint', min: 0n, max: 1_000_000n * UNIT },
+    TREASURY_PCT: { kind: 'int', min: 0, max: 50 },
   },
   MIN_ORACLE_STAKE: 500n * UNIT,
   FEE_EXEMPT_STAKE: 100n * UNIT, // stake >= 100 EAV7 => transações com taxa zero
