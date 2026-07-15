@@ -71,6 +71,9 @@ export class State {
     // Tesouraria (evolução): cofre que recebe TREASURY_PCT da recompensa de bloco e é
     // gasto por governança (proposta TREASURY_SPEND).
     this.treasury = 0n;
+    // NFTs EAV721 (evolução): collectionId -> { name, symbol, owner, nextId,
+    // tokens:{tokenId->{owner,uri}}, approvals:{tokenId->addr} }.
+    this.nfts = {};
   }
 
   getAccount(address) {
@@ -432,6 +435,7 @@ export class State {
     copy.rewardAccPerVote = structuredClone(this.rewardAccPerVote);
     copy.voterRewardDebt = structuredClone(this.voterRewardDebt);
     copy.treasury = this.treasury;
+    copy.nfts = structuredClone(this.nfts);
     return copy;
   }
 
@@ -1070,6 +1074,81 @@ export class State {
         token.blacklist ??= {};
         if (tx.data?.blocked === false) delete token.blacklist[target];
         else token.blacklist[target] = true;
+        break;
+      }
+
+      // ---- EAV721: padrão de NFT nativo (equivalente ao TRC-721) ----
+      case 'NFT_CREATE': {
+        if (height < CHAIN.NFT_HEIGHT) throw new Error('NFT ainda não ativo');
+        const name = tx.data?.name, symbol = tx.data?.symbol;
+        if (typeof name !== 'string' || name.trim().length < 1 || name.length > 64) throw new Error('nome da coleção inválido');
+        if (typeof symbol !== 'string' || !/^[A-Z0-9]{2,10}$/.test(symbol)) throw new Error('símbolo inválido');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa de criação');
+        acc.balance -= fee;
+        const cid = eavHash('EAV721-COLLECTION:' + tx.id);
+        this.nfts[cid] = { standard: 'eav721', id: cid, name: name.trim(), symbol, owner: tx.from, createdAt: tx.timestamp, nextId: 1, tokens: {}, approvals: {} };
+        break;
+      }
+
+      case 'NFT_MINT': {
+        if (height < CHAIN.NFT_HEIGHT) throw new Error('NFT ainda não ativo');
+        const col = this.nfts[tx.data?.collection];
+        if (!col) throw new Error('coleção inexistente');
+        if (col.owner !== tx.from) throw new Error('só o owner da coleção pode mint');
+        if (!isValidAddress(tx.to)) throw new Error('destino inválido');
+        const uri = tx.data?.uri ?? '';
+        if (typeof uri !== 'string' || Buffer.byteLength(uri) > CHAIN.MAX_NFT_URI_BYTES) throw new Error('uri inválida');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        const tokenId = String(col.nextId);
+        col.nextId += 1;
+        col.tokens[tokenId] = { owner: tx.to, uri };
+        break;
+      }
+
+      case 'NFT_TRANSFER': {
+        if (height < CHAIN.NFT_HEIGHT) throw new Error('NFT ainda não ativo');
+        const col = this.nfts[tx.data?.collection];
+        if (!col) throw new Error('coleção inexistente');
+        const tokenId = String(tx.data?.tokenId);
+        const nft = col.tokens[tokenId];
+        if (!nft) throw new Error('NFT inexistente');
+        if (nft.owner !== tx.from && col.approvals[tokenId] !== tx.from) throw new Error('não é dono nem aprovado');
+        if (!isValidAddress(tx.to)) throw new Error('destino inválido');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        nft.owner = tx.to;
+        delete col.approvals[tokenId]; // a aprovação some na transferência
+        break;
+      }
+
+      case 'NFT_APPROVE': {
+        if (height < CHAIN.NFT_HEIGHT) throw new Error('NFT ainda não ativo');
+        const col = this.nfts[tx.data?.collection];
+        if (!col) throw new Error('coleção inexistente');
+        const tokenId = String(tx.data?.tokenId);
+        const nft = col.tokens[tokenId];
+        if (!nft) throw new Error('NFT inexistente');
+        if (nft.owner !== tx.from) throw new Error('só o dono aprova');
+        if (!isValidAddress(tx.to)) throw new Error('aprovado inválido');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        col.approvals[tokenId] = tx.to;
+        break;
+      }
+
+      case 'NFT_BURN': {
+        if (height < CHAIN.NFT_HEIGHT) throw new Error('NFT ainda não ativo');
+        const col = this.nfts[tx.data?.collection];
+        if (!col) throw new Error('coleção inexistente');
+        const tokenId = String(tx.data?.tokenId);
+        const nft = col.tokens[tokenId];
+        if (!nft) throw new Error('NFT inexistente');
+        if (nft.owner !== tx.from) throw new Error('só o dono queima');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        delete col.tokens[tokenId];
+        delete col.approvals[tokenId];
         break;
       }
 

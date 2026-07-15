@@ -37,6 +37,7 @@ function stateLeaves(state) {
   leaves.push(leaf('meta', 'totalBurned', state.totalBurned));
   for (const [addr, acc] of Object.entries(state.accounts)) leaves.push(leaf('acct', addr, acc));
   for (const [id, tok] of Object.entries(state.tokens)) leaves.push(leaf('tok', id, tok));
+  for (const [id, col] of Object.entries(state.nfts ?? {})) leaves.push(leaf('nft', id, col));
   for (const [addr, c] of Object.entries(state.contracts)) leaves.push(leaf('ctr', addr, c));
   for (const [addr, o] of Object.entries(state.oracles)) leaves.push(leaf('orc', addr, o));
   for (const [addr, v] of Object.entries(state.votes ?? {})) leaves.push(leaf('vote', addr, v));
