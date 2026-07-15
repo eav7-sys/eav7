@@ -77,15 +77,16 @@ test('Fix 3: governança cria (bootstrap) e depois troca um comitê de ponte', (
     assert.equal(s.bridgeSourceCommittees.TRON.epoch, 0);
     assert.equal(s.bridgeSourceCommittees.TRON.quorum, 2);
 
-    // troca via governança → epoch incrementa
+    // BOOTSTRAP-ONLY: governança NÃO troca um comitê ATIVO (isso exige o handoff assinado
+    // pela origem, BRIDGE_COMMITTEE_UPDATE) — senão 2/3 dos validadores drenariam a ponte.
     const m2 = ['0x' + 'dd'.repeat(20), '0x' + 'ee'.repeat(20)];
     const prop2 = buildTransaction(vals[0], { type: 'GOV_PROPOSE', nonce: 2, data: { param: 'BRIDGE_COMMITTEE', value: { sourceChain: 'TRON', members: m2, quorum: 1 } } });
     s.applyTransaction(prop2, 6, now());
     s.applyTransaction(buildTransaction(vals[1], { type: 'GOV_VOTE', nonce: 2, data: { proposalId: prop2.id } }), 6, now());
     s.applyTransaction(buildTransaction(vals[2], { type: 'GOV_VOTE', nonce: 2, data: { proposalId: prop2.id } }), 6, now());
     s.blockTick(6);
-    assert.equal(s.bridgeSourceCommittees.TRON.epoch, 1);
-    assert.equal(s.bridgeSourceCommittees.TRON.quorum, 1);
+    assert.equal(s.bridgeSourceCommittees.TRON.epoch, 0, 'comitê ATIVO não é trocado por governança');
+    assert.deepEqual(s.bridgeSourceCommittees.TRON.members.slice().sort(), m1.slice().sort());
   } finally { CHAIN.GOVERNANCE_HEIGHT = sG; CHAIN.GOV_TIMELOCK_BLOCKS = sT; }
 });
 

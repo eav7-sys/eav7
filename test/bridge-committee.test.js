@@ -24,6 +24,7 @@ function setup() {
   s.bridgeSourceCommittees = { TRON: { members: cur.map((m) => m.addr), quorum: 2, epoch: 0 } };
   const submitter = generateKeyPair();
   s.credit(walletAddress(submitter), 100n * U);
+  s.bridgeRelayers[walletAddress(submitter)] = true; // BRIDGE_COMMITTEE_UPDATE agora exige relayer (anti-DoS)
   return { s, cur, submitter };
 }
 

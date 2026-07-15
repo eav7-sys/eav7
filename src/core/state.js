@@ -186,7 +186,7 @@ export class State {
 
   // Executa uma operação multisig APROVADA em nome da conta (#5). Suporta transferência
   // nativa e troca da própria permissão. Chamado só quando o peso das aprovações >= threshold.
-  #executeMultisigOp(account, op) {
+  #executeMultisigOp(account, op, height) {
     if (!op || typeof op !== 'object') throw new Error('operação inválida');
     if (op.type === 'TRANSFER') {
       if (!isValidAddress(op.to)) throw new Error('destino inválido');
@@ -202,6 +202,16 @@ export class State {
       const a = this.getAccount(account);
       if (a.balance < amt) throw new Error('saldo insuficiente na conta multisig');
       a.balance -= amt; a.staked += amt;
+    } else if (op.type === 'UNSTAKE') {
+      // Contraparte do STAKE: sem isto, o stake de uma conta multisig ficaria travado
+      // (a guarda de topo bloqueia UNSTAKE direto). Entra em unbonding como o UNSTAKE normal.
+      const amt = BigInt(op.amount);
+      if (amt <= 0n) throw new Error('valor deve ser positivo');
+      const a = this.getAccount(account);
+      if (a.staked < amt) throw new Error('stake insuficiente');
+      a.staked -= amt;
+      if (this.validators().length === 0) { a.staked += amt; throw new Error('não é possível remover o último validador ativo da rede'); }
+      this.unbonding.push({ address: account, amount: amt.toString(), matureAt: height + CHAIN.UNBONDING_BLOCKS });
     } else if (op.type === 'TOKEN_TRANSFER') {
       const token = this.tokens[op.token];
       if (!token) throw new Error('token inexistente');
@@ -209,9 +219,8 @@ export class State {
       const amt = BigInt(op.amount);
       if (amt <= 0n) throw new Error('valor deve ser positivo');
       if (!isValidAddress(op.to)) throw new Error('destino inválido');
-      const bal = token.balances[account] ?? 0n;
-      if (bal < amt) throw new Error('saldo do token insuficiente');
-      token.balances[account] = bal - amt;
+      if (this.#tokenAvailable(token, account, height) < amt) throw new Error('saldo do token insuficiente ou congelado');
+      token.balances[account] = (token.balances[account] ?? 0n) - amt;
       token.balances[op.to] = (token.balances[op.to] ?? 0n) + amt;
     } else if (op.type === 'NFT_TRANSFER') {
       const col = this.nfts[op.collection];
@@ -289,7 +298,7 @@ export class State {
 
   // Aplica só o EFEITO de uma tx patrocinada (meta-tx). Restrito às operações de valor
   // comuns; o relayer já pagou a taxa. Não mexe em energia/fee do usuário.
-  #applyMetaEffect(inner, fromAcc) {
+  #applyMetaEffect(inner, fromAcc, height) {
     const amount = BigInt(inner.amount);
     if (inner.type === 'TRANSFER') {
       if (!isValidAddress(inner.to)) throw new Error('destino inválido');
@@ -300,10 +309,10 @@ export class State {
     } else if (inner.type === 'TOKEN_TRANSFER') {
       const token = this.tokens[inner.data?.token];
       if (!token) throw new Error('token inexistente');
+      this.#tokenGuard(token, inner.from, inner.to); // pausa + blacklist (mesmas guardas do TOKEN_TRANSFER direto)
       if (amount <= 0n) throw new Error('valor do token deve ser positivo');
-      const bal = token.balances[inner.from] ?? 0n;
-      if (bal < amount) throw new Error('saldo do token insuficiente');
-      token.balances[inner.from] = bal - amount;
+      if (this.#tokenAvailable(token, inner.from, height) < amount) throw new Error('saldo do token insuficiente ou congelado');
+      token.balances[inner.from] = (token.balances[inner.from] ?? 0n) - amount;
       token.balances[inner.to] = (token.balances[inner.to] ?? 0n) + amount;
     } else {
       throw new Error(`tipo não patrocinável via meta-tx: ${inner.type}`);
@@ -403,13 +412,23 @@ export class State {
       if (p.status === 'QUEUED' && height >= p.executeAt) {
         if (p.param === 'BRIDGE_COMMITTEE') {
           const v = p.value;
-          const prevEpoch = this.bridgeSourceCommittees[v.sourceChain]?.epoch ?? -1;
-          this.bridgeSourceCommittees[v.sourceChain] = { members: v.members, quorum: v.quorum, epoch: prevEpoch + 1 };
+          // BOOTSTRAP APENAS: governança só CRIA o primeiro comitê. Trocar um comitê ATIVO
+          // exige o handoff assinado pela origem (BRIDGE_COMMITTEE_UPDATE) — senão 2/3 dos
+          // validadores EAV7 trocariam o comitê por chaves próprias e drenariam a ponte.
+          if (!this.bridgeSourceCommittees[v.sourceChain]) {
+            this.bridgeSourceCommittees[v.sourceChain] = { members: v.members, quorum: v.quorum, epoch: 0 };
+          }
         } else if (p.param === 'TREASURY_SPEND') {
           const amt = BigInt(p.value.amount); // gasta só se a tesouraria cobre (senão a proposta não tem efeito)
           if (this.treasury >= amt) { this.treasury -= amt; this.credit(p.value.recipient, amt); }
         } else {
+          const prev = Object.prototype.hasOwnProperty.call(this.params, p.param) ? this.params[p.param] : undefined;
           this.params[p.param] = p.value; // aplica o override (efeito persiste em params)
+          // Rail anti-brick: uma mudança que ESVAZIARIA o conjunto de validadores (MIN muito
+          // alto / MAX 0) travaria a cadeia irreversivelmente — reverte em vez de aplicar.
+          if ((p.param === 'MIN_VALIDATOR_STAKE' || p.param === 'MAX_VALIDATORS') && this.validators().length === 0) {
+            if (prev === undefined) delete this.params[p.param]; else this.params[p.param] = prev;
+          }
         }
         delete this.proposals[id]; // poda: o registro não é mais necessário
       } else if (p.status === 'VOTING' && height > p.deadline) {
@@ -757,9 +776,13 @@ export class State {
         if (!inner || typeof inner !== 'object' || inner.type === 'META_TX') throw new Error('inner inválida');
         const err = verifyTransaction(inner);
         if (err) throw new Error(`inner inválida: ${err}`);
+        // CRÍTICO: uma conta multisig NÃO pode agir por meta-tx — senão a chave-dona
+        // original (ou qualquer chave) burlaria o M-de-N patrocinando uma inner assinada
+        // como a conta multisig. Mesma guarda do topo, agora também para o efeito interno.
+        if (this.permissions[inner.from]) throw new Error('conta multisig: opere via MULTISIG_PROPOSE/APPROVE, não por meta-tx');
         const uAcc = this.getAccount(inner.from);
         if (inner.nonce !== (uAcc.nonce ?? 0) + 1) throw new Error(`nonce da inner inválido (esperado ${(uAcc.nonce ?? 0) + 1})`);
-        this.#applyMetaEffect(inner, uAcc);
+        this.#applyMetaEffect(inner, uAcc, height);
         uAcc.nonce += 1;
         break;
       }
@@ -863,6 +886,24 @@ export class State {
             if (amt - take > 0n) kept.push({ ...u, amount: (amt - take).toString() });
           }
           this.unbonding = kept;
+        }
+        // Se o slash deixou delegatedOut sem lastro (staked caiu abaixo do delegado),
+        // revoga o excesso de delegação — mantém resourceStake >= 0 e não deixa o
+        // delegatário com capacidade de recurso não lastreada por stake real.
+        if (off && BigInt(off.delegatedOut ?? 0n) > off.staked) {
+          let excess = BigInt(off.delegatedOut) - off.staked;
+          const dmap = this.delegations[offender] ?? {};
+          for (const to of Object.keys(dmap)) {
+            if (excess === 0n) break;
+            const amt = BigInt(dmap[to]);
+            const take = amt < excess ? amt : excess;
+            excess -= take;
+            const target = this.getAccount(to);
+            target.delegatedIn = BigInt(target.delegatedIn ?? 0n) - take;
+            if (amt - take > 0n) dmap[to] = amt - take; else delete dmap[to];
+          }
+          if (Object.keys(dmap).length === 0) delete this.delegations[offender];
+          off.delegatedOut = off.staked;
         }
         this.totalBurned += penalty - bounty; // a maior parte da penalidade some do supply
         this.credit(tx.from, bounty); // prêmio ao denunciante
@@ -987,7 +1028,7 @@ export class State {
         acc.balance -= fee;
         const approvals = { [tx.from]: weight };
         if (weight >= perm.threshold) {
-          this.#executeMultisigOp(account, op); // quórum imediato (1 chave já basta)
+          this.#executeMultisigOp(account, op, height); // quórum imediato (1 chave já basta)
         } else {
           this.pendingOps[tx.id] = { account, op, approvals, weight, createdAt: tx.timestamp, deadline: height + CHAIN.MULTISIG_OP_TTL_BLOCKS };
         }
@@ -1010,7 +1051,7 @@ export class State {
         pending.approvals[tx.from] = weight;
         pending.weight += weight;
         if (pending.weight >= perm.threshold) {
-          this.#executeMultisigOp(pending.account, pending.op);
+          this.#executeMultisigOp(pending.account, pending.op, height);
           delete this.pendingOps[opId];
         }
         break;
@@ -1372,6 +1413,7 @@ export class State {
         task.output = output;
         task.resultHash = eavHash(output);
         task.completedAt = tx.timestamp;
+        task.prompt = null; task.params = null; // poda a ENTRADA (fica no tx AI_TASK) — limita o crescimento de estado
         oracle.tasksCompleted += 1;
         acc.balance += task.reward;
         break;
@@ -1387,6 +1429,7 @@ export class State {
         if (blockTs < task.expiresAt) throw new Error('a tarefa ainda não expirou'); // H-2: usa timestamp do bloco
         task.status = 'REFUNDED';
         task.completedAt = tx.timestamp;
+        task.prompt = null; task.params = null; // poda a ENTRADA (limita o crescimento de estado)
         acc.balance += task.reward;
         break;
       }
@@ -1438,6 +1481,9 @@ export class State {
       // e obsoleto quando os validadores da origem mudassem. Verificado on-chain.
       case 'BRIDGE_COMMITTEE_UPDATE': {
         if (height < CHAIN.BRIDGE_PROOF_HEIGHT) throw new Error('rotação de comitê ainda não ativa');
+        // Gate de relayer (como BRIDGE_IN/SETTLE): sem isto, qualquer conta financiada
+        // dispararia até 200 `recover` secp256k1 por ~0 de energia (DoS de cripto).
+        if (!this.bridgeRelayers[tx.from]) throw new Error('remetente não é um relayer de ponte autorizado');
         const chainKey = String(tx.data?.sourceChain ?? '').toUpperCase();
         const current = this.bridgeSourceCommittees[chainKey];
         if (!current || !current.quorum) throw new Error('comitê de origem inexistente');

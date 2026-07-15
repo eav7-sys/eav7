@@ -55,10 +55,17 @@ export class Mempool {
           selected.push(tx);
           picked.add(tx.id);
           progress = true;
-        } catch {
-          if (tx.nonce <= (sim.accounts[tx.from]?.nonce ?? 0)) stale.push(tx.id);
-        }
+        } catch { /* pode ser nonce-futuro (espera as anteriores) — decide na varredura final */ }
       }
+    }
+
+    // Após a convergência (sem mais progresso), qualquer tx NÃO escolhida cujo nonce seja
+    // <= próximo-esperado é PERMANENTEMENTE inválida neste ponto (nonce já consumido, ou é
+    // o próximo esperado e falhou fundo no handler). Poda — senão uma tx cripto-cara que
+    // sempre lança (prova/slash/bridge inválidos) re-executaria a cada bloco, de graça (DoS).
+    for (const tx of pending) {
+      if (picked.has(tx.id)) continue;
+      if (tx.nonce <= (sim.accounts[tx.from]?.nonce ?? 0) + 1) stale.push(tx.id);
     }
 
     this.remove(stale);
