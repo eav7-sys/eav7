@@ -2,6 +2,7 @@ import { CHAIN } from '../config.js';
 import { eavHash, canonical } from '../crypto/hash.js';
 import { isValidAddress, deriveAddressFrom } from '../crypto/keys.js';
 import { validateTokenParams } from '../token/eav20.js';
+import { verifyBlockIntegrity } from './block.js';
 import { runEavm, EavmError } from '../eavm/vm.js';
 import { createHost } from '../eavm/host.js';
 import { keccak256 } from '../eavm/keccak.js';
@@ -51,6 +52,10 @@ export class State {
     // já coagido ao tipo); proposals = id -> proposta em votação/encerrada.
     this.params = {};
     this.proposals = {};
+    // Slashing/unbonding (b): slashed = 'produtor:altura' já penalizado (anti-duplo-slash);
+    // unbonding = [{ address, amount, matureAt }] — stake dessteikado esperando o período.
+    this.slashed = {};
+    this.unbonding = [];
   }
 
   getAccount(address) {
@@ -240,10 +245,11 @@ export class State {
     }
   }
 
-  // Tick de governança/limpeza, rodado UMA vez por bloco (após as txs) — determinístico.
-  // Aplica propostas maduras, expira as que passaram do prazo sem quórum, e poda estado
-  // terminal (propostas aplicadas/expiradas e ops multisig vencidas) para não crescer sem fim.
-  governanceTick(height) {
+  // Hook determinístico rodado UMA vez por bloco (após as txs): aplica governança madura,
+  // matura desbloqueios de stake (unbonding, (b)) e poda estado terminal (propostas
+  // aplicadas/expiradas, ops multisig vencidas) para o estado não crescer sem fim.
+  blockTick(height) {
+    // governança madura + poda de propostas
     for (const [id, p] of Object.entries(this.proposals)) {
       if (p.status === 'QUEUED' && height >= p.executeAt) {
         this.params[p.param] = p.value; // aplica o override (efeito persiste em params)
@@ -252,8 +258,18 @@ export class State {
         delete this.proposals[id]; // expirou sem atingir quórum
       }
     }
+    // ops multisig pendentes vencidas
     for (const [id, op] of Object.entries(this.pendingOps)) {
       if (op.deadline !== undefined && height > op.deadline) delete this.pendingOps[id];
+    }
+    // unbonding maduro: devolve o stake dessteikado ao saldo depois do período (b)
+    if (this.unbonding.length) {
+      const still = [];
+      for (const u of this.unbonding) {
+        if (height >= u.matureAt) this.credit(u.address, BigInt(u.amount));
+        else still.push(u);
+      }
+      this.unbonding = still;
     }
   }
 
@@ -289,6 +305,8 @@ export class State {
     copy.delegations = structuredClone(this.delegations);
     copy.params = structuredClone(this.params);
     copy.proposals = structuredClone(this.proposals);
+    copy.slashed = structuredClone(this.slashed);
+    copy.unbonding = structuredClone(this.unbonding);
     return copy;
   }
 
@@ -530,7 +548,7 @@ export class State {
       case 'UNSTAKE': {
         if (amount <= 0n) throw new Error('unstake deve ser positivo');
         if (acc.staked < amount) throw new Error('stake insuficiente');
-        if (acc.balance + amount < fee) throw new Error('saldo insuficiente para a taxa');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa'); // fundos só voltam após unbonding
         // Stake precisa continuar lastreando VOTOS (#4) e RECURSO DELEGADO (#6): não pode
         // dessteikar abaixo do maior dos dois (senão votaria/delegaria e dessteikaria).
         const stakeFloor = this.votedTotal(tx.from);
@@ -547,7 +565,35 @@ export class State {
           acc.staked += amount;
           throw new Error('não é possível remover o último validador ativo da rede');
         }
-        acc.balance += amount - fee;
+        acc.balance -= fee;
+        // (b) unbonding: os fundos NÃO voltam agora — entram na fila e o blockTick os
+        // devolve após UNBONDING_BLOCKS. O stake já saiu (perdeu voto/validação na hora).
+        this.unbonding.push({ address: tx.from, amount: amount.toString(), matureAt: height + CHAIN.UNBONDING_BLOCKS });
+        break;
+      }
+
+      // (b) Slashing por assinatura dupla: prova = dois blocos VÁLIDOS do MESMO produtor,
+      // MESMA altura, hashes diferentes → o validador assinou dois forks. Queima uma fração
+      // do stake dele e premia o denunciante. Dá lastro econômico à finalidade BFT (#2).
+      case 'SLASH_DOUBLE_SIGN': {
+        if (height < CHAIN.SLASHING_HEIGHT) throw new Error('slashing ainda não ativo');
+        const { blockA, blockB } = tx.data ?? {};
+        const eA = verifyBlockIntegrity(blockA); if (eA) throw new Error(`evidência A inválida: ${eA}`);
+        const eB = verifyBlockIntegrity(blockB); if (eB) throw new Error(`evidência B inválida: ${eB}`);
+        if (blockA.producer !== blockB.producer) throw new Error('produtores diferentes — não é assinatura dupla');
+        if (blockA.height !== blockB.height) throw new Error('alturas diferentes — não é assinatura dupla');
+        if (blockA.hash === blockB.hash) throw new Error('mesmo bloco — não há conflito');
+        const offender = blockA.producer;
+        const key = `${offender}:${blockA.height}`;
+        if (this.slashed[key]) throw new Error('essa assinatura dupla já foi penalizada');
+        const off = this.accounts[offender];
+        if (!off || off.staked <= 0n) throw new Error('infrator sem stake para penalizar');
+        const penalty = (off.staked * BigInt(CHAIN.SLASH_PERCENT)) / 100n;
+        const bounty = (penalty * BigInt(CHAIN.SLASH_REPORTER_PERCENT)) / 100n;
+        off.staked -= penalty;
+        this.totalBurned += penalty - bounty; // a maior parte da penalidade some do supply
+        this.credit(tx.from, bounty); // prêmio ao denunciante
+        this.slashed[key] = true;
         break;
       }
 

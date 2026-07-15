@@ -46,6 +46,8 @@ function stateLeaves(state) {
   for (const [addr, d] of Object.entries(state.delegations ?? {})) leaves.push(leaf('deleg', addr, d));
   leaves.push(leaf('gov', 'params', state.params ?? {}));
   for (const [id, p] of Object.entries(state.proposals ?? {})) leaves.push(leaf('gov', id, p));
+  leaves.push(leaf('slash', 'set', state.slashed ?? {}));
+  leaves.push(leaf('unbond', 'queue', state.unbonding ?? []));
   for (const [id, t] of Object.entries(state.aiTasks)) leaves.push(leaf('ai', id, t));
   leaves.push(leaf('brg', 'state', state.bridge));
   leaves.push(leaf('brg', 'relayers', state.bridgeRelayers));

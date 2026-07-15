@@ -51,6 +51,16 @@ export const CHAIN = {
 
   MAX_VALIDATORS: 27,
   MIN_VALIDATOR_STAKE: 1_000n * UNIT,
+  // Unbonding (b): UNSTAKE reduz o stake NA HORA (perde voto/validação já), mas os fundos
+  // só voltam ao saldo após UNBONDING_BLOCKS — impede sair-e-dumpar instantâneo e ataque
+  // long-range. No gênese novo, ativo do bloco 0.
+  UNBONDING_BLOCKS: 604_800, // ~7 dias a 1 bloco/s
+  // Slashing (b): a partir de SLASHING_HEIGHT, provar assinatura dupla de um validador
+  // (dois blocos válidos, mesmo produtor+altura, hashes diferentes) queima uma fração do
+  // stake dele; o denunciante leva um prêmio dessa fração. Dá lastro econômico à finalidade.
+  SLASHING_HEIGHT: 1_800_000,
+  SLASH_PERCENT: 10, // % do stake do infrator queimado por assinatura dupla
+  SLASH_REPORTER_PERCENT: 10, // % DA PENALIDADE paga ao denunciante (o resto queima)
   // Votação de validadores (#4, modelo dos 27 SRs da Tron): a partir de VOTING_HEIGHT,
   // detentores alocam seu poder de voto (= stake) a candidatos via tx VOTE, e o conjunto
   // ativo passa a ser o top-MAX_VALIDATORS por PESO = self-stake + votos recebidos. Sem
@@ -169,7 +179,7 @@ export const CHAIN = {
       TRANSFER: 1, STAKE: 1, UNSTAKE: 1, VOTE: 1, EAVM_TRANSFER: 1,
       PERMISSION_UPDATE: 2, MULTISIG_PROPOSE: 2, MULTISIG_APPROVE: 1,
       DELEGATE_RESOURCE: 1, UNDELEGATE_RESOURCE: 1,
-      GOV_PROPOSE: 2, GOV_VOTE: 1,
+      GOV_PROPOSE: 2, GOV_VOTE: 1, SLASH_DOUBLE_SIGN: 0,
       TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
       AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
       BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
@@ -208,6 +218,7 @@ export const CHAIN = {
     UNDELEGATE_RESOURCE: 10_000n,
     GOV_PROPOSE: 50_000n,
     GOV_VOTE: 10_000n,
+    SLASH_DOUBLE_SIGN: 0n, // denúncia não paga taxa (incentiva reportar); o prêmio vem do slash
     PERMISSION_UPDATE: 20_000n,
     MULTISIG_PROPOSE: 20_000n,
     MULTISIG_APPROVE: 10_000n,

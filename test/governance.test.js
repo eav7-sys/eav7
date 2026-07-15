@@ -35,9 +35,9 @@ test('#9: proposta aprovada ENFILEIRA e só aplica após o timelock', () => {
     assert.equal(s.proposals[prop.id].status, 'QUEUED');
     assert.equal(s.proposals[prop.id].executeAt, 105);
     assert.equal(s.param('BLOCK_REWARD'), CHAIN.BLOCK_REWARD, 'ainda não aplicado (timelock)');
-    s.governanceTick(50); // antes do executeAt → nada
+    s.blockTick(50); // antes do executeAt → nada
     assert.equal(s.param('BLOCK_REWARD'), CHAIN.BLOCK_REWARD);
-    s.governanceTick(105); // no executeAt → aplica e poda
+    s.blockTick(105); // no executeAt → aplica e poda
     assert.equal(s.param('BLOCK_REWARD'), 5n * U);
     assert.equal(s.proposals[prop.id], undefined, 'proposta podada após aplicar');
   } finally { CHAIN.GOVERNANCE_HEIGHT = sH; CHAIN.GOV_TIMELOCK_BLOCKS = sT; }
@@ -81,7 +81,7 @@ test('#9+(a): governança altera MAX_VALIDATORS após o timelock; conjunto refle
     const { s, vals } = govState(4);
     const prop = buildTransaction(vals[0], { type: 'GOV_PROPOSE', nonce: 1, data: { param: 'MAX_VALIDATORS', value: '2' } });
     passProposal(s, vals, prop, 5);
-    s.governanceTick(5); // timelock 0 → aplica já
+    s.blockTick(5); // timelock 0 → aplica já
     assert.equal(s.validators().length, 2, 'conjunto ativo limitado a 2');
   } finally { CHAIN.GOVERNANCE_HEIGHT = sH; CHAIN.GOV_TIMELOCK_BLOCKS = sT; }
 });
@@ -95,7 +95,7 @@ test('(a): proposta que expira sem quórum é podada pelo tick', () => {
     s.applyTransaction(prop, 5, now());
     assert.equal(s.proposals[prop.id].status, 'VOTING');
     assert.equal(s.proposals[prop.id].deadline, 15);
-    s.governanceTick(16); // passou do prazo sem quórum → podada
+    s.blockTick(16); // passou do prazo sem quórum → podada
     assert.equal(s.proposals[prop.id], undefined);
     assert.equal(s.param('BLOCK_REWARD'), CHAIN.BLOCK_REWARD, 'não aplicou');
   } finally { CHAIN.GOVERNANCE_HEIGHT = saved; }
