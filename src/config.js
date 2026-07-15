@@ -67,6 +67,12 @@ export const CHAIN = {
   // votos, degrada para top-por-stake (retrocompatível). No gênese novo = 0 (ativo já).
   VOTING_HEIGHT: 1_400_000,
   MAX_VOTE_TARGETS: 30, // nº máx. de candidatos numa única tx VOTE (anti-DoS de data)
+  // Recompensa de eleitores: o produtor fica com a COMISSÃO (%), o resto da recompensa de
+  // bloco é partilhado entre quem votou nele, proporcional aos votos (acumulador "reward
+  // por voto", O(1) por bloco; o eleitor resgata com CLAIM_VOTER_REWARD). SET_COMMISSION
+  // ajusta a comissão do validador. Sem votos, o produtor leva tudo (retrocompatível).
+  DEFAULT_COMMISSION_PCT: 20,
+  REWARD_SCALE: 1_000_000_000_000_000_000n, // escala p/ o acumulador não truncar (dust vai ao produtor)
   // Permissões de conta / multi-sig (#5, modelo owner/active da Tron). A partir de
   // PERMISSIONS_HEIGHT uma conta pode virar multisig: define { threshold, keys{addr:peso} }
   // e passa a mover fundos/alterar permissão SÓ via propose/approve (M-de-N). No gênese
@@ -181,6 +187,7 @@ export const CHAIN = {
       DELEGATE_RESOURCE: 1, UNDELEGATE_RESOURCE: 1,
       GOV_PROPOSE: 2, GOV_VOTE: 1, SLASH_DOUBLE_SIGN: 8, BRIDGE_COMMITTEE_UPDATE: 2, // SLASH custa (2 verifies híbridos) — anti-spam
       VESTING_CREATE: 2, VESTING_CLAIM: 1,
+      SET_COMMISSION: 1, CLAIM_VOTER_REWARD: 1,
       TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
       AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
       BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
@@ -227,6 +234,8 @@ export const CHAIN = {
     SLASH_DOUBLE_SIGN: 20_000n, // limite de queima p/ a denúncia (rate-limit via energia; o prêmio do slash compensa)
     VESTING_CREATE: 20_000n,
     VESTING_CLAIM: 10_000n,
+    SET_COMMISSION: 10_000n,
+    CLAIM_VOTER_REWARD: 10_000n,
     BRIDGE_COMMITTEE_UPDATE: 20_000n,
     PERMISSION_UPDATE: 20_000n,
     MULTISIG_PROPOSE: 20_000n,

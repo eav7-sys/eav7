@@ -61,6 +61,12 @@ export class State {
     // Vesting (evolução): id -> { beneficiary, total, claimed, start, cliff, duration }.
     // Fundos travados que liberam linearmente após o cliff; o beneficiário resgata o vested.
     this.vesting = {};
+    // Recompensa de eleitores (evolução): commission = validador -> % que fica com ele;
+    // rewardAccPerVote = validador -> acumulador de recompensa por unidade de voto (escalado);
+    // voterRewardDebt = eleitor -> { validador -> acumulador na última liquidação }.
+    this.commission = {};
+    this.rewardAccPerVote = {};
+    this.voterRewardDebt = {};
   }
 
   getAccount(address) {
@@ -199,6 +205,34 @@ export class State {
     if (height < v.start + v.cliff) return 0n;
     if (height >= v.start + v.duration) return total;
     return (total * BigInt(height - v.start)) / BigInt(v.duration);
+  }
+
+  // Distribui a recompensa de bloco: comissão ao produtor + partilha do resto com quem
+  // votou nele (via acumulador reward-por-voto, O(1)). Sem votos, o produtor leva tudo
+  // (retrocompatível). O `dust` da divisão inteira também vai ao produtor (conserva).
+  distributeBlockReward(producer, reward) {
+    const totalVotes = this.candidateVotes[producer] ?? 0n;
+    if (totalVotes <= 0n || reward <= 0n) { this.credit(producer, reward); return; }
+    const pct = BigInt(this.commission[producer] ?? CHAIN.DEFAULT_COMMISSION_PCT);
+    const commission = (reward * pct) / 100n;
+    const voterShare = reward - commission;
+    const inc = (voterShare * CHAIN.REWARD_SCALE) / totalVotes;
+    const dust = voterShare - (inc * totalVotes) / CHAIN.REWARD_SCALE;
+    this.credit(producer, commission + dust);
+    this.rewardAccPerVote[producer] = (this.rewardAccPerVote[producer] ?? 0n) + inc;
+  }
+
+  // Liquida a recompensa pendente de um eleitor por um validador: credita votos*(acc-debt)
+  // e atualiza a dívida. NÃO mexe em totalMinted (a emissão já foi contada no bloco).
+  #settleVoterReward(voter, validator) {
+    const votes = BigInt(this.votes[voter]?.[validator] ?? 0n);
+    const acc = this.rewardAccPerVote[validator] ?? 0n;
+    if (votes > 0n) {
+      const debt = this.voterRewardDebt[voter]?.[validator] ?? 0n;
+      const pending = (votes * (acc - debt)) / CHAIN.REWARD_SCALE;
+      if (pending > 0n) this.credit(voter, pending);
+    }
+    (this.voterRewardDebt[voter] ??= {})[validator] = acc;
   }
 
   // Total de votos que um eleitor alocou (soma da sua entrada em `votes`).
@@ -344,6 +378,9 @@ export class State {
     copy.slashed = structuredClone(this.slashed);
     copy.unbonding = structuredClone(this.unbonding);
     copy.vesting = structuredClone(this.vesting);
+    copy.commission = structuredClone(this.commission);
+    copy.rewardAccPerVote = structuredClone(this.rewardAccPerVote);
+    copy.voterRewardDebt = structuredClone(this.voterRewardDebt);
     return copy;
   }
 
@@ -579,18 +616,44 @@ export class State {
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
         if (total > acc.staked) throw new Error('votos excedem o poder de voto (stake)');
         acc.balance -= fee;
-        // remove a alocação ANTERIOR deste eleitor dos totais dos candidatos
+        // remove a alocação ANTERIOR: LIQUIDA a recompensa pendente de cada candidato
+        // ANTES de mexer nos votos (senão o eleitor perderia o acumulado).
         for (const [c, a] of Object.entries(this.votes[tx.from] ?? {})) {
+          this.#settleVoterReward(tx.from, c);
           const left = (this.candidateVotes[c] ?? 0n) - BigInt(a);
           if (left > 0n) this.candidateVotes[c] = left; else delete this.candidateVotes[c];
         }
-        // aplica a nova alocação
+        // aplica a nova alocação, zerando a dívida (começa a acumular do ponto atual)
         const rec = {};
         for (const [c, a] of parsed) {
           this.candidateVotes[c] = (this.candidateVotes[c] ?? 0n) + a;
           rec[c] = a.toString();
+          (this.voterRewardDebt[tx.from] ??= {})[c] = this.rewardAccPerVote[c] ?? 0n;
         }
         this.votes[tx.from] = rec;
+        break;
+      }
+
+      // O validador define a COMISSÃO (% da recompensa que fica com ele; o resto vai aos eleitores).
+      case 'SET_COMMISSION': {
+        if (height < CHAIN.VOTING_HEIGHT) throw new Error('votação ainda não ativa');
+        const pct = Number(tx.data?.percent);
+        if (!Number.isSafeInteger(pct) || pct < 0 || pct > 100) throw new Error('comissão deve ser 0..100');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        this.commission[tx.from] = pct;
+        break;
+      }
+
+      // O eleitor resgata a recompensa acumulada por ter votado num validador.
+      case 'CLAIM_VOTER_REWARD': {
+        if (height < CHAIN.VOTING_HEIGHT) throw new Error('votação ainda não ativa');
+        const validator = tx.data?.validator;
+        if (!isValidAddress(validator)) throw new Error('validador inválido');
+        if ((this.votes[tx.from]?.[validator] ?? null) === null) throw new Error('você não vota nesse validador');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        this.#settleVoterReward(tx.from, validator);
         break;
       }
 

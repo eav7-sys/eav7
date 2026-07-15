@@ -222,7 +222,7 @@ export class Blockchain {
       fees += sim.applyTransaction(tx, block.height, block.timestamp);
     }
     const reward = this.blockReward(block.height, sim);
-    sim.credit(block.producer, reward + fees);
+    sim.distributeBlockReward(block.producer, reward + fees); // comissão + partilha c/ eleitores
     sim.totalMinted += reward; // contabiliza a emissão (para o supply real) — M1
     sim.blockTick(block.height); // aplica governança madura + poda estado (por bloco)
 
@@ -259,7 +259,7 @@ export class Blockchain {
     let fees = 0n;
     for (const tx of block.transactions) fees += state.applyTransaction(tx, block.height, block.timestamp);
     const reward = this.blockReward(block.height, state);
-    state.credit(block.producer, reward + fees);
+    state.distributeBlockReward(block.producer, reward + fees);
     state.totalMinted += reward;
     state.blockTick(block.height);
   }
@@ -314,7 +314,7 @@ export class Blockchain {
       let fees = 0n;
       for (const tx of transactions) fees += sim.applyTransaction(tx, height, timestamp);
       const reward = this.blockReward(height, sim);
-      sim.credit(producer, reward + fees);
+      sim.distributeBlockReward(producer, reward + fees);
       sim.totalMinted += reward;
       sim.blockTick(height);
       stateRoot = computeStateRoot(sim);

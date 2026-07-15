@@ -49,6 +49,9 @@ function stateLeaves(state) {
   leaves.push(leaf('slash', 'set', state.slashed ?? {}));
   leaves.push(leaf('unbond', 'queue', state.unbonding ?? []));
   for (const [id, v] of Object.entries(state.vesting ?? {})) leaves.push(leaf('vest', id, v));
+  for (const [a, c] of Object.entries(state.commission ?? {})) leaves.push(leaf('comm', a, c));
+  for (const [a, r] of Object.entries(state.rewardAccPerVote ?? {})) leaves.push(leaf('racc', a, r));
+  for (const [a, d] of Object.entries(state.voterRewardDebt ?? {})) leaves.push(leaf('rdebt', a, d));
   for (const [id, t] of Object.entries(state.aiTasks)) leaves.push(leaf('ai', id, t));
   leaves.push(leaf('brg', 'state', state.bridge));
   leaves.push(leaf('brg', 'relayers', state.bridgeRelayers));
