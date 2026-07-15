@@ -242,6 +242,13 @@ export class State {
     (this.voterRewardDebt[voter] ??= {})[validator] = acc;
   }
 
+  // Guarda de token EAV20: rejeita se pausado ou se algum endereço envolvido está na blacklist.
+  #tokenGuard(token, ...addrs) {
+    if (token.paused) throw new Error('token pausado');
+    const bl = token.blacklist ?? {};
+    for (const a of addrs) if (a && bl[a]) throw new Error(`endereço bloqueado neste token: ${a}`);
+  }
+
   // Aplica só o EFEITO de uma tx patrocinada (meta-tx). Restrito às operações de valor
   // comuns; o relayer já pagou a taxa. Não mexe em energia/fee do usuário.
   #applyMetaEffect(inner, fromAcc) {
@@ -984,6 +991,10 @@ export class State {
           decimals: tx.data.decimals,
           totalSupply,
           creator: tx.from,
+          owner: tx.from, // admin: pode mint (se mintable)/pause/blacklist
+          mintable: tx.data.mintable === true, // supply pode crescer via TOKEN_MINT
+          paused: false,
+          blacklist: {},
           createdAt: tx.timestamp,
           balances: { [tx.from]: totalSupply },
           allowances: {},
@@ -994,6 +1005,7 @@ export class State {
       case 'TOKEN_TRANSFER': {
         const token = this.tokens[tx.data.token];
         if (!token) throw new Error('token EAV20 inexistente');
+        this.#tokenGuard(token, tx.from, tx.to); // pausa + blacklist
         if (amount <= 0n) throw new Error('valor do token deve ser positivo');
         const balance = token.balances[tx.from] ?? 0n;
         if (balance < amount) throw new Error('saldo do token insuficiente');
@@ -1001,6 +1013,63 @@ export class State {
         acc.balance -= fee;
         token.balances[tx.from] = balance - amount;
         token.balances[tx.to] = (token.balances[tx.to] ?? 0n) + amount;
+        break;
+      }
+
+      // Funções administrativas do token (só o owner). mint exige mintable.
+      case 'TOKEN_MINT': {
+        if (height < CHAIN.TOKEN_ADMIN_HEIGHT) throw new Error('admin de token ainda não ativo');
+        const token = this.tokens[tx.data?.token];
+        if (!token) throw new Error('token EAV20 inexistente');
+        if (token.owner !== tx.from) throw new Error('só o owner do token pode mint');
+        if (!token.mintable) throw new Error('token não é mintable (supply fixo)');
+        if (!isValidAddress(tx.to)) throw new Error('destino inválido');
+        if (amount <= 0n) throw new Error('valor do mint deve ser positivo');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        token.totalSupply = BigInt(token.totalSupply) + amount;
+        token.balances[tx.to] = (token.balances[tx.to] ?? 0n) + amount;
+        break;
+      }
+
+      case 'TOKEN_BURN': {
+        if (height < CHAIN.TOKEN_ADMIN_HEIGHT) throw new Error('admin de token ainda não ativo');
+        const token = this.tokens[tx.data?.token];
+        if (!token) throw new Error('token EAV20 inexistente');
+        if (amount <= 0n) throw new Error('valor do burn deve ser positivo');
+        const bal = token.balances[tx.from] ?? 0n; // queima do PRÓPRIO saldo
+        if (bal < amount) throw new Error('saldo do token insuficiente para queimar');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        token.balances[tx.from] = bal - amount;
+        token.totalSupply = BigInt(token.totalSupply) - amount;
+        break;
+      }
+
+      case 'TOKEN_PAUSE':
+      case 'TOKEN_UNPAUSE': {
+        if (height < CHAIN.TOKEN_ADMIN_HEIGHT) throw new Error('admin de token ainda não ativo');
+        const token = this.tokens[tx.data?.token];
+        if (!token) throw new Error('token EAV20 inexistente');
+        if (token.owner !== tx.from) throw new Error('só o owner do token pode pausar');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        token.paused = tx.type === 'TOKEN_PAUSE';
+        break;
+      }
+
+      case 'TOKEN_BLACKLIST': {
+        if (height < CHAIN.TOKEN_ADMIN_HEIGHT) throw new Error('admin de token ainda não ativo');
+        const token = this.tokens[tx.data?.token];
+        if (!token) throw new Error('token EAV20 inexistente');
+        if (token.owner !== tx.from) throw new Error('só o owner do token pode bloquear');
+        const target = tx.data?.address;
+        if (!isValidAddress(target)) throw new Error('endereço inválido');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        token.blacklist ??= {};
+        if (tx.data?.blocked === false) delete token.blacklist[target];
+        else token.blacklist[target] = true;
         break;
       }
 
@@ -1018,6 +1087,7 @@ export class State {
         if (!token) throw new Error('token EAV20 inexistente');
         const owner = tx.data.owner;
         if (!isValidAddress(owner)) throw new Error('endereço do dono inválido');
+        this.#tokenGuard(token, owner, tx.to, tx.from); // pausa + blacklist
         if (amount <= 0n) throw new Error('valor do token deve ser positivo');
         const allowance = token.allowances[owner]?.[tx.from] ?? 0n;
         if (allowance < amount) throw new Error('allowance insuficiente');
