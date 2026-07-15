@@ -300,9 +300,13 @@ export const CHAIN = {
 // cada altura à mão. Deixa a cadeia ATUAL intacta (só liga quando o env está setado).
 export const FORK_HEIGHTS = [
   'STRICT_PRODUCER_HEIGHT', 'CANONICAL_HASH_HEIGHT', 'STATEROOT_HEIGHT', 'BRIDGE_QUORUM_HEIGHT',
-  'BRIDGE_PROOF_HEIGHT', 'VOTING_HEIGHT', 'PERMISSIONS_HEIGHT', 'RESOURCE_HEIGHT', 'GOVERNANCE_HEIGHT', 'SLASHING_HEIGHT',
+  'BRIDGE_PROOF_HEIGHT', 'VOTING_HEIGHT', 'PERMISSIONS_HEIGHT', 'RESOURCE_HEIGHT', 'GOVERNANCE_HEIGHT',
   'VESTING_HEIGHT', 'META_HEIGHT', 'TOKEN_ADMIN_HEIGHT', 'NFT_HEIGHT', 'NAME_HEIGHT',
 ];
+// SLASHING_HEIGHT é DELIBERADAMENTE excluído do gênese-ativo: a detecção de assinatura
+// dupla ainda não distingue equivocação maliciosa de um validador honesto re-produzindo
+// uma altura após um reorg (puniria honesto). A finalidade BFT (#2) já dá a garantia de
+// segurança principal; ative o slashing só após endurecer a evidência anti-equivocação.
 if (process.env.EAV7_GENESIS_ACTIVE === '1') {
   for (const k of FORK_HEIGHTS) CHAIN[k] = 0;
 }
