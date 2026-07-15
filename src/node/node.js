@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { CHAIN, formatEav7 } from '../config.js';
 import { walletAddress } from '../crypto/keys.js';
 import { Blockchain } from '../core/blockchain.js';
@@ -18,6 +19,7 @@ export class Eav7Node {
     selfUrl = null,
     allowPrivatePeers = false,
     expectedGenesisHash = null,
+    genesisFile = null,
     adminToken = process.env.EAV7_ADMIN_TOKEN || null,
     publicRpcUrl = process.env.EAV7_PUBLIC_RPC_URL || null,
     eavm = true,
@@ -33,6 +35,7 @@ export class Eav7Node {
     this.mempool = new Mempool();
     this.validatorWallet = validatorWallet;
     this.validatorAddress = validatorWallet ? walletAddress(validatorWallet) : null;
+    this.genesisFile = genesisFile;
     this.securityAlerts = [];
     this.p2p = new P2P({ node: this, selfUrl: selfUrl ?? `http://127.0.0.1:${port}`, peers, allowPrivatePeers, log });
     this.api = createApiServer(this);
@@ -81,6 +84,14 @@ export class Eav7Node {
 
   ensureGenesis() {
     if (this.blockchain.hasGenesis()) return;
+    // Gênese CUSTOMIZADO (--genesis): TODOS os nós adotam o mesmo bloco gênese (mesmo
+    // hash), sem depender de um nó semente. É o caminho do relaunch multi-validador.
+    if (this.genesisFile) {
+      const block = JSON.parse(readFileSync(this.genesisFile, 'utf8'));
+      this.blockchain.adoptGenesis(block); // valida integridade + confere o hash fixado
+      this.log(`[nó] gênese adotada do arquivo (${block.hash})`);
+      return;
+    }
     // Com peers configurados, a gênese vem da REDE (sincronização) — mesmo sendo
     // validador. Um validador que ENTRA numa rede existente não cria uma gênese
     // nova (que teria hash divergente); apenas os primeiros nós de uma rede nova
