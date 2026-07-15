@@ -41,6 +41,8 @@ function stateLeaves(state) {
   for (const [addr, o] of Object.entries(state.oracles)) leaves.push(leaf('orc', addr, o));
   for (const [addr, v] of Object.entries(state.votes ?? {})) leaves.push(leaf('vote', addr, v));
   for (const [addr, t] of Object.entries(state.candidateVotes ?? {})) leaves.push(leaf('cvotes', addr, t));
+  for (const [addr, p] of Object.entries(state.permissions ?? {})) leaves.push(leaf('perm', addr, p));
+  for (const [id, o] of Object.entries(state.pendingOps ?? {})) leaves.push(leaf('pop', id, o));
   for (const [id, t] of Object.entries(state.aiTasks)) leaves.push(leaf('ai', id, t));
   leaves.push(leaf('brg', 'state', state.bridge));
   leaves.push(leaf('brg', 'relayers', state.bridgeRelayers));

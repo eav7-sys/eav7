@@ -39,6 +39,11 @@ export class State {
     // RECEBIDOS de terceiros (BigInt). O peso de ranking é self-stake + candidateVotes.
     this.votes = {};
     this.candidateVotes = {};
+    // Permissões / multi-sig (#5): permissions = conta -> { threshold, keys: {addr: peso} }.
+    // Conta COM permissão é multisig: não move nada por single-sig; só via propose/approve.
+    // pendingOps = opId (id da tx MULTISIG_PROPOSE) -> { account, op, approvals:{signer:peso}, weight }.
+    this.permissions = {};
+    this.pendingOps = {};
   }
 
   getAccount(address) {
@@ -94,6 +99,49 @@ export class State {
   // endereço). Contas mapeadas de EAVM (0x…) são excluídas: elas não têm par de
   // chaves híbrido e nunca conseguiriam assinar/produzir um bloco — se entrassem
   // no conjunto, seus slots seriam pulados (grief de liveness).
+  // Valida e normaliza uma permissão { threshold, keys:{addr:peso} } (#5). Garante que
+  // a soma dos pesos >= threshold (senão a conta ficaria PERMANENTEMENTE travada).
+  #normalizePermission(p) {
+    if (!p || typeof p !== 'object') throw new Error('permissão inválida');
+    const threshold = Number(p.threshold);
+    if (!Number.isSafeInteger(threshold) || threshold <= 0) throw new Error('threshold inválido');
+    const keys = p.keys;
+    if (!keys || typeof keys !== 'object' || Array.isArray(keys)) throw new Error('keys inválidas');
+    const entries = Object.entries(keys);
+    if (entries.length === 0 || entries.length > CHAIN.MAX_PERMISSION_KEYS) throw new Error('nº de keys inválido');
+    let totalWeight = 0;
+    const norm = {};
+    for (const [addr, w] of entries) {
+      if (!isValidAddress(addr)) throw new Error('endereço de key inválido');
+      const wt = Number(w);
+      if (!Number.isSafeInteger(wt) || wt <= 0) throw new Error('peso inválido');
+      totalWeight += wt;
+      norm[addr] = wt;
+    }
+    if (totalWeight < threshold) throw new Error('soma dos pesos < threshold (conta ficaria travada)');
+    return { threshold, keys: norm };
+  }
+
+  // Executa uma operação multisig APROVADA em nome da conta (#5). Suporta transferência
+  // nativa e troca da própria permissão. Chamado só quando o peso das aprovações >= threshold.
+  #executeMultisigOp(account, op) {
+    if (!op || typeof op !== 'object') throw new Error('operação inválida');
+    if (op.type === 'TRANSFER') {
+      if (!isValidAddress(op.to)) throw new Error('destino inválido');
+      const amt = BigInt(op.amount);
+      if (amt <= 0n) throw new Error('valor deve ser positivo');
+      const acc = this.getAccount(account);
+      if (acc.balance < amt) throw new Error('saldo insuficiente na conta multisig');
+      acc.balance -= amt;
+      this.credit(op.to, amt);
+    } else if (op.type === 'PERMISSION_CHANGE') {
+      if (op.permission === null) delete this.permissions[account]; // remove multisig (volta a single-sig)
+      else this.permissions[account] = this.#normalizePermission(op.permission);
+    } else {
+      throw new Error(`tipo de operação multisig não suportado: ${op.type}`);
+    }
+  }
+
   // Total de votos que um eleitor alocou (soma da sua entrada em `votes`).
   votedTotal(address) {
     let sum = 0n;
@@ -145,6 +193,8 @@ export class State {
     copy.contracts = structuredClone(this.contracts);
     copy.votes = structuredClone(this.votes);
     copy.candidateVotes = structuredClone(this.candidateVotes);
+    copy.permissions = structuredClone(this.permissions);
+    copy.pendingOps = structuredClone(this.pendingOps);
     return copy;
   }
 
@@ -287,6 +337,13 @@ export class State {
     if (BigInt(tx.fee) > CHAIN.MAX_FEE_LIMIT) throw new Error('limite de taxa (fee) acima do máximo permitido');
     const acc = this.getAccount(tx.from);
     const amount = BigInt(tx.amount);
+    // #5: conta multisig (com permissão) não age por assinatura ÚNICA. Todas as suas
+    // operações (mover fundos, alterar permissão) passam por MULTISIG_PROPOSE/APPROVE
+    // das chaves autorizadas — que assinam de SUAS PRÓPRIAS contas. Bloquear aqui impede
+    // que a chave-dona original burle o M-de-N transferindo direto.
+    if (this.permissions[tx.from]) {
+      throw new Error('conta multisig: opere via MULTISIG_PROPOSE/APPROVE, não por assinatura única');
+    }
     // ---- Energia: consome energia; a FALTA é queimada em EAV7 (deflacionário).
     // O peek NÃO muta (só commita no fim, após todas as validações passarem — o
     // clone do estado é reusado e uma tx que lança não pode deixar estado sujo).
@@ -383,6 +440,64 @@ export class State {
           throw new Error('não é possível remover o último validador ativo da rede');
         }
         acc.balance += amount - fee;
+        break;
+      }
+
+      // #5: a conta define sua permissão pela PRIMEIRA vez (por assinatura única do dono).
+      // Depois disso ela vira multisig e a guarda no topo bloqueia txs diretas — mudanças
+      // futuras de permissão só via op MULTISIG PERMISSION_CHANGE.
+      case 'PERMISSION_UPDATE': {
+        if (height < CHAIN.PERMISSIONS_HEIGHT) throw new Error('permissões ainda não ativas');
+        // (a guarda no topo já garante que tx.from ainda NÃO tem permissão)
+        const perm = this.#normalizePermission(tx.data?.permission);
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        this.permissions[tx.from] = perm;
+        break;
+      }
+
+      // Uma CHAVE autorizada propõe uma operação para uma conta multisig. Registra a
+      // aprovação do proponente; se já atingir o threshold, executa na hora.
+      case 'MULTISIG_PROPOSE': {
+        if (height < CHAIN.PERMISSIONS_HEIGHT) throw new Error('permissões ainda não ativas');
+        const account = tx.data?.account;
+        const op = tx.data?.op;
+        if (!isValidAddress(account)) throw new Error('conta multisig inválida');
+        const perm = this.permissions[account];
+        if (!perm) throw new Error('conta não é multisig');
+        const weight = perm.keys[tx.from];
+        if (!weight) throw new Error('remetente não é uma chave autorizada da conta');
+        if (!op || typeof op !== 'object' || typeof op.type !== 'string') throw new Error('operação inválida');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        const approvals = { [tx.from]: weight };
+        if (weight >= perm.threshold) {
+          this.#executeMultisigOp(account, op); // quórum imediato (1 chave já basta)
+        } else {
+          this.pendingOps[tx.id] = { account, op, approvals, weight, createdAt: tx.timestamp };
+        }
+        break;
+      }
+
+      // Outra CHAVE aprova uma operação pendente; ao cruzar o threshold, executa.
+      case 'MULTISIG_APPROVE': {
+        if (height < CHAIN.PERMISSIONS_HEIGHT) throw new Error('permissões ainda não ativas');
+        const opId = tx.data?.opId;
+        const pending = typeof opId === 'string' ? this.pendingOps[opId] : null;
+        if (!pending) throw new Error('operação pendente inexistente');
+        const perm = this.permissions[pending.account];
+        if (!perm) throw new Error('conta não é mais multisig'); // permissão mudou sob a op
+        const weight = perm.keys[tx.from];
+        if (!weight) throw new Error('remetente não é uma chave autorizada da conta');
+        if (pending.approvals[tx.from]) throw new Error('chave já aprovou esta operação');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        pending.approvals[tx.from] = weight;
+        pending.weight += weight;
+        if (pending.weight >= perm.threshold) {
+          this.#executeMultisigOp(pending.account, pending.op);
+          delete this.pendingOps[opId];
+        }
         break;
       }
 

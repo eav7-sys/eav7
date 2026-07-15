@@ -57,6 +57,12 @@ export const CHAIN = {
   // votos, degrada para top-por-stake (retrocompatível). No gênese novo = 0 (ativo já).
   VOTING_HEIGHT: 1_400_000,
   MAX_VOTE_TARGETS: 30, // nº máx. de candidatos numa única tx VOTE (anti-DoS de data)
+  // Permissões de conta / multi-sig (#5, modelo owner/active da Tron). A partir de
+  // PERMISSIONS_HEIGHT uma conta pode virar multisig: define { threshold, keys{addr:peso} }
+  // e passa a mover fundos/alterar permissão SÓ via propose/approve (M-de-N). No gênese
+  // novo = 0 (ativo já).
+  PERMISSIONS_HEIGHT: 1_500_000,
+  MAX_PERMISSION_KEYS: 20,
   MIN_ORACLE_STAKE: 500n * UNIT,
   FEE_EXEMPT_STAKE: 100n * UNIT, // stake >= 100 EAV7 => transações com taxa zero
 
@@ -142,6 +148,7 @@ export const CHAIN = {
     BURN_PER_ENERGY: 20_000n, // e7 queimados por unidade de energia em falta (0,02 EAV7)
     COST: {
       TRANSFER: 1, STAKE: 1, UNSTAKE: 1, VOTE: 1, EAVM_TRANSFER: 1,
+      PERMISSION_UPDATE: 2, MULTISIG_PROPOSE: 2, MULTISIG_APPROVE: 1,
       TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
       AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
       BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
@@ -162,6 +169,9 @@ export const CHAIN = {
     STAKE: 10_000n,
     UNSTAKE: 10_000n,
     VOTE: 10_000n,
+    PERMISSION_UPDATE: 20_000n,
+    MULTISIG_PROPOSE: 20_000n,
+    MULTISIG_APPROVE: 10_000n,
     TOKEN_CREATE: 10n * UNIT,
     TOKEN_TRANSFER: 20_000n,
     TOKEN_APPROVE: 10_000n,
