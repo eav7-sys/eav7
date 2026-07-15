@@ -195,6 +195,7 @@ export const CHAIN = {
       TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
       TOKEN_MINT: 2, TOKEN_BURN: 2, TOKEN_PAUSE: 1, TOKEN_UNPAUSE: 1, TOKEN_BLACKLIST: 1,
       NFT_CREATE: 10, NFT_MINT: 3, NFT_TRANSFER: 2, NFT_APPROVE: 1, NFT_BURN: 2,
+      NAME_REGISTER: 3, NAME_UPDATE: 1, NAME_TRANSFER: 1, NAME_RELEASE: 1,
       AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
       BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
       EAVM_DEPLOY: 10, EAVM_CALL: 5, // custo BASE; a execução da VM soma gás/energia dinâmico
@@ -221,6 +222,9 @@ export const CHAIN = {
   TOKEN_ADMIN_HEIGHT: 1_700_000,
   NFT_HEIGHT: 1_720_000,
   MAX_NFT_URI_BYTES: 2_048,
+  // Serviço de nomes EAV-NS (evolução): nomes legíveis -> endereço E7. No gênese novo = 0.
+  NAME_HEIGHT: 1_740_000,
+  NAME_REGISTER_COST: 1n * UNIT, // custo (queimado) de registrar um nome — anti-squatting
   BANDWIDTH: {
     FREE: 8_000, // bytes grátis por conta (cobre ~1 tx híbrida; regenera) — a assinatura ML-DSA é grande
     PER_STAKED_EAV7: 256, // +256 bytes de banda por EAV7 travado
@@ -270,6 +274,10 @@ export const CHAIN = {
     NFT_TRANSFER: 20_000n,
     NFT_APPROVE: 10_000n,
     NFT_BURN: 20_000n,
+    NAME_REGISTER: 1n * UNIT, // registro custa 1 EAV7 (queimado) — anti-squatting
+    NAME_UPDATE: 10_000n,
+    NAME_TRANSFER: 10_000n,
+    NAME_RELEASE: 10_000n,
     AI_TASK: 50_000n,
     AI_RESULT: 0n,
     ORACLE_REGISTER: 10_000n,
@@ -289,7 +297,7 @@ export const CHAIN = {
 export const FORK_HEIGHTS = [
   'STRICT_PRODUCER_HEIGHT', 'CANONICAL_HASH_HEIGHT', 'STATEROOT_HEIGHT', 'BRIDGE_QUORUM_HEIGHT',
   'BRIDGE_PROOF_HEIGHT', 'VOTING_HEIGHT', 'PERMISSIONS_HEIGHT', 'RESOURCE_HEIGHT', 'GOVERNANCE_HEIGHT', 'SLASHING_HEIGHT',
-  'VESTING_HEIGHT', 'META_HEIGHT', 'TOKEN_ADMIN_HEIGHT', 'NFT_HEIGHT',
+  'VESTING_HEIGHT', 'META_HEIGHT', 'TOKEN_ADMIN_HEIGHT', 'NFT_HEIGHT', 'NAME_HEIGHT',
 ];
 if (process.env.EAV7_GENESIS_ACTIVE === '1') {
   for (const k of FORK_HEIGHTS) CHAIN[k] = 0;

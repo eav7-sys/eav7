@@ -409,6 +409,13 @@ async function handle(node, req, res) {
     send(res, 200, { address, height: blockchain.height, stateRoot: head.stateRoot, encodedAccount: proof.encodedAccount, path: proof.path });
     return;
   }
+  // EAV-NS: resolve um nome legível para o endereço-alvo.
+  if (GET && parts[0] === 'name' && parts.length === 2) {
+    const rec = state.names?.[String(parts[1]).toLowerCase()];
+    if (!rec) return send(res, 404, { error: 'nome não registrado' });
+    send(res, 200, { name: String(parts[1]).toLowerCase(), target: rec.target, owner: rec.owner });
+    return;
+  }
   if (GET && parts[0] === 'contract' && parts.length === 2) {
     const rec = node.getVerifiedContract(parts[1]);
     if (!rec) return send(res, 404, { verified: false, error: 'contrato não verificado' });

@@ -74,6 +74,8 @@ export class State {
     // NFTs EAV721 (evolução): collectionId -> { name, symbol, owner, nextId,
     // tokens:{tokenId->{owner,uri}}, approvals:{tokenId->addr} }.
     this.nfts = {};
+    // Serviço de nomes EAV-NS (evolução): nome(minúsculo) -> { owner, target, registeredAt }.
+    this.names = {};
   }
 
   getAccount(address) {
@@ -436,6 +438,7 @@ export class State {
     copy.voterRewardDebt = structuredClone(this.voterRewardDebt);
     copy.treasury = this.treasury;
     copy.nfts = structuredClone(this.nfts);
+    copy.names = structuredClone(this.names);
     return copy;
   }
 
@@ -1149,6 +1152,61 @@ export class State {
         acc.balance -= fee;
         delete col.tokens[tokenId];
         delete col.approvals[tokenId];
+        break;
+      }
+
+      // ---- EAV-NS: serviço de nomes (nome legível -> endereço) ----
+      case 'NAME_REGISTER': {
+        if (height < CHAIN.NAME_HEIGHT) throw new Error('serviço de nomes ainda não ativo');
+        const name = String(tx.data?.name ?? '').toLowerCase();
+        if (!/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(name)) throw new Error('nome inválido (3-32, [a-z0-9-], sem hífen nas pontas)');
+        if (this.names[name]) throw new Error('nome já registrado');
+        const target = tx.data?.target ?? tx.from;
+        if (!isValidAddress(target)) throw new Error('endereço-alvo inválido');
+        const cost = CHAIN.NAME_REGISTER_COST;
+        if (acc.balance < fee + cost) throw new Error('saldo insuficiente para registrar');
+        acc.balance -= fee + cost;
+        this.totalBurned += cost; // custo de registro é queimado (anti-squatting)
+        this.names[name] = { owner: tx.from, target, registeredAt: tx.timestamp };
+        break;
+      }
+
+      case 'NAME_UPDATE': {
+        if (height < CHAIN.NAME_HEIGHT) throw new Error('serviço de nomes ainda não ativo');
+        const name = String(tx.data?.name ?? '').toLowerCase();
+        const rec = this.names[name];
+        if (!rec) throw new Error('nome inexistente');
+        if (rec.owner !== tx.from) throw new Error('só o dono do nome atualiza');
+        const target = tx.data?.target;
+        if (!isValidAddress(target)) throw new Error('endereço-alvo inválido');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        rec.target = target;
+        break;
+      }
+
+      case 'NAME_TRANSFER': {
+        if (height < CHAIN.NAME_HEIGHT) throw new Error('serviço de nomes ainda não ativo');
+        const name = String(tx.data?.name ?? '').toLowerCase();
+        const rec = this.names[name];
+        if (!rec) throw new Error('nome inexistente');
+        if (rec.owner !== tx.from) throw new Error('só o dono do nome transfere');
+        if (!isValidAddress(tx.to)) throw new Error('novo dono inválido');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        rec.owner = tx.to;
+        break;
+      }
+
+      case 'NAME_RELEASE': {
+        if (height < CHAIN.NAME_HEIGHT) throw new Error('serviço de nomes ainda não ativo');
+        const name = String(tx.data?.name ?? '').toLowerCase();
+        const rec = this.names[name];
+        if (!rec) throw new Error('nome inexistente');
+        if (rec.owner !== tx.from) throw new Error('só o dono do nome libera');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        delete this.names[name];
         break;
       }
 
