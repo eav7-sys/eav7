@@ -1,5 +1,5 @@
 import { CHAIN } from '../config.js';
-import { eavHash, canonical, merkleRoot } from '../crypto/hash.js';
+import { eavHash, canonical, merkleRoot, isValidHash } from '../crypto/hash.js';
 import {
   SIGNATURE_SCHEME,
   addressFromPublicKeys,
@@ -25,7 +25,7 @@ function blockHash(payload, signature, pqSignature, height) {
   return height >= CHAIN.CANONICAL_HASH_HEIGHT ? eavHash(payload) : eavHash(payload + signature + pqSignature);
 }
 
-export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(), transactions = [] }) {
+export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(), transactions = [], stateRoot = null }) {
   const core = {
     protocol: CHAIN.PROTOCOL,
     version: CHAIN.PROTOCOL_VERSION,
@@ -38,6 +38,10 @@ export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(
     producer: addressFromPublicKeys(wallet.publicKeyPem, wallet.pqPublicKeyPem),
     publicKey: wallet.publicKeyPem,
     pqPublicKey: wallet.pqPublicKeyPem,
+    // stateRoot entra no core (logo, no hash + assinatura) só a partir do fork —
+    // blocos anteriores não têm o campo (grandfather). O valor é o root do estado
+    // APÓS aplicar este bloco; a Blockchain o calcula e o confere no addBlock (#1).
+    ...(height >= CHAIN.STATEROOT_HEIGHT ? { stateRoot } : {}),
   };
   const payload = canonical(core);
   const { signature, pqSignature } = hybridSign(wallet, payload);
@@ -84,6 +88,14 @@ export function verifyBlockIntegrity(block) {
 
   const payload = canonical(blockCore(block));
   if (block.hash !== blockHash(payload, block.signature, block.pqSignature, block.height)) return 'hash do bloco não confere';
+
+  // Estrutural: acima do fork o stateRoot é obrigatório; abaixo, proibido (o valor
+  // é conferido contra o estado no addBlock, aqui só a forma). Achado/feature #1.
+  if (block.height >= CHAIN.STATEROOT_HEIGHT) {
+    if (!isValidHash(block.stateRoot)) return 'stateRoot ausente ou malformado';
+  } else if (block.stateRoot !== undefined) {
+    return 'stateRoot presente antes do fork (STATEROOT_HEIGHT)';
+  }
 
   if (block.height === 0) {
     if (block.signature !== GENESIS_SIGNATURE || block.producer !== 'GENESIS') return 'bloco gênese malformado';

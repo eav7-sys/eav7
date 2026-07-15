@@ -8,6 +8,7 @@ import { State } from './state.js';
 import { verifyTransaction } from './transaction.js';
 import { buildBlock, buildGenesisBlock, verifyBlockIntegrity } from './block.js';
 import { BlockStore } from './blockstore.js';
+import { computeStateRoot } from './stateroot.js';
 
 // Serialização do snapshot: BigInt vira { $big: "…" } (marcador sem colisão com
 // strings legítimas do estado) e o reviver restaura. Maps são convertidos a
@@ -221,6 +222,17 @@ export class Blockchain {
     sim.credit(block.producer, reward + fees);
     sim.totalMinted += reward; // contabiliza a emissão (para o supply real) — M1
 
+    // #1: acima do fork, o header commita o stateRoot (Merkle do estado APÓS o bloco).
+    // Recalculamos do estado simulado e exigimos igualdade — qualquer divergência de
+    // saldo/stake/ponte/contrato entre nós é detectada aqui (hoje o consenso não valida
+    // estado). Roda inclusive no replay de disco: é a checagem que pega corrupção.
+    if (block.height >= CHAIN.STATEROOT_HEIGHT) {
+      const computed = computeStateRoot(sim);
+      if (computed !== block.stateRoot) {
+        throw new Error(`stateRoot não confere (esperado ${computed}, recebido ${block.stateRoot})`);
+      }
+    }
+
     // Disco ANTES da memória: se o append falhar, o bloco é rejeitado inteiro —
     // memória e disco nunca divergem (uma divergência aqui já produziu lacuna
     // no blocks.jsonl em produção, com o nó avançando só em RAM sob pressão).
@@ -287,11 +299,26 @@ export class Blockchain {
     if (expected !== producer) {
       throw new Error(`slot pertence a ${expected ?? 'ninguém'}, não a ${producer}`);
     }
+    const height = this.head.height + 1;
+    // #1: acima do fork, simulamos o bloco para obter o stateRoot pós-estado e
+    // commitá-lo no header (entra no hash + assinatura). O addBlock recalcula e
+    // confere — se divergir, nem produzimos um bloco inválido.
+    let stateRoot = null;
+    if (height >= CHAIN.STATEROOT_HEIGHT) {
+      const sim = this.state.clone();
+      let fees = 0n;
+      for (const tx of transactions) fees += sim.applyTransaction(tx, height, timestamp);
+      const reward = this.blockReward(height);
+      sim.credit(producer, reward + fees);
+      sim.totalMinted += reward;
+      stateRoot = computeStateRoot(sim);
+    }
     const block = buildBlock(wallet, {
-      height: this.head.height + 1,
+      height,
       previousHash: this.head.hash,
       timestamp,
       transactions,
+      stateRoot,
     });
     // Valida o próprio bloco contra o relógio real (não contra o timestamp do
     // bloco), para que as checagens de slot-futuro e drift não fiquem nulas.

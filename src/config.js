@@ -79,6 +79,11 @@ export const CHAIN = {
   // produção ~677k em 2026-07-14 → altura PRECISA ser futura. 1.000.000 = ~3,7 dias de
   // folga. Fork COORDENADO: mesmo valor nos 3 nós antes de a cadeia cruzá-la.
   CANONICAL_HASH_HEIGHT: 1_000_000,
+  // A PARTIR desta altura o header carrega um `stateRoot` — compromisso Merkle do
+  // estado APÓS o bloco — verificado no addBlock. Destrava prova de estado, light
+  // clients e a ponte trustless (#1). Fork COORDENADO, acima do fork de consenso
+  // anterior; ajustar para altura futura acordada antes do rollout.
+  STATEROOT_HEIGHT: 1_200_000,
 
   // Rate limit por IP (usa CF-Connecting-IP atrás da Cloudflare).
   RATE_LIMIT_WINDOW_MS: 10_000,
