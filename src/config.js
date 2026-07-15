@@ -45,6 +45,9 @@ export const CHAIN = {
   // divergente. Generosa o bastante para cobrir forks longos acumulados em
   // incidentes de rede, mantendo-se abaixo de MAX_SYNC_BLOCKS.
   REORG_WINDOW: 5_000,
+  // A cada N blocos o nó grava um snapshot do estado + índices (snapshot.json).
+  // O boot parte do snapshot e replaya só o rabo — nunca a cadeia inteira.
+  SNAPSHOT_INTERVAL_BLOCKS: 5_000,
 
   MAX_VALIDATORS: 27,
   MIN_VALIDATOR_STAKE: 1_000n * UNIT,
@@ -80,7 +83,7 @@ export const CHAIN = {
   MAX_RPC_BATCH: 50,
   MAX_CHAIN_PAGE: 2_000,
   MAX_SYNC_BLOCKS: 10_000, // teto de blocos baixados por ciclo de sync (anti-OOM)
-  MAX_SYNC_PAGE_BYTES: 100_000_000, // teto de bytes por página /chain lida de um peer (anti-OOM, H-4)
+  MAX_SYNC_PAGE_BYTES: 16_000_000, // teto de bytes por página /chain lida de um peer (anti-OOM, H-4/L6). 2000 blocos típicos cabem folgado; corta a pressão de memória em sync multi-peer.
   MAX_TX_SCAN: 20_000, // teto de blocos varridos por consulta de transações
   MAX_ALERT_CONTEXT_BYTES: 2_048,
 

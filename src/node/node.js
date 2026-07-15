@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { CHAIN, formatEav7 } from '../config.js';
 import { walletAddress } from '../crypto/keys.js';
 import { Blockchain } from '../core/blockchain.js';
@@ -47,7 +48,13 @@ export class Eav7Node {
   checkAdmin(req) {
     if (!this.adminToken) return false;
     const header = req.headers?.['x-admin-token'];
-    return typeof header === 'string' && header === this.adminToken;
+    if (typeof header !== 'string') return false;
+    // Comparação constant-time: compara SHA-256 de ambos (mesmo comprimento
+    // sempre), evitando o side-channel de timing do `===` que sai no 1º byte
+    // divergente e vazaria o token byte a byte (achado L1).
+    const a = createHash('sha256').update(header).digest();
+    const b = createHash('sha256').update(this.adminToken).digest();
+    return timingSafeEqual(a, b);
   }
 
   ensureGenesis() {

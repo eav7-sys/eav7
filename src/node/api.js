@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { CHAIN, toJson, formatEav7 } from '../config.js';
@@ -10,6 +10,41 @@ import { createRateLimiter } from './ratelimit.js';
 const rateLimit = createRateLimiter();
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
+
+// Caches invalidados por ALTURA de bloco: o estado só muda quando entra um bloco,
+// então /stats e /search recomputam no máximo UMA vez por bloco em vez de varrer
+// todas as contas a cada request. Sob 240 req/s todas reusam o mesmo resultado —
+// fecha o DoS assimético de varredura full-state por request (achado M2).
+let statsCache = { height: -1, value: null };
+let searchIndexCache = { height: -1, sorted: null };
+
+function computeStats(blockchain, state) {
+  if (statsCache.value && statsCache.height === blockchain.height) return statsCache.value;
+  const accs = Object.keys(state.accounts);
+  let staked = 0n;
+  for (const a of accs) staked += (state.accounts[a].staked ?? 0n);
+  const value = { accounts: accs.length, staked, transactions: blockchain.txIndex.size };
+  statsCache = { height: blockchain.height, value };
+  return value;
+}
+
+// Índice de busca ordenado por endereço minúsculo (candidatos = contas nativas +
+// holders de token). Reconstruído no máximo uma vez por bloco; buscas por prefixo
+// usam busca binária (O(log n + k)) e a varredura por substring é limitada.
+const SEARCH_SUBSTR_SCAN_CAP = 50_000;
+function searchIndex(blockchain, state) {
+  if (searchIndexCache.sorted && searchIndexCache.height === blockchain.height) return searchIndexCache.sorted;
+  const cand = new Set(Object.keys(state.accounts));
+  for (const tok of Object.values(state.tokens)) for (const h of Object.keys(tok.balances ?? {})) cand.add(h);
+  const sorted = [...cand].map((a) => [a.toLowerCase(), a]).sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
+  searchIndexCache = { height: blockchain.height, sorted };
+  return sorted;
+}
+function lowerBound(sorted, ql) {
+  let lo = 0, hi = sorted.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid][0] < ql) lo = mid + 1; else hi = mid; }
+  return lo;
+}
 
 // Estáticos servidos do disco com cache por mtime: relê o arquivo só quando ele muda.
 // Assim uma atualização de frontend (rsync do public/) é servida SEM reiniciar o nó,
@@ -53,6 +88,35 @@ const wantsHtml = (req) => (req.headers.accept ?? '').includes('text/html');
 function isFrontendRoute(parts) {
   if (parts.length === 0) return true;
   return ['explorer', 'blocks', 'block', 'tx', 'address', 'wallet', 'app', 'scan', 'mining'].includes(parts[0]);
+}
+
+// ---- Frontend Next.js (serviço eav7-web em 127.0.0.1:3000) --------------------
+// O nó continua na frente do domínio; navegação do browser, payloads RSC e assets
+// do app são encaminhados ao Next. A API (accept: application/json), o P2P (sem
+// accept text/html) e o RPC seguem sendo servidos pelo próprio nó.
+const WEB_HOST = '127.0.0.1';
+const WEB_PORT = 3000;
+// Prefixos de diretório do app (proxy por startsWith — inclui /_next/image, sem extensão).
+const WEB_PREFIXES = ['/_next/', '/bg/', '/brand/'];
+const WEB_FILES_RE = /^\/(?:favicon\.ico|icon\.svg|icon\.png|apple-icon|opengraph-image|twitter-image|robots\.txt|sitemap\.xml|manifest|sw\.js)/i;
+const WEB_EXT_RE = /\.(?:js|mjs|css|map|png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|eot|mp4|webm|ogg|wasm)$/i;
+function isWebRequest(req, pathname) {
+  const accept = req.headers.accept ?? '';
+  if (accept.includes('text/html') || accept.includes('text/x-component')) return true;
+  if ('rsc' in req.headers || 'next-router-prefetch' in req.headers || 'next-router-state-tree' in req.headers) return true;
+  if (WEB_PREFIXES.some((p) => pathname.startsWith(p))) return true;
+  return WEB_FILES_RE.test(pathname) || WEB_EXT_RE.test(pathname);
+}
+function proxyToWeb(req, res, node) {
+  const upstream = httpRequest({ host: WEB_HOST, port: WEB_PORT, method: req.method, path: req.url, headers: req.headers }, (up) => {
+    res.writeHead(up.statusCode ?? 502, up.headers);
+    up.pipe(res);
+  });
+  upstream.on('error', (e) => {
+    node.log?.(`[web] proxy indisponível: ${e.message}`);
+    if (!res.headersSent) { res.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' }); res.end('EAV7 Web temporariamente indisponível'); }
+  });
+  req.pipe(upstream);
 }
 
 export function createApiServer(node) {
@@ -118,7 +182,13 @@ async function handle(node, req, res) {
   const GET = req.method === 'GET';
   const POST = req.method === 'POST';
 
-  // ---- SPA React (web/dist) ------------------------------------------------
+  // Encaminha ao frontend Next (navegação/RSC/assets). A API e o P2P seguem abaixo.
+  if ((GET || req.method === 'HEAD') && isWebRequest(req, url.pathname)) {
+    proxyToWeb(req, res, node);
+    return;
+  }
+
+  // ---- SPA React (web/dist) — legado (fallback quando o Next está fora) -----
   // Assets do build (hash no nome → cache longo).
   if (GET && parts[0] === 'assets') {
     try {
@@ -269,9 +339,9 @@ async function handle(node, req, res) {
     const fromParam = url.searchParams.get('from');
     if (fromParam !== null) {
       const from = Math.max(Number(fromParam), 0);
-      send(res, 200, blockchain.blocks.slice(from, from + limit));
+      send(res, 200, blockchain.getRange(from, limit));
     } else {
-      send(res, 200, blockchain.blocks.slice(-limit).reverse());
+      send(res, 200, blockchain.getRange(Math.max(0, blockchain.height - limit + 1), limit).reverse());
     }
     return;
   }
@@ -295,7 +365,7 @@ async function handle(node, req, res) {
     send(res, 200, {
       height: blockchain.height,
       from,
-      blocks: blockchain.blocks.slice(from, from + limit),
+      blocks: blockchain.getRange(from, limit),
     });
     return;
   }
@@ -331,18 +401,22 @@ async function handle(node, req, res) {
   // um fetch HTTP por bloco). Pula blocos vazios. Pagina via ?before=altura.
   if (GET && parts[0] === 'txs' && parts.length === 1) {
     const limit = Math.min(Math.max(intParam(url.searchParams.get('limit'), 25), 1), 100);
-    const before = intParam(url.searchParams.get('before'), blockchain.height);
-    let h = Math.min(before, blockchain.height);
-    // teto de blocos varridos por requisição (anti-DoS de CPU)
-    const floor = Math.max(0, h - CHAIN.MAX_TX_SCAN);
+    const before = intParam(url.searchParams.get('before'), Number.MAX_SAFE_INTEGER);
+    // Usa o índice global de blocos-com-tx → sempre carrega as últimas transações
+    // REAIS, mesmo que os últimos milhares de blocos estejam vazios (sem varrer a cadeia).
+    const bwt = blockchain.blocksWithTxs;
     const txs = [];
     let nextBefore = null;
-    for (; h >= 0; h--) {
-      const b = blockchain.blocks[h];
-      if (b.transactions.length) {
-        for (const t of b.transactions) txs.push({ ...t, blockHeight: h, blockHash: b.hash, blockTime: b.timestamp });
+    for (let i = bwt.length - 1; i >= 0 && txs.length < limit; i--) {
+      const h = bwt[i];
+      if (h >= before) continue;
+      const b = blockchain.getBlock(h);
+      if (!b) continue;
+      for (let j = b.transactions.length - 1; j >= 0; j--) {
+        const t = b.transactions[j];
+        txs.push({ ...t, blockHeight: h, blockHash: b.hash, blockTime: b.timestamp });
       }
-      if (txs.length >= limit || h <= floor) { nextBefore = h - 1 >= 0 ? h - 1 : null; break; }
+      if (txs.length >= limit && i > 0) nextBefore = h;
     }
     send(res, 200, { txs, nextBefore, height: blockchain.height });
     return;
@@ -366,15 +440,23 @@ async function handle(node, req, res) {
         if (sym.toLowerCase().includes(ql) || nm.toLowerCase().includes(ql) || id.toLowerCase().includes(ql)) push({ kind: 'Token', label: `${sym} · ${nm}`, sub: id, to: `/address/${id}` });
       }
       // contas por endereço PARCIAL — candidatos = contas nativas + holders de token
-      // (assim uma conta que só tem token, sem EAV7 nativo, também aparece). O conjunto
-      // é limitado (não cresce com a cadeia). Prefixo primeiro; ≥2 chars.
+      // (assim uma conta que só tem token, sem EAV7 nativo, também aparece). Índice
+      // ordenado cacheado por altura (achado M2): prefixo por busca binária primeiro,
+      // depois substring com varredura LIMITADA. Prefixo primeiro; ≥2 chars.
       if (ql.length >= 2) {
-        const cand = new Set(Object.keys(state.accounts));
-        for (const tok of Object.values(state.tokens)) for (const h of Object.keys(tok.balances ?? {})) cand.add(h);
-        const matches = [];
-        for (const addr of cand) { const al = addr.toLowerCase(); if (al.includes(ql)) matches.push([addr, al.startsWith(ql)]); }
-        matches.sort((a, b) => Number(b[1]) - Number(a[1])); // startsWith primeiro
-        for (const [addr] of matches.slice(0, 20)) {
+        const sorted = searchIndex(blockchain, state);
+        const found = []; // [addr, isPrefix]
+        const seen = new Set();
+        // prefixo (startsWith) via busca binária: faixa contígua no array ordenado
+        for (let i = lowerBound(sorted, ql); i < sorted.length && sorted[i][0].startsWith(ql) && found.length < 20; i++) {
+          found.push([sorted[i][1], true]); seen.add(sorted[i][1]);
+        }
+        // substring (não-prefixo) para completar, com teto de varredura anti-DoS
+        const scan = Math.min(sorted.length, SEARCH_SUBSTR_SCAN_CAP);
+        for (let i = 0; i < scan && found.length < 20; i++) {
+          if (!seen.has(sorted[i][1]) && sorted[i][0].includes(ql)) found.push([sorted[i][1], false]);
+        }
+        for (const [addr] of found.slice(0, 20)) {
           const acc = state.accounts[addr] ?? {};
           const isVal = (acc.staked ?? 0n) >= CHAIN.MIN_VALIDATOR_STAKE;
           push({ kind: isVal ? 'Validador' : 'Conta', label: addr, to: `/address/${addr}`, detail: `${formatEav7(acc.balance ?? 0n)} EAV7` });
@@ -382,6 +464,22 @@ async function handle(node, req, res) {
       }
     }
     send(res, 200, { query: q, results });
+    return;
+  }
+
+  // Estatísticas da rede para o novo frontend (cards do explorer).
+  if (GET && parts[0] === 'stats' && parts.length === 1) {
+    const s = computeStats(blockchain, state);
+    send(res, 200, {
+      accounts: s.accounts,
+      accountsDelta: 0,
+      transactions: s.transactions,
+      transactionsDelta: 0,
+      volume: 0,
+      volumeDelta: 0,
+      staked: Number(s.staked / CHAIN.UNIT),
+      stakedDelta: 0,
+    });
     return;
   }
 
@@ -424,17 +522,25 @@ async function handle(node, req, res) {
     let addr = parts[1];
     if (isEavmAddress(addr)) addr = eavmToE7(addr);
     else if (!isValidAddress(addr)) return send(res, 400, { error: 'endereço inválido' });
-    const limit = Math.min(Math.max(intParam(url.searchParams.get('limit'), 25), 1), 100);
-    let h = Math.min(intParam(url.searchParams.get('before'), blockchain.height), blockchain.height);
-    const floor = Math.max(0, h - CHAIN.MAX_TX_SCAN);
+    // Usa o índice por endereço → TODAS as transações da carteira, da mais nova para a
+    // mais antiga, sem varrer a cadeia inteira e sem o teto de 20k blocos.
+    const HARD_CAP = 2000;
+    const limit = Math.min(Math.max(intParam(url.searchParams.get('limit'), HARD_CAP), 1), HARD_CAP);
+    const before = intParam(url.searchParams.get('before'), Number.MAX_SAFE_INTEGER);
+    const heights = blockchain.addressTxIndex.get(addr) ?? [];
     const txs = [];
     let nextBefore = null;
-    for (; h >= 0; h--) {
-      const b = blockchain.blocks[h];
+    for (let i = heights.length - 1; i >= 0 && txs.length < limit; i--) {
+      const h = heights[i];
+      if (h >= before) continue;
+      const b = blockchain.getBlock(h);
+      if (!b) continue;
+      const inBlock = [];
       for (const t of b.transactions) {
-        if (t.from === addr || t.to === addr) txs.push({ ...t, blockHeight: h, blockTime: b.timestamp });
+        if (t.from === addr || t.to === addr) inBlock.push({ ...t, blockHeight: h, blockTime: b.timestamp });
       }
-      if (txs.length >= limit || h <= floor) { nextBefore = h - 1 >= 0 ? h - 1 : null; break; }
+      for (let j = inBlock.length - 1; j >= 0; j--) txs.push(inBlock[j]);
+      if (txs.length >= limit && i > 0) nextBefore = h;
     }
     send(res, 200, { address: addr, txs, nextBefore });
     return;

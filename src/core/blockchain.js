@@ -1,14 +1,55 @@
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, mkdirSync, existsSync, statSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { CHAIN } from '../config.js';
 import { isValidHash } from '../crypto/hash.js';
 import { walletAddress } from '../crypto/keys.js';
 import { State } from './state.js';
 import { verifyTransaction } from './transaction.js';
 import { buildBlock, buildGenesisBlock, verifyBlockIntegrity } from './block.js';
+import { BlockStore } from './blockstore.js';
 
+// Serialização do snapshot: BigInt vira { $big: "…" } (marcador sem colisão com
+// strings legítimas do estado) e o reviver restaura. Maps são convertidos a
+// arrays de entradas antes do stringify.
+const bigReplacer = (_, v) => (typeof v === 'bigint' ? { $big: v.toString() } : v);
+const bigReviver = (_, v) =>
+  v && typeof v === 'object' && typeof v.$big === 'string' && Object.keys(v).length === 1 ? BigInt(v.$big) : v;
+
+// Chaves que, atribuídas a um objeto, reescreveriam seu protótipo/constructor.
+// JSON.parse cria `__proto__` como propriedade PRÓPRIA enumerável; um
+// Object.assign a copiaria via [[Set]], trocando o protótipo da instância State
+// (métodos somem → crash no boot). Copiamos campo a campo pulando essas chaves.
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const reviveState = (obj) => {
+  if (!obj) return null;
+  const s = new State();
+  for (const k of Object.keys(obj)) {
+    if (UNSAFE_KEYS.has(k)) continue;
+    s[k] = obj[k];
+  }
+  return s;
+};
+
+// Autenticação OPCIONAL do snapshot: se EAV7_SNAPSHOT_KEY estiver setada (segredo
+// do operador, mantido FORA do dataDir), o snapshot é selado com um HMAC. No boot,
+// um snapshot sem HMAC válido é descartado e cai no replay completo — fecha o vetor
+// de "quem escreve no dataDir injeta saldos/validadores via snapshot.json" (achado
+// C2). Sem a chave, mantém o comportamento anterior (otimização não autenticada).
+const SNAPSHOT_KEY = process.env.EAV7_SNAPSHOT_KEY || null;
+const snapshotMac = (body) => createHmac('sha256', SNAPSHOT_KEY).update(body).digest();
+
+// Janela de blocos mantida em RAM (contígua até o head). Precisa cobrir a
+// REORG_WINDOW do p2p (o ancestral comum de qualquer reorg cai dentro dela).
+// Lida dinamicamente para os testes poderem encolher a janela (TAIL_BLOCKS).
+const tailLimit = () => CHAIN.TAIL_BLOCKS ?? CHAIN.REORG_WINDOW + 100;
+
+// A RAM é proporcional ao ESTADO + janela recente, não à idade da cadeia:
+// blocos antigos vivem só no disco (BlockStore) e o boot parte de um snapshot
+// de estado + replay do rabo — nunca mais replay desde a gênese.
 export class Blockchain {
   #loading = false;
+  #lastSnapshotHeight = -1;
 
   constructor({ dataDir = null, expectedGenesisHash = null } = {}) {
     this.dataDir = dataDir;
@@ -16,11 +57,19 @@ export class Blockchain {
     // uma gênese cujo hash bata com este valor — impede que um peer malicioso
     // imponha sua própria gênese num nó que ainda não tem cadeia (trust-on-first-sync).
     this.expectedGenesisHash = expectedGenesisHash;
-    this.blocks = [];
+    this.tail = []; // janela recente de blocos em RAM (tail[i] = altura tailStart+i)
+    this.tailStart = 0; // altura de tail[0]
+    this.baseState = null; // estado APÓS o bloco (tailStart-1) — âncora para reorgs
     this.state = new State();
+    this.hashes = []; // altura -> hash do bloco (cadeia inteira; ~70B por bloco)
+    this.hashIndex = new Map(); // hash -> altura
     this.txIndex = new Map(); // txId -> altura do bloco
+    this.addressTxIndex = new Map(); // endereço -> [alturas de blocos com tx desse endereço] (asc)
+    this.blocksWithTxs = []; // alturas (asc) de blocos que contêm ≥1 transação (feed global de txs)
+    this.store = null;
     if (dataDir) {
       mkdirSync(dataDir, { recursive: true });
+      this.store = new BlockStore(join(dataDir, 'blocks.jsonl'));
       this.#loadFromDisk();
     }
   }
@@ -33,8 +82,12 @@ export class Blockchain {
     return this.dataDir ? join(this.dataDir, 'chain.json') : null; // formato legado (migração)
   }
 
+  get snapshotFile() {
+    return this.dataDir ? join(this.dataDir, 'snapshot.json') : null;
+  }
+
   get head() {
-    return this.blocks[this.blocks.length - 1] ?? null;
+    return this.tail[this.tail.length - 1] ?? null;
   }
 
   get height() {
@@ -42,7 +95,11 @@ export class Blockchain {
   }
 
   hasGenesis() {
-    return this.blocks.length > 0;
+    return this.tail.length > 0;
+  }
+
+  hashAt(height) {
+    return this.hashes[height] ?? null;
   }
 
   createGenesis({ address, timestamp = Date.now() }) {
@@ -66,11 +123,21 @@ export class Blockchain {
     if (this.expectedGenesisHash && block.hash !== this.expectedGenesisHash) {
       throw new Error(`gênese não confere com o hash fixado (${this.expectedGenesisHash})`);
     }
-    this.blocks = [block];
+    this.tail = [block];
+    this.tailStart = 0;
+    this.baseState = null;
     this.state = new State();
     this.state.applyGenesis(block.genesis);
+    this.hashes = [block.hash];
+    this.hashIndex = new Map([[block.hash, 0]]);
     this.txIndex = new Map();
-    this.#rewriteAll();
+    this.addressTxIndex = new Map();
+    this.blocksWithTxs = [];
+    if (this.store && !this.#loading) {
+      this.store.reset([block]);
+      if (this.snapshotFile) rmSync(this.snapshotFile, { force: true }); // snapshot antigo é de outra cadeia
+      this.#lastSnapshotHeight = -1;
+    }
   }
 
   slotFor(timestamp) {
@@ -154,11 +221,63 @@ export class Blockchain {
     sim.credit(block.producer, reward + fees);
     sim.totalMinted += reward; // contabiliza a emissão (para o supply real) — M1
 
-    this.state = sim;
-    this.blocks.push(block);
-    for (const tx of block.transactions) this.txIndex.set(tx.id, block.height);
+    // Disco ANTES da memória: se o append falhar, o bloco é rejeitado inteiro —
+    // memória e disco nunca divergem (uma divergência aqui já produziu lacuna
+    // no blocks.jsonl em produção, com o nó avançando só em RAM sob pressão).
     this.#appendBlock(block);
+    this.state = sim;
+    this.tail.push(block);
+    this.hashes.push(block.hash);
+    this.hashIndex.set(block.hash, block.height);
+    for (const tx of block.transactions) this.txIndex.set(tx.id, block.height);
+    this.#indexAddressTxs(block);
+    this.#slideTail();
+    this.#maybeSnapshot();
     return block;
+  }
+
+  // Re-executa um bloco JÁ VALIDADO sobre um estado (sem clone, sem verificação):
+  // usado para avançar o baseState quando a janela desliza e para reconstruir o
+  // estado no ponto de fork num reorg. Determinístico — mesma sequência do addBlock.
+  #applyBlockTo(state, block) {
+    let fees = 0n;
+    for (const tx of block.transactions) fees += state.applyTransaction(tx, block.height, block.timestamp);
+    const reward = this.blockReward(block.height);
+    state.credit(block.producer, reward + fees);
+    state.totalMinted += reward;
+  }
+
+  // Desliza a janela: expulsa blocos antigos da RAM (continuam no disco) e avança
+  // o baseState aplicando cada bloco expulso. Sem store (cadeia só em memória,
+  // testes/candidatos de reorg) mantém tudo em RAM.
+  #slideTail() {
+    if (!this.store) return;
+    const limit = tailLimit();
+    while (this.tail.length > limit) {
+      const evicted = this.tail.shift();
+      if (evicted.height === 0) {
+        const s = new State();
+        s.applyGenesis(evicted.genesis);
+        this.baseState = s;
+      } else {
+        this.#applyBlockTo(this.baseState, evicted);
+      }
+      this.tailStart = evicted.height + 1;
+    }
+  }
+
+  // Índice de transações por endereço: registra a altura do bloco para cada endereço
+  // (from/to) tocado. Permite listar TODAS as txs de uma carteira sem varrer a cadeia.
+  #indexAddressTxs(block) {
+    if (block.transactions.length > 0) this.blocksWithTxs.push(block.height);
+    for (const tx of block.transactions) {
+      for (const a of [tx.from, tx.to]) {
+        if (!a) continue;
+        let arr = this.addressTxIndex.get(a);
+        if (!arr) { arr = []; this.addressTxIndex.set(a, arr); }
+        if (arr[arr.length - 1] !== block.height) arr.push(block.height);
+      }
+    }
   }
 
   produceBlock(wallet, transactions = [], { timestamp = Date.now() } = {}) {
@@ -181,110 +300,344 @@ export class Blockchain {
 
   getBlock(ref) {
     if (typeof ref === 'string' && isValidHash(ref)) {
-      return this.blocks.find((b) => b.hash === ref) ?? null;
+      const h = this.hashIndex.get(ref);
+      return h === undefined ? null : this.getBlock(h);
     }
     const height = Number(ref);
-    if (Number.isSafeInteger(height) && height >= 0) return this.blocks[height] ?? null;
-    return null;
+    if (!Number.isSafeInteger(height) || height < 0 || height > this.height) return null;
+    if (height >= this.tailStart) return this.tail[height - this.tailStart] ?? null;
+    return this.store ? this.store.get(height) : null;
+  }
+
+  // Faixa contígua de blocos [from, from+limit) — da RAM ou do disco.
+  getRange(from, limit) {
+    const start = Math.max(0, Number(from) || 0);
+    const end = Math.min(start + Math.max(0, limit) - 1, this.height);
+    const out = [];
+    for (let h = start; h <= end; h++) {
+      const b = this.getBlock(h);
+      if (b) out.push(b);
+    }
+    return out;
   }
 
   getTransaction(id) {
     const height = this.txIndex.get(id);
     if (height === undefined) return null;
-    const tx = this.blocks[height].transactions.find((t) => t.id === id);
-    return tx ? { tx, blockHeight: height, blockHash: this.blocks[height].hash } : null;
+    const block = this.getBlock(height);
+    const tx = block?.transactions.find((t) => t.id === id);
+    return tx ? { tx, blockHeight: height, blockHash: block.hash } : null;
   }
 
-  // Fork choice: adota a cadeia válida mais longa com a mesma gênese. Como a
-  // regra de "um bloco por slot" (addBlock) limita o número de blocos ao número
-  // de slots decorridos, ninguém consegue fabricar uma cadeia artificialmente
-  // mais longa. (Produção: evoluir para peso de stake acumulado / finalidade.)
-  // Retorna false se não substituiu, ou o array de transações órfãs (dos blocos
-  // descartados que não estão na nova cadeia) para o chamador reinserir no
-  // mempool — sem isto, uma reorganização descartava txs confirmadas para sempre.
-  replaceChain(rawBlocks, { now = Date.now() } = {}) {
-    if (!Array.isArray(rawBlocks) || rawBlocks.length <= this.blocks.length) return false;
-    if (this.hasGenesis() && rawBlocks[0]?.hash !== this.blocks[0].hash) {
-      throw new Error('gênese divergente: a cadeia recebida pertence a outra rede');
+  // Fork choice a partir de um ANCESTRAL COMUM: valida e aplica o novo rabo sobre
+  // o estado reconstruído no fork (dentro da janela em RAM — O(janela), nunca
+  // O(cadeia)). Adota se ficar mais longa. Retorna false se não substituiu, ou o
+  // array de transações órfãs (dos blocos descartados que não estão na nova
+  // cadeia) para o chamador reinserir no mempool.
+  reorg(common, newBlocks, { now = Date.now() } = {}) {
+    if (!this.hasGenesis()) throw new Error('cadeia sem bloco gênese');
+    if (!Number.isSafeInteger(common) || common < 0 || common > this.height) {
+      throw new Error('ponto de fork inválido');
     }
+    if (!Array.isArray(newBlocks) || common + newBlocks.length <= this.height) return false;
     // FINALIDADE (correção C-1): uma vez que a cadeia PASSOU de STRICT_PRODUCER_HEIGHT,
     // os blocos até esse ponto (a janela de grandfathering, de validação fraca) ficam
     // imutáveis — um reorg não pode substituí-los. Sem isto, um validador bizantino
-    // forjaria uma cadeia mais densa naquela janela e a rede a adotaria. Como cada hash
-    // encadeia o anterior, bater no bloco STRICT garante que 0..STRICT são idênticos.
-    // Só vale depois de STRICT (cadeias novas/testes reorganizam normalmente).
+    // forjaria uma cadeia mais densa naquela janela e a rede a adotaria.
     const fin = CHAIN.STRICT_PRODUCER_HEIGHT;
-    if (fin > 0 && this.height >= fin && rawBlocks[fin]?.hash !== this.blocks[fin]?.hash) {
+    if (fin > 0 && this.height >= fin && common < fin) {
       throw new Error('reorg rejeitado: tentaria substituir histórico finalizado (< STRICT_PRODUCER_HEIGHT)');
     }
+    if (common < this.tailStart - 1) throw new Error('reorg além da janela de reorganização');
+
+    // Estado no ponto de fork: âncora (baseState) + re-execução dos blocos da
+    // janela até `common`. Blocos já validados — só re-execução determinística.
+    let forkState;
+    if (common === this.tailStart - 1) {
+      forkState = this.baseState.clone();
+    } else if (this.tailStart === 0) {
+      forkState = new State();
+      forkState.applyGenesis(this.tail[0].genesis);
+      for (let h = 1; h <= common; h++) this.#applyBlockTo(forkState, this.tail[h]);
+    } else {
+      forkState = this.baseState.clone();
+      for (let h = this.tailStart; h <= common; h++) this.#applyBlockTo(forkState, this.tail[h - this.tailStart]);
+    }
+
+    // Candidato descartável: cadeia em memória ancorada no bloco do fork. O
+    // addBlock dele aplica TODAS as regras de consenso vivas ao novo rabo.
     const candidate = new Blockchain({ expectedGenesisHash: this.expectedGenesisHash });
-    candidate.adoptGenesis(rawBlocks[0]);
-    for (const block of rawBlocks.slice(1)) candidate.addBlock(block, { now });
+    candidate.tail = [this.getBlock(common)];
+    candidate.tailStart = common;
+    candidate.state = forkState;
+    // txIndex do candidato = histórico ≤ common (mantém a rejeição de tx duplicada
+    // contra a cadeia inteira, não só contra o rabo novo).
+    candidate.txIndex = new Map();
+    for (const [id, h] of this.txIndex) if (h <= common) candidate.txIndex.set(id, h);
+    for (const block of newBlocks) candidate.addBlock(block, { now });
     if (candidate.height <= this.height) return false;
 
+    // Órfãs: txs dos blocos descartados que não estão na nova cadeia.
+    const dropped = this.tail.slice(common + 1 - this.tailStart);
     const orphans = [];
-    for (const block of this.blocks) {
+    for (const block of dropped) {
       for (const tx of block.transactions) {
         if (!candidate.txIndex.has(tx.id)) orphans.push(tx);
       }
     }
-    this.blocks = candidate.blocks;
+
+    // ---- commit ----
+    // Disco primeiro: uma falha aqui aborta o reorg com a memória intacta e o
+    // arquivo reparado num prefixo válido (≤ fork), que reboot + resync curam.
+    if (this.store && !this.#loading) {
+      try {
+        this.store.truncateFrom(common + 1);
+        for (const block of newBlocks) this.store.append(block);
+      } catch (err) {
+        try { this.store.truncateFrom(common + 1); } catch { /* melhor esforço */ }
+        throw err;
+      }
+      if (this.#lastSnapshotHeight > common && this.snapshotFile) {
+        rmSync(this.snapshotFile, { force: true }); // snapshot além do fork ficou inválido
+        this.#lastSnapshotHeight = -1;
+      }
+    }
     this.state = candidate.state;
     this.txIndex = candidate.txIndex;
-    this.#rewriteAll(); // reorg: reescreve o arquivo inteiro (evento raro)
+    // poda os índices por endereço/feed das alturas descartadas…
+    for (const block of dropped) {
+      for (const tx of block.transactions) {
+        for (const a of [tx.from, tx.to]) {
+          const arr = this.addressTxIndex.get(a);
+          if (!arr) continue;
+          while (arr.length && arr[arr.length - 1] > common) arr.pop();
+          if (arr.length === 0) this.addressTxIndex.delete(a);
+        }
+      }
+      this.hashIndex.delete(block.hash);
+    }
+    while (this.blocksWithTxs.length && this.blocksWithTxs[this.blocksWithTxs.length - 1] > common) this.blocksWithTxs.pop();
+    // …e anexa as do candidato (só do rabo novo; alturas > common, em ordem)
+    for (const [addr, arr] of candidate.addressTxIndex) {
+      let ours = this.addressTxIndex.get(addr);
+      if (!ours) { ours = []; this.addressTxIndex.set(addr, ours); }
+      ours.push(...arr);
+    }
+    this.blocksWithTxs.push(...candidate.blocksWithTxs);
+    this.hashes.length = common + 1;
+    for (const block of newBlocks) {
+      this.hashes.push(block.hash);
+      this.hashIndex.set(block.hash, block.height);
+    }
+    this.tail = this.tail.slice(0, common + 1 - this.tailStart).concat(newBlocks);
+    this.#slideTail();
+    this.#maybeSnapshot();
     return orphans;
   }
 
+  // Compatibilidade: recebe uma cadeia completa (bootstrap ou fork), acha o
+  // ancestral comum localmente e delega ao reorg. Sem gênese, adota a cadeia.
+  replaceChain(rawBlocks, { now = Date.now() } = {}) {
+    if (!Array.isArray(rawBlocks) || rawBlocks.length === 0) return false;
+    if (!this.hasGenesis()) {
+      this.adoptGenesis(rawBlocks[0]);
+      for (const block of rawBlocks.slice(1)) this.addBlock(block, { now });
+      return [];
+    }
+    if (rawBlocks.length - 1 <= this.height) return false;
+    if (rawBlocks[0]?.hash !== this.hashes[0]) {
+      throw new Error('gênese divergente: a cadeia recebida pertence a outra rede');
+    }
+    let common = -1;
+    for (let h = Math.min(this.height, rawBlocks.length - 1); h >= 0; h--) {
+      if (rawBlocks[h]?.hash === this.hashes[h]) { common = h; break; }
+    }
+    return this.reorg(common, rawBlocks.slice(common + 1), { now });
+  }
+
   #loadFromDisk() {
-    let migrated = false;
     this.#loading = true;
+    let migrated = false;
     try {
-      if (existsSync(this.blocksFile)) {
-        // Formato incremental (uma linha JSON por bloco). Lê como BUFFER e processa
-        // linha a linha — o arquivo cresce sem limite e passa dos ~512MB do limite de
-        // string do Node, então NUNCA materializar o arquivo inteiro numa string só.
-        const buf = readFileSync(this.blocksFile);
-        let start = 0;
-        let first = true;
-        const handle = (from, to) => {
-          if (to <= from) return;
-          const line = buf.toString('utf8', from, to).trim();
-          if (!line) return;
-          const block = JSON.parse(line);
-          if (first) { this.adoptGenesis(block); first = false; } else this.addBlock(block);
-        };
-        let nl;
-        while ((nl = buf.indexOf(10, start)) !== -1) { handle(start, nl); start = nl + 1; } // 10 = '\n'
-        handle(start, buf.length);
-        if (first) return; // arquivo vazio
+      if (existsSync(this.store.file)) {
+        if (!this.#loadFromSnapshot()) this.#fullReplay();
       } else if (existsSync(this.chainFile)) {
         // migração do formato legado (array único) para incremental
         const raw = JSON.parse(readFileSync(this.chainFile, 'utf8'));
         if (!Array.isArray(raw) || raw.length === 0) return;
         this.adoptGenesis(raw[0]);
         for (const block of raw.slice(1)) this.addBlock(block);
+        this.store.reset(raw);
         migrated = true;
       }
     } finally {
       this.#loading = false;
     }
-    if (migrated && this.hasGenesis()) {
-      this.#rewriteAll(); // grava o novo formato
+    if (migrated) {
       try { renameSync(this.chainFile, this.chainFile + '.legacy'); } catch { /* ok */ }
+    }
+    // Snapshot fresco após um replay completo (ou se o rabo replayado foi longo):
+    // o PRÓXIMO boot parte daqui em segundos, sem replay desde a gênese.
+    if (this.hasGenesis() && this.height - this.#lastSnapshotHeight >= CHAIN.SNAPSHOT_INTERVAL_BLOCKS) {
+      this.#writeSnapshot();
+    }
+  }
+
+  // Boot rápido: estado + índices vêm do snapshot; do disco só a janela recente
+  // e o replay do rabo appendado depois do snapshot. Qualquer inconsistência
+  // (arquivo truncado/trocado, hash não bate) descarta o snapshot e cai no
+  // replay completo — o snapshot é uma otimização, nunca fonte de verdade.
+  #loadFromSnapshot() {
+    const file = this.snapshotFile;
+    if (!file || !existsSync(file)) return false;
+    let snap;
+    try {
+      const body = readFileSync(file, 'utf8');
+      // Com chave configurada, exige HMAC válido (sidecar .mac). Ausente ou
+      // divergente → não confia no snapshot e reconstrói do disco (achado C2).
+      if (SNAPSHOT_KEY) {
+        const macFile = file + '.mac';
+        if (!existsSync(macFile)) {
+          console.warn('[cadeia] snapshot sem HMAC (.mac) e EAV7_SNAPSHOT_KEY setada — descartando, replay completo');
+          return false;
+        }
+        const stored = readFileSync(macFile);
+        const expected = snapshotMac(body);
+        if (stored.length !== expected.length || !timingSafeEqual(stored, expected)) {
+          console.warn('[cadeia] HMAC do snapshot NÃO confere — arquivo adulterado/incompatível, replay completo');
+          return false;
+        }
+      }
+      snap = JSON.parse(body, bigReviver);
+    } catch {
+      return false;
+    }
+    try {
+      if (snap?.version !== 1 || !Array.isArray(snap.offsets) || !Array.isArray(snap.hashes)) return false;
+      if (this.expectedGenesisHash && snap.hashes[0] !== this.expectedGenesisHash) return false;
+      if (statSync(this.store.file).size < snap.fileBytes) return false;
+      this.store.offsets = snap.offsets;
+      const headBlock = this.store.get(snap.height);
+      if (!headBlock || headBlock.hash !== snap.headHash) throw new Error('snapshot não bate com o arquivo de blocos');
+
+      this.hashes = snap.hashes;
+      this.hashIndex = new Map();
+      for (let h = 0; h < this.hashes.length; h++) this.hashIndex.set(this.hashes[h], h);
+      this.state = reviveState(snap.state);
+      this.baseState = reviveState(snap.baseState);
+      this.txIndex = new Map(snap.txIndex);
+      this.addressTxIndex = new Map(snap.addressTxIndex);
+      this.blocksWithTxs = snap.blocksWithTxs;
+      this.tailStart = snap.tailStart;
+      this.tail = [];
+      for (let h = snap.tailStart; h <= snap.height; h++) {
+        const b = this.store.get(h);
+        if (!b || b.hash !== this.hashes[h]) throw new Error('janela do snapshot não bate com o arquivo de blocos');
+        this.tail.push(b);
+      }
+      this.#lastSnapshotHeight = snap.height;
+      // replay do rabo: blocos appendados ao arquivo depois do snapshot
+      let bad = null;
+      this.store.scan((block) => {
+        if (bad) return;
+        try { this.addBlock(block); } catch (err) { bad = err; }
+      }, snap.fileBytes);
+      if (bad) this.#discardInvalidTail(bad);
+      return true;
+    } catch {
+      this.#resetMemory();
+      return false;
+    }
+  }
+
+  // Replay tolerante: blocos inválidos no FIM do arquivo (lacuna/lixo deixado por
+  // crash ou por bug antigo) são descartados — mantém o prefixo válido, trunca o
+  // resto e o nó re-sincroniza da rede. O arquivo é cache; a rede é a fonte de
+  // verdade. (Corrupção no meio continua fatal: JSON.parse do scan lança.)
+  #fullReplay() {
+    let first = true;
+    let bad = null;
+    this.store.scan((block) => {
+      if (bad) return;
+      try {
+        if (first) { this.adoptGenesis(block); first = false; } else this.addBlock(block);
+      } catch (err) { bad = err; }
+    });
+    if (bad) this.#discardInvalidTail(bad);
+  }
+
+  #discardInvalidTail(err) {
+    this.store.offsets.length = this.height + 1;
+    this.store.truncateToIndexedEnd();
+    console.warn(`[cadeia] blocos inválidos no fim do blocks.jsonl descartados após a altura ${this.height} (${err.message}) — o restante re-sincroniza da rede`);
+  }
+
+  #resetMemory() {
+    this.tail = [];
+    this.tailStart = 0;
+    this.baseState = null;
+    this.state = new State();
+    this.hashes = [];
+    this.hashIndex = new Map();
+    this.txIndex = new Map();
+    this.addressTxIndex = new Map();
+    this.blocksWithTxs = [];
+    this.#lastSnapshotHeight = -1;
+    if (this.store) {
+      this.store.offsets = [];
+      this.store.close();
     }
   }
 
   // Append de um único bloco (custo O(1) por bloco, em vez de reescrever tudo).
+  // INVARIANTE: o store só guarda um prefixo contíguo 0..count-1 da cadeia. Se o
+  // disco ficou para trás (falha anterior), NÃO appenda fora de ordem — o nó segue
+  // em RAM e o reboot re-sincroniza o que faltar da rede (nunca grava lacuna).
   #appendBlock(block) {
-    if (!this.blocksFile || this.#loading) return;
-    appendFileSync(this.blocksFile, JSON.stringify(block) + '\n');
+    if (!this.store || this.#loading) return;
+    if (this.store.count !== block.height) {
+      console.warn(`[cadeia] disco em ${this.store.count - 1}, bloco ${block.height} não persistido (re-sincroniza no reboot)`);
+      return;
+    }
+    this.store.append(block);
   }
 
-  // Reescrita completa (só na gênese, migração e reorg — eventos raros).
-  #rewriteAll() {
-    if (!this.blocksFile || this.#loading) return;
-    const tmp = this.blocksFile + '.tmp';
-    writeFileSync(tmp, this.blocks.map((b) => JSON.stringify(b)).join('\n') + (this.blocks.length ? '\n' : ''));
-    renameSync(tmp, this.blocksFile);
+  // Snapshot periódico do estado + índices (tmp + rename: um crash no meio deixa
+  // o snapshot anterior válido). O boot seguinte parte daqui.
+  #maybeSnapshot() {
+    if (this.#loading || !this.store || !this.hasGenesis()) return;
+    if (this.height - this.#lastSnapshotHeight < CHAIN.SNAPSHOT_INTERVAL_BLOCKS) return;
+    this.#writeSnapshot();
+  }
+
+  #writeSnapshot() {
+    const file = this.snapshotFile;
+    if (!file || !this.hasGenesis()) return;
+    const snap = {
+      version: 1,
+      height: this.height,
+      headHash: this.head.hash,
+      fileBytes: this.store.fileBytes,
+      tailStart: this.tailStart,
+      offsets: this.store.offsets,
+      hashes: this.hashes,
+      state: this.state,
+      baseState: this.baseState,
+      txIndex: [...this.txIndex],
+      addressTxIndex: [...this.addressTxIndex],
+      blocksWithTxs: this.blocksWithTxs,
+    };
+    const body = JSON.stringify(snap, bigReplacer);
+    const tmp = file + '.tmp';
+    writeFileSync(tmp, body);
+    renameSync(tmp, file);
+    // Sela o snapshot com HMAC quando há chave (mac primeiro, depois o arquivo já
+    // foi renomeado; no boot exigimos ambos consistentes). Achado C2.
+    if (SNAPSHOT_KEY) {
+      const macTmp = file + '.mac.tmp';
+      writeFileSync(macTmp, snapshotMac(body));
+      renameSync(macTmp, file + '.mac');
+    }
+    this.#lastSnapshotHeight = this.height;
   }
 }

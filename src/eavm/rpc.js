@@ -24,17 +24,18 @@ export function createEavmRpcServer(node) {
   let indexedHeight = -1;
 
   function ensureIndexed() {
-    const { blocks } = node.blockchain;
-    if (indexedHeight >= blocks.length - 1) {
-      if (indexedHeight > blocks.length - 1) indexedHeight = -1; // reorg: reindexa
-      else return;
-    }
-    for (let h = Math.max(indexedHeight + 1, 0); h < blocks.length; h++) {
-      for (const tx of blocks[h].transactions) {
+    const bc = node.blockchain;
+    if (indexedHeight > bc.height) indexedHeight = -1; // reorg: reindexa
+    if (indexedHeight >= bc.height) return;
+    // Visita só os blocos que TÊM transações (índice global) — sem varrer a cadeia.
+    for (const h of bc.blocksWithTxs) {
+      if (h <= indexedHeight) continue;
+      const block = bc.getBlock(h);
+      for (const tx of block?.transactions ?? []) {
         if (tx.type === 'EAVM_TRANSFER') eavmIndex.set(tx.data.eavmHash, tx.id);
       }
     }
-    indexedHeight = blocks.length - 1;
+    indexedHeight = bc.height;
   }
 
   function blockByTag(tag) {
@@ -42,7 +43,7 @@ export function createEavmRpcServer(node) {
     if (tag === 'latest' || tag === 'pending' || tag === 'safe' || tag === 'finalized' || tag === undefined) {
       return blockchain.head;
     }
-    if (tag === 'earliest') return blockchain.blocks[0] ?? null;
+    if (tag === 'earliest') return blockchain.getBlock(0);
     return blockchain.getBlock(Number(BigInt(tag)));
   }
 

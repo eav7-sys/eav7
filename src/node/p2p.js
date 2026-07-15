@@ -172,19 +172,18 @@ export class P2P {
 
             // 2b) REORG DE TOPO DIVERGENTE: forkamos. Baixa a janela recente do peer
             // de uma vez (forks são recentes), acha o ancestral comum LOCALMENTE e
-            // reorganiza a partir dele — sem apagar dados nem rebaixar a cadeia toda.
+            // reorganiza a partir dele — O(janela), sem replay da cadeia inteira.
             if (novos.length) {
               const from = Math.max(0, bc.height - CHAIN.REORG_WINDOW);
               const janela = await this.#fetchRange(peer, from);
               let common = -1;
               for (let i = janela.length - 1; i >= 0; i--) {
                 const h = from + i;
-                if (bc.blocks[h] && janela[i].hash === bc.blocks[h].hash) { common = h; break; }
+                if (bc.hashAt(h) && janela[i].hash === bc.hashAt(h)) { common = h; break; }
               }
               if (common >= 0 && common < bc.height) {
                 const tail = janela.slice(common - from + 1);
-                const full = bc.blocks.slice(0, common + 1).concat(tail);
-                const orphans = bc.replaceChain(full);
+                const orphans = bc.reorg(common, tail);
                 if (orphans) {
                   this.node.mempool.prune(bc.state);
                   for (const tx of orphans) { try { this.node.submitTransaction(tx, { broadcast: false }); } catch { /* obsoleta */ } }
@@ -238,22 +237,57 @@ function normalize(url) {
   return url.replace(/\/+$/, '');
 }
 
+// Classifica um octeto-quad (a.b.c.d) como privado/loopback/link-local.
+function isPrivateV4(a, b) {
+  if (a === 127 || a === 10 || a === 0) return true;
+  if (a === 169 && b === 254) return true; // link-local / metadata cloud
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  return false;
+}
+
+// Normaliza formas NÃO-canônicas de IPv4 (inteiro `2130706433`, octal `0177.0.0.1`,
+// hex `0x7f.0.0.1`, quads curtos) para [a,b,c,d]. Retorna null se não for IPv4.
+// Sem isso, `http://2130706433/` (= 127.0.0.1) escaparia do filtro literal (achado L3).
+function normalizeV4(host) {
+  const parseNum = (s) => {
+    if (/^0x[0-9a-f]+$/.test(s)) return parseInt(s, 16);
+    if (/^0[0-7]+$/.test(s)) return parseInt(s, 8);
+    if (/^\d+$/.test(s)) return parseInt(s, 10);
+    return NaN;
+  };
+  const parts = host.split('.');
+  if (parts.length === 1) {
+    const n = parseNum(parts[0]);
+    if (!Number.isInteger(n) || n < 0 || n > 0xffffffff) return null;
+    return [(n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff];
+  }
+  if (parts.length === 4) {
+    const nums = parts.map(parseNum);
+    if (nums.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
+    return nums;
+  }
+  return null;
+}
+
 // IP literal em faixa privada/loopback/link-local (inclui metadata cloud).
 function isPrivateIp(ip) {
   const host = String(ip).toLowerCase().replace(/^\[|\]$/g, '');
-  const v4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (v4) {
-    const [a, b] = [Number(v4[1]), Number(v4[2])];
-    if (a === 127 || a === 10 || a === 0) return true;
-    if (a === 169 && b === 254) return true; // link-local / metadata cloud
-    if (a === 172 && b >= 16 && b <= 31) return true;
-    if (a === 192 && b === 168) return true;
-    return false;
-  }
+  const v4 = normalizeV4(host);
+  if (v4) return isPrivateV4(v4[0], v4[1]);
   if (host === '::1' || host === '::') return true;
   // ULA fc00::/7 (fc,fd) e link-local fe80::/10 (fe8,fe9,fea,feb — não só fe8)
   if (host.startsWith('fc') || host.startsWith('fd') || /^fe[89ab]/.test(host)) return true;
-  if (host.startsWith('::ffff:')) return isPrivateIp(host.slice(7)); // IPv4 mapeado
+  // IPv4 mapeado/compatível em IPv6: ::ffff:a.b.c.d, ::ffff:7f00:1, ::a.b.c.d
+  if (host.startsWith('::ffff:') || host.startsWith('::')) {
+    const tail = host.replace(/^::(ffff:)?/, '');
+    if (tail.includes('.')) return isPrivateIp(tail);
+    const hexPair = tail.match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (hexPair) {
+      const hi = parseInt(hexPair[1], 16); // dois octetos mais altos do IPv4 embutido
+      return isPrivateV4((hi >>> 8) & 0xff, hi & 0xff);
+    }
+  }
   return false;
 }
 

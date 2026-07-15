@@ -176,7 +176,7 @@ test('persistência: migra chain.json legado para blocks.jsonl', () => {
   src.createGenesis({ address, timestamp: t0 });
   src.produceBlock(wallet, [], { timestamp: t0 + CHAIN.BLOCK_TIME_MS });
   const dataDir = mkdtempSync(join(tmpdir(), 'eav7-mig-'));
-  writeFileSync(join(dataDir, 'chain.json'), JSON.stringify(src.blocks));
+  writeFileSync(join(dataDir, 'chain.json'), JSON.stringify(src.getRange(0, src.height + 1)));
 
   const loaded = new Blockchain({ dataDir }); // deve migrar
   assert.equal(loaded.height, 1);
@@ -193,13 +193,13 @@ test('fork choice: adota a cadeia válida mais longa com a mesma gênese', () =>
   const a = new Blockchain();
   a.createGenesis({ address, timestamp: t0 });
   const b = new Blockchain();
-  b.adoptGenesis(structuredClone(a.blocks[0]));
+  b.adoptGenesis(structuredClone(a.getBlock(0)));
 
   b.produceBlock(wallet, [], { timestamp: t0 + CHAIN.BLOCK_TIME_MS });
   b.produceBlock(wallet, [], { timestamp: t0 + 2 * CHAIN.BLOCK_TIME_MS });
 
   assert.equal(a.height, 0);
-  assert.ok(a.replaceChain(structuredClone(b.blocks)));
+  assert.ok(a.replaceChain(structuredClone(b.getRange(0, b.height + 1))));
   assert.equal(a.height, 2);
   assert.equal(a.head.hash, b.head.hash);
 });

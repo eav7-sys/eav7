@@ -16,7 +16,14 @@ export function createRateLimiter({ max = CHAIN.RATE_LIMIT_MAX, windowMs = CHAIN
       const cf = req.headers['cf-connecting-ip'];
       if (typeof cf === 'string' && cf) return cf;
       const xff = req.headers['x-forwarded-for'];
-      if (typeof xff === 'string' && xff) return xff.split(',')[0].trim();
+      // ÚLTIMO hop, não o primeiro: cada proxy confiável APENDA o IP do peer de
+      // quem recebeu, então o último item é o IP que o nosso proxy loopback viu.
+      // O primeiro item é fornecido pelo cliente e seria trivialmente forjável
+      // para trocar de bucket a cada request e furar o rate limit (achado L2).
+      if (typeof xff === 'string' && xff) {
+        const hops = xff.split(',');
+        return hops[hops.length - 1].trim();
+      }
     }
     return socketIp;
   }
