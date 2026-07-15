@@ -5,8 +5,9 @@ import { CHAIN } from '../src/config.js';
 import { generateKeyPair, walletAddress } from '../src/crypto/keys.js';
 import { eavHash, canonical } from '../src/crypto/hash.js';
 import { Blockchain } from '../src/core/blockchain.js';
-import { buildBlock } from '../src/core/block.js';
+import { buildBlock, buildGenesisBlock, verifyBlockIntegrity, blockCore } from '../src/core/block.js';
 import { buildTransaction, verifyTransaction, txSigningPayload } from '../src/core/transaction.js';
+import { State } from '../src/core/state.js';
 
 function genesisChain() {
   const wallet = generateKeyPair();
@@ -97,10 +98,10 @@ test('gênese fixada: hash divergente é rejeitado no bootstrap sem cadeia', () 
   real.createGenesis({ address: walletAddress(wallet), timestamp: Date.now() - 60_000 });
   // um nó que fixa OUTRO hash de gênese recusa a gênese do peer
   const pinned = new Blockchain({ expectedGenesisHash: 'E7' + '1'.repeat(62) });
-  assert.throws(() => pinned.adoptGenesis(structuredClone(real.blocks[0])), /hash fixado/);
+  assert.throws(() => pinned.adoptGenesis(structuredClone(real.getBlock(0))), /hash fixado/);
   // com o hash correto, adota normalmente
-  const ok = new Blockchain({ expectedGenesisHash: real.blocks[0].hash });
-  ok.adoptGenesis(structuredClone(real.blocks[0]));
+  const ok = new Blockchain({ expectedGenesisHash: real.getBlock(0).hash });
+  ok.adoptGenesis(structuredClone(real.getBlock(0)));
   assert.equal(ok.height, 0);
 });
 
@@ -178,4 +179,89 @@ test('mempool: nonce muito à frente é recusado na submissão (anti-DoS)', asyn
     type: 'TRANSFER', to, amount: 1n, nonce: CHAIN.MAX_FUTURE_NONCE_GAP + 5,
   });
   assert.throws(() => node.submitTransaction(farAhead, { broadcast: false }), /muito à frente/);
+});
+
+// ---- M1: hash de bloco canônico (imune à maleabilidade de assinatura) ----
+test('M1: acima do fork o hash do bloco deriva só do payload (não da assinatura)', () => {
+  const saved = CHAIN.CANONICAL_HASH_HEIGHT;
+  CHAIN.CANONICAL_HASH_HEIGHT = 1;
+  try {
+    const w = generateKeyPair();
+    const g = buildGenesisBlock({ timestamp: Date.now() - 60_000, balances: {}, stakes: {} });
+    const b = buildBlock(w, { height: 1, previousHash: g.hash, timestamp: Date.now() - 30_000, transactions: [] });
+    const payload = canonical(blockCore(b));
+    assert.equal(b.hash, eavHash(payload), 'hash deve ser eavHash(payload) puro');
+    assert.notEqual(b.hash, eavHash(payload + b.signature + b.pqSignature), 'hash não pode depender da assinatura');
+    assert.equal(verifyBlockIntegrity(b), null, 'bloco real deve verificar');
+    // qualquer variante do MESMO payload (assinatura reencodada) colide no MESMO id:
+    // não existem dois ids válidos para o mesmo conteúdo.
+    assert.equal(eavHash(canonical(blockCore({ ...b, signature: 'x', pqSignature: 'y' }))), b.hash);
+  } finally {
+    CHAIN.CANONICAL_HASH_HEIGHT = saved;
+  }
+});
+
+test('M1: abaixo do fork mantém a fórmula antiga (grandfather do histórico)', () => {
+  const saved = CHAIN.CANONICAL_HASH_HEIGHT;
+  CHAIN.CANONICAL_HASH_HEIGHT = 100_000;
+  try {
+    const w = generateKeyPair();
+    const g = buildGenesisBlock({ timestamp: Date.now() - 60_000, balances: {}, stakes: {} });
+    const b = buildBlock(w, { height: 1, previousHash: g.hash, timestamp: Date.now() - 30_000, transactions: [] });
+    const payload = canonical(blockCore(b));
+    assert.equal(b.hash, eavHash(payload + b.signature + b.pqSignature));
+    assert.equal(verifyBlockIntegrity(b), null);
+  } finally {
+    CHAIN.CANONICAL_HASH_HEIGHT = saved;
+  }
+});
+
+// ---- C1: quórum M-de-N da ponte (sem ponto único de falha) ----
+function bridgeState(relayers) {
+  const s = new State();
+  s.bridgeRelayers = Object.fromEntries(relayers.map((r) => [r.addr, true]));
+  s.bridge.lockedNative = 1000n * CHAIN.UNIT;
+  for (const r of relayers) s.credit(r.addr, 100n * CHAIN.UNIT); // energia p/ fee
+  return s;
+}
+
+test('C1: acima do fork, um relayer sozinho NÃO drena o pool (exige maioria)', () => {
+  const saved = CHAIN.BRIDGE_QUORUM_HEIGHT;
+  CHAIN.BRIDGE_QUORUM_HEIGHT = 1;
+  try {
+    const relayers = [0, 1, 2].map(() => { const w = generateKeyPair(); return { w, addr: walletAddress(w) }; });
+    const dest = walletAddress(generateKeyPair());
+    const data = { sourceChain: 'TRON', sourceTxHash: '0xdeposit1', token: null };
+    const amt = 5n * CHAIN.UNIT;
+    const s = bridgeState(relayers);
+
+    // 1ª atestação: apenas ATESTADO, sem liberar (quórum = 2 de 3)
+    s.applyTransaction(buildTransaction(relayers[0].w, { type: 'BRIDGE_IN', to: dest, amount: amt, nonce: 1, data }), 5, Date.now());
+    assert.equal(s.balanceOf(dest), 0n, 'uma atestação não pode liberar');
+
+    // 2ª atestação distinta: atinge quórum e libera exatamente uma vez
+    s.applyTransaction(buildTransaction(relayers[1].w, { type: 'BRIDGE_IN', to: dest, amount: amt, nonce: 1, data }), 5, Date.now());
+    assert.equal(s.balanceOf(dest), amt, 'quórum atingido deve liberar');
+    assert.equal(s.bridge.lockedNative, 1000n * CHAIN.UNIT - amt, 'lockedNative cai exatamente 1x');
+
+    // depósito já liberado: replay é rejeitado
+    assert.throws(() => s.applyTransaction(buildTransaction(relayers[2].w, { type: 'BRIDGE_IN', to: dest, amount: amt, nonce: 1, data }), 5, Date.now()), /já processado/);
+  } finally {
+    CHAIN.BRIDGE_QUORUM_HEIGHT = saved;
+  }
+});
+
+test('C1: abaixo do fork mantém quórum antigo (grandfather do histórico)', () => {
+  const saved = CHAIN.BRIDGE_QUORUM_HEIGHT;
+  CHAIN.BRIDGE_QUORUM_HEIGHT = 100_000;
+  try {
+    const relayers = [0, 1, 2].map(() => { const w = generateKeyPair(); return { w, addr: walletAddress(w) }; });
+    const dest = walletAddress(generateKeyPair());
+    const amt = 5n * CHAIN.UNIT;
+    const s = bridgeState(relayers);
+    s.applyTransaction(buildTransaction(relayers[0].w, { type: 'BRIDGE_IN', to: dest, amount: amt, nonce: 1, data: { sourceChain: 'TRON', sourceTxHash: '0xhist', token: null } }), 5, Date.now());
+    assert.equal(s.balanceOf(dest), amt, 'abaixo do fork, 1 atestação libera (regra antiga)');
+  } finally {
+    CHAIN.BRIDGE_QUORUM_HEIGHT = saved;
+  }
 });

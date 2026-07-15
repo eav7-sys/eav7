@@ -528,7 +528,16 @@ export class State {
         const existing = this.bridge.attestations[attKey];
         if (existing && existing.relayers.includes(tx.from)) throw new Error('relayer já atestou este depósito');
         const attCount = (existing ? existing.relayers.length : 0) + 1;
-        const willRelease = attCount >= CHAIN.BRIDGE_MIN_ATTESTATIONS;
+        // Quórum efetivo: a partir do fork coordenado exige a MAIORIA dos relayers da
+        // gênese (federação M-de-N), não mais um único (achado C1). Antes do fork mantém
+        // o quórum antigo para o replay do histórico bater. `height` e a contagem de
+        // relayers são estado de consenso → determinístico entre nós.
+        const relayerCount = Object.keys(this.bridgeRelayers).length;
+        const quorum =
+          height >= CHAIN.BRIDGE_QUORUM_HEIGHT
+            ? Math.max(CHAIN.BRIDGE_MIN_ATTESTATIONS, Math.floor(relayerCount / 2) + 1)
+            : CHAIN.BRIDGE_MIN_ATTESTATIONS;
+        const willRelease = attCount >= quorum;
         if (willRelease) {
           if (token != null) {
             const t = this.tokens[token];
@@ -548,7 +557,7 @@ export class State {
             id: tx.id, direction: 'IN', relayer: tx.from, to: tx.to,
             sourceChain: sourceChain.toUpperCase(), sourceTxHash, token: token ?? null,
             amount, status: 'ATTESTED', attestations: att.relayers.length,
-            quorum: CHAIN.BRIDGE_MIN_ATTESTATIONS, createdAt: tx.timestamp,
+            quorum, createdAt: tx.timestamp,
           };
           break;
         }

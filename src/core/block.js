@@ -16,6 +16,15 @@ export function blockCore(block) {
   return core;
 }
 
+// A PARTIR de CANONICAL_HASH_HEIGHT o hash deriva SÓ do payload assinado. Assinaturas
+// (ECDSA/ML-DSA) são maleáveis — reencodá-las (ex.: s → N−s) produzia um hash diferente
+// para conteúdo idêntico, permitindo dois ids válidos do MESMO bloco (achado M1). Derivar
+// do payload torna o id canônico, como já é o id da tx. Blocos antes do fork (incl. gênese,
+// altura 0) mantêm a fórmula antiga para o replay do histórico continuar válido.
+function blockHash(payload, signature, pqSignature, height) {
+  return height >= CHAIN.CANONICAL_HASH_HEIGHT ? eavHash(payload) : eavHash(payload + signature + pqSignature);
+}
+
 export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(), transactions = [] }) {
   const core = {
     protocol: CHAIN.PROTOCOL,
@@ -32,7 +41,7 @@ export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(
   };
   const payload = canonical(core);
   const { signature, pqSignature } = hybridSign(wallet, payload);
-  return { ...core, signature, pqSignature, hash: eavHash(payload + signature + pqSignature), transactions };
+  return { ...core, signature, pqSignature, hash: blockHash(payload, signature, pqSignature, height), transactions };
 }
 
 // Bloco gênese: sem produtor real; carrega as alocações e stakes iniciais da rede.
@@ -74,7 +83,7 @@ export function verifyBlockIntegrity(block) {
   if (block.txRoot !== merkleRoot(block.transactions.map((tx) => tx?.id))) return 'txRoot não confere';
 
   const payload = canonical(blockCore(block));
-  if (block.hash !== eavHash(payload + block.signature + block.pqSignature)) return 'hash do bloco não confere';
+  if (block.hash !== blockHash(payload, block.signature, block.pqSignature, block.height)) return 'hash do bloco não confere';
 
   if (block.height === 0) {
     if (block.signature !== GENESIS_SIGNATURE || block.producer !== 'GENESIS') return 'bloco gênese malformado';

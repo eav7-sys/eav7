@@ -62,8 +62,23 @@ export const CHAIN = {
   GENESIS_STAKE: 10_000n * UNIT,
 
   // Ponte: nº mínimo de relayers autorizados distintos que devem atestar um
-  // depósito de origem antes da liberação (quórum M-de-N). 1 = comportamento atual.
+  // depósito de origem antes da liberação (quórum M-de-N). 1 = comportamento antigo
+  // (ponto único de falha). A PARTIR de BRIDGE_QUORUM_HEIGHT o quórum efetivo passa a
+  // ser max(BRIDGE_MIN_ATTESTATIONS, maioria dos relayers da gênese) — vira federação
+  // M-de-N de verdade, sem ponto único (achado C1). Depósitos ANTES do fork mantêm o
+  // quórum antigo, para o replay do histórico continuar válido.
   BRIDGE_MIN_ATTESTATIONS: 1,
+  // Altura de fork COORDENADO da ponte. Head de produção ~677k em 2026-07-14 (~1 bloco/s),
+  // então esta altura PRECISA ser futura. 1.000.000 = ~3,7 dias de folga para o rollout
+  // escalonado nos 3 nós. Todos os nós precisam da MESMA altura antes de a cadeia cruzá-la.
+  // Exige ≥3 relayers na gênese para um quórum de maioria (ex.: 2-de-3) ter efeito.
+  BRIDGE_QUORUM_HEIGHT: 1_000_000,
+  // A PARTIR desta altura o hash do bloco deriva SÓ do payload assinado (não das
+  // assinaturas), tornando o id do bloco canônico e imune à maleabilidade de assinatura
+  // (achado M1). Blocos antes do fork mantêm a fórmula antiga (grandfather). Head de
+  // produção ~677k em 2026-07-14 → altura PRECISA ser futura. 1.000.000 = ~3,7 dias de
+  // folga. Fork COORDENADO: mesmo valor nos 3 nós antes de a cadeia cruzá-la.
+  CANONICAL_HASH_HEIGHT: 1_000_000,
 
   // Rate limit por IP (usa CF-Connecting-IP atrás da Cloudflare).
   RATE_LIMIT_WINDOW_MS: 10_000,
