@@ -47,6 +47,10 @@ export class State {
     // Delegação de recurso (#6): delegador -> { delegatário: amount (BigInt) }. O espelho
     // agregado fica em acc.delegatedOut / acc.delegatedIn (usado por resourceStake).
     this.delegations = {};
+    // Governança on-chain (#9): params = overrides de parâmetros aprovados (nome -> valor
+    // já coagido ao tipo); proposals = id -> proposta em votação/encerrada.
+    this.params = {};
+    this.proposals = {};
   }
 
   getAccount(address) {
@@ -182,21 +186,57 @@ export class State {
     return sum;
   }
 
+  // Valor EFETIVO de um parâmetro governável (#9): o override aprovado on-chain
+  // (state.params) se houver, senão o default de CHAIN. Já vem coagido ao tipo certo.
+  param(name) {
+    return Object.prototype.hasOwnProperty.call(this.params, name) ? this.params[name] : CHAIN[name];
+  }
+
   // Conjunto ativo: top-N candidatos elegíveis (self-stake >= MIN, não-EAVM) por PESO
   // = self-stake + votos RECEBIDOS de terceiros (#4). Sem votos, `candidateVotes` é
-  // vazio e o peso é só o stake → mesma ordenação de antes (retrocompatível). Desempate
-  // por endereço, determinístico.
+  // vazio e o peso é só o stake → mesma ordenação de antes (retrocompatível). MIN e N
+  // são governáveis (#9). Desempate por endereço, determinístico.
   validators() {
+    const minStake = this.param('MIN_VALIDATOR_STAKE');
     return Object.entries(this.accounts)
-      .filter(([, acc]) => acc.staked >= CHAIN.MIN_VALIDATOR_STAKE && !acc.eavmManaged)
+      .filter(([, acc]) => acc.staked >= minStake && !acc.eavmManaged)
       .map(([address, acc]) => ({ address, staked: acc.staked, votes: this.candidateVotes[address] ?? 0n }))
       .sort((a, b) => {
         const wa = a.staked + a.votes, wb = b.staked + b.votes;
         if (wa !== wb) return wa > wb ? -1 : 1;
         return a.address < b.address ? -1 : 1;
       })
-      .slice(0, CHAIN.MAX_VALIDATORS)
+      .slice(0, this.param('MAX_VALIDATORS'))
       .map(({ address, staked, votes }) => ({ address, staked, votes }));
+  }
+
+  // #9: coage/valida o valor proposto para um parâmetro governável (tipo + limites).
+  #coerceGovValue(spec, raw) {
+    if (spec.kind === 'bigint') {
+      let v;
+      try { v = BigInt(raw); } catch { throw new Error('valor inválido (esperado inteiro)'); }
+      if (v < spec.min || v > spec.max) throw new Error('valor fora dos limites permitidos');
+      return v;
+    }
+    const v = Number(raw);
+    if (!Number.isSafeInteger(v) || v < spec.min || v > spec.max) throw new Error('valor inválido/fora dos limites');
+    return v;
+  }
+
+  // #9: conta votos de validadores ATUAIS numa proposta; ao atingir 2/3+1, aplica o
+  // override e marca EXECUTED. Determinístico (validadores e votos são estado).
+  #tallyProposal(p, height) {
+    const active = new Set(this.validators().map((v) => v.address));
+    const N = active.size;
+    if (N === 0) return;
+    const quorum = Math.floor((2 * N) / 3) + 1;
+    let yes = 0;
+    for (const a of Object.keys(p.votes)) if (active.has(a)) yes++;
+    if (yes >= quorum) {
+      this.params[p.param] = p.value;
+      p.status = 'EXECUTED';
+      p.executedAt = height;
+    }
   }
 
   pendingAiTasks() {
@@ -229,6 +269,8 @@ export class State {
     copy.permissions = structuredClone(this.permissions);
     copy.pendingOps = structuredClone(this.pendingOps);
     copy.delegations = structuredClone(this.delegations);
+    copy.params = structuredClone(this.params);
+    copy.proposals = structuredClone(this.proposals);
     return copy;
   }
 
@@ -530,6 +572,39 @@ export class State {
         const left = cur - amt;
         if (left > 0n) d[to] = left;
         else { delete d[to]; if (Object.keys(d).length === 0) delete this.delegations[tx.from]; }
+        break;
+      }
+
+      // #9: um validador ATIVO propõe alterar um parâmetro governável. O voto do
+      // proponente já conta; se o conjunto for pequeno, pode atingir o quórum na hora.
+      case 'GOV_PROPOSE': {
+        if (height < CHAIN.GOVERNANCE_HEIGHT) throw new Error('governança ainda não ativa');
+        if (!this.validators().some((v) => v.address === tx.from)) throw new Error('só validador ativo pode propor');
+        const param = tx.data?.param;
+        const spec = CHAIN.GOVERNABLE[param];
+        if (!spec) throw new Error(`parâmetro não governável: ${param}`);
+        const value = this.#coerceGovValue(spec, tx.data?.value);
+        const vb = Number(tx.data?.votingBlocks ?? CHAIN.GOV_MAX_VOTING_BLOCKS);
+        if (!Number.isSafeInteger(vb) || vb <= 0 || vb > CHAIN.GOV_MAX_VOTING_BLOCKS) throw new Error('votingBlocks inválido');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        const proposal = { id: tx.id, param, value, proposer: tx.from, deadline: height + vb, votes: { [tx.from]: true }, status: 'VOTING', createdAt: tx.timestamp };
+        this.proposals[tx.id] = proposal;
+        this.#tallyProposal(proposal, height);
+        break;
+      }
+
+      case 'GOV_VOTE': {
+        if (height < CHAIN.GOVERNANCE_HEIGHT) throw new Error('governança ainda não ativa');
+        const p = this.proposals[tx.data?.proposalId];
+        if (!p || p.status !== 'VOTING') throw new Error('proposta inexistente ou encerrada');
+        if (height > p.deadline) { p.status = 'DEFEATED'; throw new Error('proposta expirada'); }
+        if (!this.validators().some((v) => v.address === tx.from)) throw new Error('só validador ativo pode votar');
+        if (p.votes[tx.from]) throw new Error('validador já votou nesta proposta');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        p.votes[tx.from] = true;
+        this.#tallyProposal(p, height);
         break;
       }
 

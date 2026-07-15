@@ -146,10 +146,13 @@ export class Blockchain {
   }
 
   // Recompensa de bloco na altura dada, com halving periódico (emissão limitada).
-  blockReward(height) {
+  // Recompensa de bloco: base governável (#9) com halving (#M1). Lê o parâmetro do
+  // ESTADO sendo aplicado (não do global) para o replay/reorg ser determinístico.
+  blockReward(height, state = this.state) {
+    const base = state?.param ? state.param('BLOCK_REWARD') : CHAIN.BLOCK_REWARD;
     const halvings = Math.floor(height / CHAIN.HALVING_INTERVAL_BLOCKS);
     if (halvings >= 64) return 0n;
-    return CHAIN.BLOCK_REWARD >> BigInt(halvings);
+    return base >> BigInt(halvings);
   }
 
   // DPoS round-robin: o produtor PRIMÁRIO do slot (rodízio determinístico).
@@ -218,7 +221,7 @@ export class Blockchain {
       seen.add(tx.id);
       fees += sim.applyTransaction(tx, block.height, block.timestamp);
     }
-    const reward = this.blockReward(block.height);
+    const reward = this.blockReward(block.height, sim);
     sim.credit(block.producer, reward + fees);
     sim.totalMinted += reward; // contabiliza a emissão (para o supply real) — M1
 
@@ -254,7 +257,7 @@ export class Blockchain {
   #applyBlockTo(state, block) {
     let fees = 0n;
     for (const tx of block.transactions) fees += state.applyTransaction(tx, block.height, block.timestamp);
-    const reward = this.blockReward(block.height);
+    const reward = this.blockReward(block.height, state);
     state.credit(block.producer, reward + fees);
     state.totalMinted += reward;
   }
@@ -308,7 +311,7 @@ export class Blockchain {
       const sim = this.state.clone();
       let fees = 0n;
       for (const tx of transactions) fees += sim.applyTransaction(tx, height, timestamp);
-      const reward = this.blockReward(height);
+      const reward = this.blockReward(height, sim);
       sim.credit(producer, reward + fees);
       sim.totalMinted += reward;
       stateRoot = computeStateRoot(sim);

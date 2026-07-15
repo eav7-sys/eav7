@@ -63,6 +63,20 @@ export const CHAIN = {
   // novo = 0 (ativo já).
   PERMISSIONS_HEIGHT: 1_500_000,
   MAX_PERMISSION_KEYS: 20,
+  // Governança on-chain (#9): a partir de GOVERNANCE_HEIGHT, validadores propõem
+  // (GOV_PROPOSE) mudar um parâmetro GOVERNÁVEL e votam (GOV_VOTE); ao atingir 2/3+1 dos
+  // validadores ativos, o valor é sobrescrito on-chain (state.params) — substitui o ajuste
+  // manual por SSH. No gênese novo = 0 (ativo já).
+  GOVERNANCE_HEIGHT: 1_700_000,
+  GOV_MAX_VOTING_BLOCKS: 200_000, // janela máx. de votação (~2,3 dias a 1 bloco/s)
+  // Parâmetros que a governança pode alterar, com tipo e limites (anti-valor-absurdo).
+  GOVERNABLE: {
+    BLOCK_REWARD: { kind: 'bigint', min: 0n, max: 1_000n * UNIT },
+    MIN_VALIDATOR_STAKE: { kind: 'bigint', min: 1n, max: 10_000_000n * UNIT },
+    MAX_VALIDATORS: { kind: 'int', min: 1, max: 101 },
+    FEE_EXEMPT_STAKE: { kind: 'bigint', min: 0n, max: 1_000_000n * UNIT },
+    MIN_ORACLE_STAKE: { kind: 'bigint', min: 0n, max: 1_000_000n * UNIT },
+  },
   MIN_ORACLE_STAKE: 500n * UNIT,
   FEE_EXEMPT_STAKE: 100n * UNIT, // stake >= 100 EAV7 => transações com taxa zero
 
@@ -150,6 +164,7 @@ export const CHAIN = {
       TRANSFER: 1, STAKE: 1, UNSTAKE: 1, VOTE: 1, EAVM_TRANSFER: 1,
       PERMISSION_UPDATE: 2, MULTISIG_PROPOSE: 2, MULTISIG_APPROVE: 1,
       DELEGATE_RESOURCE: 1, UNDELEGATE_RESOURCE: 1,
+      GOV_PROPOSE: 2, GOV_VOTE: 1,
       TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
       AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
       BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
@@ -186,6 +201,8 @@ export const CHAIN = {
     VOTE: 10_000n,
     DELEGATE_RESOURCE: 10_000n,
     UNDELEGATE_RESOURCE: 10_000n,
+    GOV_PROPOSE: 50_000n,
+    GOV_VOTE: 10_000n,
     PERMISSION_UPDATE: 20_000n,
     MULTISIG_PROPOSE: 20_000n,
     MULTISIG_APPROVE: 10_000n,
