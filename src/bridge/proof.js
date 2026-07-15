@@ -38,7 +38,10 @@ export function verifyCommitteeProof(digest, sigs, committee) {
   const members = new Set((committee?.members ?? []).map((m) => String(m).toLowerCase()));
   const seen = new Set();
   let valid = 0;
-  for (const sig of Array.isArray(sigs) ? sigs : []) {
+  // Teto: no máximo `members.size` assinaturas (mais que isso não pode agregar — cada
+  // membro conta uma vez). Impede um `recover` secp256k1 por sig de lixo (DoS de cripto).
+  const capped = (Array.isArray(sigs) ? sigs : []).slice(0, members.size);
+  for (const sig of capped) {
     let point;
     try {
       point = recover(digest, BigInt(sig.r), BigInt(sig.s), BigInt(sig.recId));

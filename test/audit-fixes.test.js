@@ -8,6 +8,9 @@ import { generateKeyPair, walletAddress } from '../src/crypto/keys.js';
 import { buildTransaction } from '../src/core/transaction.js';
 import { buildBlock } from '../src/core/block.js';
 import { eavHash } from '../src/crypto/hash.js';
+import { randomBytes } from 'node:crypto';
+import { verifyCommitteeProof, bridgeEventDigest } from '../src/bridge/proof.js';
+import { N, bufToBig, sign, publicKeyFromPrivate, ethAddressFromPoint } from '../src/eavm/secp256k1.js';
 
 const U = CHAIN.UNIT;
 const now = () => Date.now();
@@ -84,4 +87,29 @@ test('Fix 3: governança cria (bootstrap) e depois troca um comitê de ponte', (
     assert.equal(s.bridgeSourceCommittees.TRON.epoch, 1);
     assert.equal(s.bridgeSourceCommittees.TRON.quorum, 1);
   } finally { CHAIN.GOVERNANCE_HEIGHT = sG; CHAIN.GOV_TIMELOCK_BLOCKS = sT; }
+});
+
+test('Fix C: VOTE em candidato não elegível (self-stake < mínimo) é rejeitado', () => {
+  const saved = CHAIN.VOTING_HEIGHT; CHAIN.VOTING_HEIGHT = 1;
+  try {
+    const s = new State();
+    const voter = generateKeyPair(); const V = walletAddress(voter);
+    s.getAccount(V).staked = 5000n * U; s.credit(V, 1n * U);
+    const lixo = walletAddress(generateKeyPair()); // endereço sem stake
+    const tx = buildTransaction(voter, { type: 'VOTE', nonce: 1, data: { votes: { [lixo]: (100n * U).toString() } } });
+    assert.throws(() => s.applyTransaction(tx, 5, now()), /não elegível/);
+  } finally { CHAIN.VOTING_HEIGHT = saved; }
+});
+
+test('Fix B: verifyCommitteeProof limita as sigs ao nº de membros (anti-DoS)', () => {
+  const m = () => { const priv = (bufToBig(randomBytes(32)) % (N - 1n)) + 1n; return { priv, addr: ethAddressFromPoint(publicKeyFromPrivate(priv)).toLowerCase() }; };
+  const a = m(), b = m();
+  const committee = { members: [a.addr, b.addr], quorum: 2 };
+  const digest = bridgeEventDigest({ sourceChain: 'TRON', sourceTxHash: '0x1', to: 'E7abc', amount: 1n, token: null });
+  const sd = (mm) => { const { r, s, recId } = sign(digest, mm.priv); return { r: r.toString(), s: s.toString(), recId: Number(recId) }; };
+  const lixo = { r: '1', s: '1', recId: 0 };
+  // 2 lixos ANTES das 2 válidas: cap=2 → só os lixos são conferidos → 0 válidas
+  assert.equal(verifyCommitteeProof(digest, [lixo, lixo, sd(a), sd(b)], committee), 0);
+  // válidas dentro do cap → contam
+  assert.equal(verifyCommitteeProof(digest, [sd(a), sd(b), lixo], committee), 2);
 });

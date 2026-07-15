@@ -52,8 +52,10 @@ export class State {
     // já coagido ao tipo); proposals = id -> proposta em votação/encerrada.
     this.params = {};
     this.proposals = {};
-    // Slashing/unbonding (b): slashed = 'produtor:altura' já penalizado (anti-duplo-slash);
-    // unbonding = [{ address, amount, matureAt }] — stake dessteikado esperando o período.
+    // Slashing/unbonding (b): slashed = 'produtor:altura' já penalizado (anti-duplo-slash).
+    // Cresce com o nº de ofensas penalizadas (raras) — conjunto nullifier-like, como
+    // bridge.processedInbound; não é podável sem reabrir replay. unbonding = [{ address,
+    // amount, matureAt }] — stake dessteikado esperando o período.
     this.slashed = {};
     this.unbonding = [];
   }
@@ -179,6 +181,9 @@ export class State {
     } else if (op.type === 'PERMISSION_CHANGE') {
       if (op.permission === null) delete this.permissions[account]; // remove multisig (volta a single-sig)
       else this.permissions[account] = this.#normalizePermission(op.permission);
+      // Invalida ops pendentes desta conta: elas foram aprovadas sob a permissão ANTIGA
+      // (pesos/threshold), que não valem mais. Devem ser repropostas sob a nova.
+      for (const [id, p] of Object.entries(this.pendingOps)) if (p.account === account) delete this.pendingOps[id];
     } else {
       throw new Error(`tipo de operação multisig não suportado: ${op.type}`);
     }
@@ -542,6 +547,9 @@ export class State {
         for (const [cand, amtRaw] of entries) {
           if (!isValidAddress(cand)) throw new Error('endereço de candidato inválido');
           if (cand === tx.from) throw new Error('não pode votar em si mesmo (o self-stake já conta)');
+          // Candidato precisa ser ELEGÍVEL (self-stake >= mínimo) — senão votar num
+          // endereço-lixo acumularia `candidateVotes` que nunca vira validador (poeira de estado).
+          if ((this.accounts[cand]?.staked ?? 0n) < this.param('MIN_VALIDATOR_STAKE')) throw new Error('candidato não elegível (self-stake abaixo do mínimo)');
           const amt = BigInt(amtRaw);
           if (amt <= 0n) throw new Error('voto deve ser positivo');
           total += amt;
@@ -598,8 +606,11 @@ export class State {
       case 'SLASH_DOUBLE_SIGN': {
         if (height < CHAIN.SLASHING_HEIGHT) throw new Error('slashing ainda não ativo');
         const { blockA, blockB } = tx.data ?? {};
-        const eA = verifyBlockIntegrity(blockA); if (eA) throw new Error(`evidência A inválida: ${eA}`);
-        const eB = verifyBlockIntegrity(blockB); if (eB) throw new Error(`evidência B inválida: ${eB}`);
+        if (!blockA || !blockB || typeof blockA !== 'object' || typeof blockB !== 'object') throw new Error('evidência ausente');
+        // Checks BARATOS primeiro (campos lidos SEM verificar assinatura) — as duas
+        // verificações híbridas são caras, então só rodam se o resto fizer sentido:
+        // conflito real, ainda não penalizado, e infrator COM stake. Fecha o DoS de
+        // spammar SLASH forçando cripto cara de graça (mesma classe do achado M4).
         if (blockA.producer !== blockB.producer) throw new Error('produtores diferentes — não é assinatura dupla');
         if (blockA.height !== blockB.height) throw new Error('alturas diferentes — não é assinatura dupla');
         if (blockA.hash === blockB.hash) throw new Error('mesmo bloco — não há conflito');
@@ -613,6 +624,9 @@ export class State {
         const unbondTotal = this.unbonding.reduce((s, u) => (u.address === offender ? s + BigInt(u.amount) : s), 0n);
         const atRisk = (off?.staked ?? 0n) + unbondTotal;
         if (atRisk <= 0n) throw new Error('infrator sem stake para penalizar');
+        // agora sim a verificação CARA (2 assinaturas híbridas)
+        const eA = verifyBlockIntegrity(blockA); if (eA) throw new Error(`evidência A inválida: ${eA}`);
+        const eB = verifyBlockIntegrity(blockB); if (eB) throw new Error(`evidência B inválida: ${eB}`);
         const penalty = (atRisk * BigInt(CHAIN.SLASH_PERCENT)) / 100n;
         const bounty = (penalty * BigInt(CHAIN.SLASH_REPORTER_PERCENT)) / 100n;
         let remaining = penalty;
