@@ -297,6 +297,7 @@ async function handle(node, req, res) {
       symbol: CHAIN.SYMBOL,
       blockTimeMs: CHAIN.BLOCK_TIME_MS,
       height: blockchain.height,
+      finalizedHeight: blockchain.finalizedHeight(), // #2: última altura finalizada por BFT (-1 = sem finalidade)
       headHash: head?.hash ?? null,
       headTime: head?.timestamp ?? null,
       supply: CHAIN.GENESIS_SUPPLY + state.totalMinted - state.totalBurned, // supply REAL (gênese + emissão − queima)

@@ -84,6 +84,12 @@ export const CHAIN = {
   // clients e a ponte trustless (#1). Fork COORDENADO, acima do fork de consenso
   // anterior; ajustar para altura futura acordada antes do rollout.
   STATEROOT_HEIGHT: 1_200_000,
+  // Finalidade BFT (#2): um bloco é FINAL quando >= 2/3+1 validadores DISTINTOS
+  // construíram em cima dele (determinístico da própria cadeia). Um reorg não pode
+  // reverter abaixo do finalizado. Só engaja com >= este nº de validadores ativos —
+  // abaixo disso (dev/bootstrap de 1-2 nós) não há garantia BFT e a finalidade fica
+  // desligada para não travar reorgs legítimos.
+  FINALITY_MIN_VALIDATORS: 3,
 
   // Rate limit por IP (usa CF-Connecting-IP atrás da Cloudflare).
   RATE_LIMIT_WINDOW_MS: 10_000,

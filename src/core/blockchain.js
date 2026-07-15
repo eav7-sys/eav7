@@ -356,6 +356,24 @@ export class Blockchain {
     return tx ? { tx, blockHeight: height, blockHash: block.hash } : null;
   }
 
+  // Finalidade BFT (#2): maior altura FINALIZADA — aquela sobre a qual >= 2/3+1
+  // validadores DISTINTOS já produziram. Determinística da cadeia (produtores estão
+  // nos blocos), sem subprotocolo de votos. Um reorg não pode reverter abaixo disto.
+  // Retorna -1 (sem finalidade) quando há poucos validadores para garantia BFT.
+  finalizedHeight() {
+    const N = this.state.validators().length;
+    if (N < CHAIN.FINALITY_MIN_VALIDATORS) return -1;
+    const quorum = Math.floor((2 * N) / 3) + 1;
+    const producers = new Set();
+    for (let h = this.height; h >= Math.max(1, this.tailStart); h--) {
+      const b = this.getBlock(h);
+      if (!b) break;
+      producers.add(b.producer);
+      if (producers.size >= quorum) return h - 1; // [h, head] tem quórum → h-1 é final
+    }
+    return -1;
+  }
+
   // Fork choice a partir de um ANCESTRAL COMUM: valida e aplica o novo rabo sobre
   // o estado reconstruído no fork (dentro da janela em RAM — O(janela), nunca
   // O(cadeia)). Adota se ficar mais longa. Retorna false se não substituiu, ou o
@@ -374,6 +392,13 @@ export class Blockchain {
     const fin = CHAIN.STRICT_PRODUCER_HEIGHT;
     if (fin > 0 && this.height >= fin && common < fin) {
       throw new Error('reorg rejeitado: tentaria substituir histórico finalizado (< STRICT_PRODUCER_HEIGHT)');
+    }
+    // Finalidade BFT dinâmica (#2): não pode reverter abaixo do último bloco finalizado
+    // por >= 2/3+1 validadores distintos. Um fork mais longo ramificado no histórico
+    // finalizado exigiria supermaioria equivocando — rejeitado.
+    const finalized = this.finalizedHeight();
+    if (common < finalized) {
+      throw new Error(`reorg rejeitado: tentaria reverter bloco finalizado por BFT (comum ${common} < final ${finalized})`);
     }
     if (common < this.tailStart - 1) throw new Error('reorg além da janela de reorganização');
 
