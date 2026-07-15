@@ -1,5 +1,5 @@
 import { CHAIN } from '../config.js';
-import { eavHash } from '../crypto/hash.js';
+import { eavHash, canonical } from '../crypto/hash.js';
 import { isValidAddress, deriveAddressFrom } from '../crypto/keys.js';
 import { validateTokenParams } from '../token/eav20.js';
 import { runEavm, EavmError } from '../eavm/vm.js';
@@ -44,16 +44,49 @@ export class State {
     // pendingOps = opId (id da tx MULTISIG_PROPOSE) -> { account, op, approvals:{signer:peso}, weight }.
     this.permissions = {};
     this.pendingOps = {};
+    // Delegação de recurso (#6): delegador -> { delegatário: amount (BigInt) }. O espelho
+    // agregado fica em acc.delegatedOut / acc.delegatedIn (usado por resourceStake).
+    this.delegations = {};
   }
 
   getAccount(address) {
-    // energyUsed/energyBlock: contabilidade do recurso Energia (ver #peekEnergy).
-    return (this.accounts[address] ??= { balance: 0n, nonce: 0, staked: 0n, energyUsed: 0, energyBlock: 0 });
+    // energyUsed/energyBlock + bandwidthUsed/bandwidthBlock: contabilidade dos recursos.
+    // delegatedOut/In: stake cujo RECURSO foi cedido a/recebido de outra conta (#6).
+    return (this.accounts[address] ??= {
+      balance: 0n, nonce: 0, staked: 0n, energyUsed: 0, energyBlock: 0,
+      bandwidthUsed: 0, bandwidthBlock: 0, delegatedOut: 0n, delegatedIn: 0n,
+    });
   }
 
-  // Energia máxima de uma conta: cota grátis + bônus por stake (por EAV7 travado).
+  // Stake efetivo para RECURSOS (energia/bandwidth): o próprio − o delegado a outros
+  // + o recebido em delegação (#6). Poder de VOTO e peso de validador seguem usando
+  // acc.staked (delegar recurso não tira voto). Sem delegação, = acc.staked.
+  resourceStake(acc) {
+    return BigInt(acc?.staked ?? 0n) - BigInt(acc?.delegatedOut ?? 0n) + BigInt(acc?.delegatedIn ?? 0n);
+  }
+
+  // Energia máxima: cota grátis + bônus por resourceStake (por EAV7 de recurso).
   maxEnergy(acc) {
-    return CHAIN.ENERGY.FREE + Number(BigInt(acc?.staked ?? 0n) / CHAIN.UNIT) * CHAIN.ENERGY.PER_STAKED_EAV7;
+    return CHAIN.ENERGY.FREE + Number(this.resourceStake(acc) / CHAIN.UNIT) * CHAIN.ENERGY.PER_STAKED_EAV7;
+  }
+
+  // Bandwidth máximo: cota grátis + bônus por resourceStake (bytes por EAV7 de recurso).
+  maxBandwidth(acc) {
+    return CHAIN.BANDWIDTH.FREE + Number(this.resourceStake(acc) / CHAIN.UNIT) * CHAIN.BANDWIDTH.PER_STAKED_EAV7;
+  }
+
+  // Falta de bandwidth para custear `bytes`, SEM mutar (regenera ao longo de REGEN_BLOCKS).
+  #peekBandwidth(acc, height, bytes) {
+    const maxB = this.maxBandwidth(acc);
+    const elapsed = Math.max(0, height - (acc.bandwidthBlock ?? 0));
+    const used = Math.max(0, (acc.bandwidthUsed ?? 0) - Math.floor((maxB * elapsed) / CHAIN.BANDWIDTH.REGEN_BLOCKS));
+    const available = Math.max(0, maxB - used);
+    return { shortfall: Math.max(0, bytes - available), usedAfter: used + Math.min(available, bytes) };
+  }
+
+  #commitBandwidth(acc, height, peek) {
+    acc.bandwidthBlock = height;
+    acc.bandwidthUsed = peek.usedAfter;
   }
 
   // Calcula a energia em FALTA para custear `cost`, SEM mutar (a energia usada
@@ -195,6 +228,7 @@ export class State {
     copy.candidateVotes = structuredClone(this.candidateVotes);
     copy.permissions = structuredClone(this.permissions);
     copy.pendingOps = structuredClone(this.pendingOps);
+    copy.delegations = structuredClone(this.delegations);
     return copy;
   }
 
@@ -355,10 +389,19 @@ export class State {
       cost += Math.ceil(Number(vm.gasUsed) / CHAIN.GAS_PER_ENERGY);
     }
     const energy = this.#peekEnergy(acc, height, cost);
-    const fee = BigInt(energy.shortfall) * CHAIN.ENERGY.BURN_PER_ENERGY;
+    // #6: bandwidth consumido pelo TAMANHO da tx (só a partir de RESOURCE_HEIGHT — abaixo
+    // do fork o cálculo de fee é idêntico ao antigo, replay do histórico intacto).
+    let bw = null;
+    let bwFee = 0n;
+    if (height >= CHAIN.RESOURCE_HEIGHT) {
+      const bytes = Buffer.byteLength(canonical(tx));
+      bw = this.#peekBandwidth(acc, height, bytes);
+      bwFee = BigInt(bw.shortfall) * CHAIN.BANDWIDTH.BURN_PER_BYTE;
+    }
+    const fee = BigInt(energy.shortfall) * CHAIN.ENERGY.BURN_PER_ENERGY + bwFee;
     if (fee > BigInt(tx.fee)) {
       if (vm) vm.world.revert(0); // atomicidade: desfaz o que a VM mutou antes de lançar (C-1/A-4)
-      throw new Error('energia insuficiente e limite de taxa (fee) excedido — faça stake ou aumente o limite');
+      throw new Error('recursos (energia/bandwidth) insuficientes e limite de taxa excedido — faça stake ou aumente o limite');
     }
 
     switch (tx.type) {
@@ -428,10 +471,15 @@ export class State {
         if (amount <= 0n) throw new Error('unstake deve ser positivo');
         if (acc.staked < amount) throw new Error('stake insuficiente');
         if (acc.balance + amount < fee) throw new Error('saldo insuficiente para a taxa');
-        // Votos precisam continuar lastreados por stake: não pode dessteikar abaixo do
-        // total já votado (senão votaria com stake, dessteikaria e votaria de novo) (#4).
-        if (acc.staked - amount < this.votedTotal(tx.from)) {
+        // Stake precisa continuar lastreando VOTOS (#4) e RECURSO DELEGADO (#6): não pode
+        // dessteikar abaixo do maior dos dois (senão votaria/delegaria e dessteikaria).
+        const stakeFloor = this.votedTotal(tx.from);
+        const dOut = BigInt(acc.delegatedOut ?? 0n);
+        if (acc.staked - amount < stakeFloor) {
           throw new Error('unstake deixaria votos sem lastro; refaça VOTE (reduza os votos) primeiro');
+        }
+        if (acc.staked - amount < dOut) {
+          throw new Error('unstake deixaria recurso delegado sem lastro; retire a delegação primeiro');
         }
         acc.staked -= amount;
         // não permitir esvaziar o conjunto de validadores (halt permanente da cadeia)
@@ -440,6 +488,48 @@ export class State {
           throw new Error('não é possível remover o último validador ativo da rede');
         }
         acc.balance += amount - fee;
+        break;
+      }
+
+      // #6: delega a CAPACIDADE DE RECURSO de parte do próprio stake a outra conta (sem
+      // perder poder de voto). O delegatário ganha resourceStake (energia/bandwidth); o
+      // delegador perde. dApps patrocinam taxas dos usuários com isto.
+      case 'DELEGATE_RESOURCE': {
+        if (height < CHAIN.RESOURCE_HEIGHT) throw new Error('delegação de recurso ainda não ativa');
+        const to = tx.data?.to;
+        if (!isValidAddress(to)) throw new Error('delegatário inválido');
+        if (to === tx.from) throw new Error('não pode delegar para si mesmo');
+        const amt = BigInt(tx.data?.amount ?? '0');
+        if (amt <= 0n) throw new Error('valor de delegação deve ser positivo');
+        const curOut = BigInt(acc.delegatedOut ?? 0n);
+        if (curOut + amt > BigInt(acc.staked)) throw new Error('delegação excede o stake disponível');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        acc.delegatedOut = curOut + amt;
+        const target = this.getAccount(to);
+        target.delegatedIn = BigInt(target.delegatedIn ?? 0n) + amt;
+        const d = (this.delegations[tx.from] ??= {});
+        d[to] = BigInt(d[to] ?? 0n) + amt;
+        break;
+      }
+
+      case 'UNDELEGATE_RESOURCE': {
+        if (height < CHAIN.RESOURCE_HEIGHT) throw new Error('delegação de recurso ainda não ativa');
+        const to = tx.data?.to;
+        if (!isValidAddress(to)) throw new Error('delegatário inválido');
+        const amt = BigInt(tx.data?.amount ?? '0');
+        if (amt <= 0n) throw new Error('valor deve ser positivo');
+        const d = this.delegations[tx.from] ?? {};
+        const cur = BigInt(d[to] ?? 0n);
+        if (cur < amt) throw new Error('delegação insuficiente para retirar');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        acc.delegatedOut = BigInt(acc.delegatedOut ?? 0n) - amt;
+        const target = this.getAccount(to);
+        target.delegatedIn = BigInt(target.delegatedIn ?? 0n) - amt;
+        const left = cur - amt;
+        if (left > 0n) d[to] = left;
+        else { delete d[to]; if (Object.keys(d).length === 0) delete this.delegations[tx.from]; }
         break;
       }
 
@@ -816,6 +906,7 @@ export class State {
     // Todas as validações passaram: commita a energia usada e QUEIMA a taxa
     // (não vai para o produtor — some do supply). Retorna 0 de taxa ao bloco.
     this.#commitEnergy(acc, height, energy);
+    if (bw) this.#commitBandwidth(acc, height, bw); // #6
     this.totalBurned += fee;
     acc.nonce += 1;
     return 0n;

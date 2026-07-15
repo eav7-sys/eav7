@@ -149,12 +149,27 @@ export const CHAIN = {
     COST: {
       TRANSFER: 1, STAKE: 1, UNSTAKE: 1, VOTE: 1, EAVM_TRANSFER: 1,
       PERMISSION_UPDATE: 2, MULTISIG_PROPOSE: 2, MULTISIG_APPROVE: 1,
+      DELEGATE_RESOURCE: 1, UNDELEGATE_RESOURCE: 1,
       TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
       AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
       BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
       EAVM_DEPLOY: 10, EAVM_CALL: 5, // custo BASE; a execução da VM soma gás/energia dinâmico
     },
   },
+  // ---- Recurso "Bandwidth" (net) + delegação (#6, estilo Tron freeze v2) ----
+  // Bandwidth é consumido pelo TAMANHO em bytes da transação (anti-spam por volume).
+  // Grátis + bônus por resourceStake; regenera; a falta QUEIMA e7 por byte. A partir de
+  // RESOURCE_HEIGHT. A capacidade de recurso (energia E bandwidth) usa resourceStake =
+  // staked − delegadoOut + delegadoIn: delegar cede RECURSO a outra conta sem perder
+  // poder de voto (dApps patrocinam taxas). No gênese novo = 0 (ativo já).
+  RESOURCE_HEIGHT: 1_600_000,
+  BANDWIDTH: {
+    FREE: 8_000, // bytes grátis por conta (cobre ~1 tx híbrida; regenera) — a assinatura ML-DSA é grande
+    PER_STAKED_EAV7: 256, // +256 bytes de banda por EAV7 travado
+    REGEN_BLOCKS: 86_400, // banda usada volta a 100% em ~24h
+    BURN_PER_BYTE: 5n, // e7 queimados por byte em falta (0,000005 EAV7/byte)
+  },
+
   MAX_FEE_LIMIT: 100n * UNIT, // teto do limite de taxa autorizável (anti-erro de digitação)
 
   // ---- EAVM (VM de contratos) ----
@@ -169,6 +184,8 @@ export const CHAIN = {
     STAKE: 10_000n,
     UNSTAKE: 10_000n,
     VOTE: 10_000n,
+    DELEGATE_RESOURCE: 10_000n,
+    UNDELEGATE_RESOURCE: 10_000n,
     PERMISSION_UPDATE: 20_000n,
     MULTISIG_PROPOSE: 20_000n,
     MULTISIG_APPROVE: 10_000n,
