@@ -69,7 +69,9 @@ export function buildGenesisBlock({ timestamp, balances, stakes, bridgeRelayers 
     ...core,
     signature: GENESIS_SIGNATURE,
     pqSignature: GENESIS_SIGNATURE,
-    hash: eavHash(payload + GENESIS_SIGNATURE + GENESIS_SIGNATURE),
+    // Mesma função de hash do verify: com CANONICAL_HASH_HEIGHT=0 (gênese-ativo) a altura
+    // 0 usa payload-only; com fork alto, mantém a fórmula antiga (mesmo hash de sempre).
+    hash: blockHash(payload, GENESIS_SIGNATURE, GENESIS_SIGNATURE, 0),
     transactions: [],
   };
 }
@@ -89,18 +91,21 @@ export function verifyBlockIntegrity(block) {
   const payload = canonical(blockCore(block));
   if (block.hash !== blockHash(payload, block.signature, block.pqSignature, block.height)) return 'hash do bloco não confere';
 
+  // A gênese valida por regras próprias (sem produtor, sem stateRoot) — checada ANTES
+  // da regra estrutural de stateRoot, senão com STATEROOT_HEIGHT=0 (gênese-ativo) a
+  // própria gênese seria rejeitada por não ter o campo.
+  if (block.height === 0) {
+    if (block.signature !== GENESIS_SIGNATURE || block.producer !== 'GENESIS') return 'bloco gênese malformado';
+    if (!block.genesis || typeof block.genesis !== 'object') return 'alocações da gênese ausentes';
+    return null;
+  }
+
   // Estrutural: acima do fork o stateRoot é obrigatório; abaixo, proibido (o valor
   // é conferido contra o estado no addBlock, aqui só a forma). Achado/feature #1.
   if (block.height >= CHAIN.STATEROOT_HEIGHT) {
     if (!isValidHash(block.stateRoot)) return 'stateRoot ausente ou malformado';
   } else if (block.stateRoot !== undefined) {
     return 'stateRoot presente antes do fork (STATEROOT_HEIGHT)';
-  }
-
-  if (block.height === 0) {
-    if (block.signature !== GENESIS_SIGNATURE || block.producer !== 'GENESIS') return 'bloco gênese malformado';
-    if (!block.genesis || typeof block.genesis !== 'object') return 'alocações da gênese ausentes';
-    return null;
   }
 
   let derived;

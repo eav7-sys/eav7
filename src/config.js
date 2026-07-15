@@ -240,6 +240,17 @@ export const CHAIN = {
   },
 };
 
+// Gênese-ativo: com EAV7_GENESIS_ACTIVE=1, TODAS as features nascem no bloco 0 (todas
+// as alturas de fork = 0). É o modo do relaunch e da testnet — um flag em vez de editar
+// cada altura à mão. Deixa a cadeia ATUAL intacta (só liga quando o env está setado).
+export const FORK_HEIGHTS = [
+  'STRICT_PRODUCER_HEIGHT', 'CANONICAL_HASH_HEIGHT', 'STATEROOT_HEIGHT', 'BRIDGE_QUORUM_HEIGHT',
+  'BRIDGE_PROOF_HEIGHT', 'VOTING_HEIGHT', 'PERMISSIONS_HEIGHT', 'RESOURCE_HEIGHT', 'GOVERNANCE_HEIGHT', 'SLASHING_HEIGHT',
+];
+if (process.env.EAV7_GENESIS_ACTIVE === '1') {
+  for (const k of FORK_HEIGHTS) CHAIN[k] = 0;
+}
+
 export const TX_TYPES = Object.freeze(Object.keys(CHAIN.FEES));
 
 // Normaliza um valor monetário (bigint | number inteiro | string decimal) para BigInt.
