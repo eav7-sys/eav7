@@ -51,6 +51,12 @@ export const CHAIN = {
 
   MAX_VALIDATORS: 27,
   MIN_VALIDATOR_STAKE: 1_000n * UNIT,
+  // Votação de validadores (#4, modelo dos 27 SRs da Tron): a partir de VOTING_HEIGHT,
+  // detentores alocam seu poder de voto (= stake) a candidatos via tx VOTE, e o conjunto
+  // ativo passa a ser o top-MAX_VALIDATORS por PESO = self-stake + votos recebidos. Sem
+  // votos, degrada para top-por-stake (retrocompatível). No gênese novo = 0 (ativo já).
+  VOTING_HEIGHT: 1_400_000,
+  MAX_VOTE_TARGETS: 30, // nº máx. de candidatos numa única tx VOTE (anti-DoS de data)
   MIN_ORACLE_STAKE: 500n * UNIT,
   FEE_EXEMPT_STAKE: 100n * UNIT, // stake >= 100 EAV7 => transações com taxa zero
 
@@ -135,7 +141,7 @@ export const CHAIN = {
     REGEN_BLOCKS: 86_400, // energia usada volta a 100% em ~24h (1 bloco/s)
     BURN_PER_ENERGY: 20_000n, // e7 queimados por unidade de energia em falta (0,02 EAV7)
     COST: {
-      TRANSFER: 1, STAKE: 1, UNSTAKE: 1, EAVM_TRANSFER: 1,
+      TRANSFER: 1, STAKE: 1, UNSTAKE: 1, VOTE: 1, EAVM_TRANSFER: 1,
       TOKEN_TRANSFER: 2, TOKEN_TRANSFER_FROM: 2, TOKEN_APPROVE: 1, TOKEN_CREATE: 10,
       AI_TASK: 5, AI_RESULT: 0, AI_REFUND: 0, ORACLE_REGISTER: 2,
       BRIDGE_OUT: 2, BRIDGE_IN: 0, BRIDGE_SETTLE: 0,
@@ -155,6 +161,7 @@ export const CHAIN = {
     TRANSFER: 10_000n, // 0.01 EAV7
     STAKE: 10_000n,
     UNSTAKE: 10_000n,
+    VOTE: 10_000n,
     TOKEN_CREATE: 10n * UNIT,
     TOKEN_TRANSFER: 20_000n,
     TOKEN_APPROVE: 10_000n,

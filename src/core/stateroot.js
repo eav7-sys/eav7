@@ -39,6 +39,8 @@ function stateLeaves(state) {
   for (const [id, tok] of Object.entries(state.tokens)) leaves.push(leaf('tok', id, tok));
   for (const [addr, c] of Object.entries(state.contracts)) leaves.push(leaf('ctr', addr, c));
   for (const [addr, o] of Object.entries(state.oracles)) leaves.push(leaf('orc', addr, o));
+  for (const [addr, v] of Object.entries(state.votes ?? {})) leaves.push(leaf('vote', addr, v));
+  for (const [addr, t] of Object.entries(state.candidateVotes ?? {})) leaves.push(leaf('cvotes', addr, t));
   for (const [id, t] of Object.entries(state.aiTasks)) leaves.push(leaf('ai', id, t));
   leaves.push(leaf('brg', 'state', state.bridge));
   leaves.push(leaf('brg', 'relayers', state.bridgeRelayers));

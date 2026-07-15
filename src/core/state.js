@@ -34,6 +34,11 @@ export class State {
     this.totalMinted = 0n;
     // Mundo de contratos EAVM (espaço de endereço 0x): addr -> { code, storage, balance }.
     this.contracts = {};
+    // Votação de validadores (#4): votes = eleitor -> { candidato: amountString } (a
+    // alocação atual de cada eleitor); candidateVotes = candidato -> total de votos
+    // RECEBIDOS de terceiros (BigInt). O peso de ranking é self-stake + candidateVotes.
+    this.votes = {};
+    this.candidateVotes = {};
   }
 
   getAccount(address) {
@@ -89,15 +94,28 @@ export class State {
   // endereço). Contas mapeadas de EAVM (0x…) são excluídas: elas não têm par de
   // chaves híbrido e nunca conseguiriam assinar/produzir um bloco — se entrassem
   // no conjunto, seus slots seriam pulados (grief de liveness).
+  // Total de votos que um eleitor alocou (soma da sua entrada em `votes`).
+  votedTotal(address) {
+    let sum = 0n;
+    for (const a of Object.values(this.votes[address] ?? {})) sum += BigInt(a);
+    return sum;
+  }
+
+  // Conjunto ativo: top-N candidatos elegíveis (self-stake >= MIN, não-EAVM) por PESO
+  // = self-stake + votos RECEBIDOS de terceiros (#4). Sem votos, `candidateVotes` é
+  // vazio e o peso é só o stake → mesma ordenação de antes (retrocompatível). Desempate
+  // por endereço, determinístico.
   validators() {
     return Object.entries(this.accounts)
       .filter(([, acc]) => acc.staked >= CHAIN.MIN_VALIDATOR_STAKE && !acc.eavmManaged)
-      .sort(([addrA, a], [addrB, b]) => {
-        if (a.staked !== b.staked) return a.staked > b.staked ? -1 : 1;
-        return addrA < addrB ? -1 : 1;
+      .map(([address, acc]) => ({ address, staked: acc.staked, votes: this.candidateVotes[address] ?? 0n }))
+      .sort((a, b) => {
+        const wa = a.staked + a.votes, wb = b.staked + b.votes;
+        if (wa !== wb) return wa > wb ? -1 : 1;
+        return a.address < b.address ? -1 : 1;
       })
       .slice(0, CHAIN.MAX_VALIDATORS)
-      .map(([address, acc]) => ({ address, staked: acc.staked }));
+      .map(({ address, staked, votes }) => ({ address, staked, votes }));
   }
 
   pendingAiTasks() {
@@ -125,6 +143,8 @@ export class State {
     copy.totalBurned = this.totalBurned;
     copy.totalMinted = this.totalMinted;
     copy.contracts = structuredClone(this.contracts);
+    copy.votes = structuredClone(this.votes);
+    copy.candidateVotes = structuredClone(this.candidateVotes);
     return copy;
   }
 
@@ -313,10 +333,49 @@ export class State {
         break;
       }
 
+      case 'VOTE': {
+        if (height < CHAIN.VOTING_HEIGHT) throw new Error('votação de validadores ainda não ativa');
+        const votes = tx.data?.votes;
+        if (!votes || typeof votes !== 'object' || Array.isArray(votes)) throw new Error('votos inválidos');
+        const entries = Object.entries(votes);
+        if (entries.length === 0 || entries.length > CHAIN.MAX_VOTE_TARGETS) throw new Error('nº de candidatos inválido');
+        let total = 0n;
+        const parsed = [];
+        for (const [cand, amtRaw] of entries) {
+          if (!isValidAddress(cand)) throw new Error('endereço de candidato inválido');
+          if (cand === tx.from) throw new Error('não pode votar em si mesmo (o self-stake já conta)');
+          const amt = BigInt(amtRaw);
+          if (amt <= 0n) throw new Error('voto deve ser positivo');
+          total += amt;
+          parsed.push([cand, amt]);
+        }
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        if (total > acc.staked) throw new Error('votos excedem o poder de voto (stake)');
+        acc.balance -= fee;
+        // remove a alocação ANTERIOR deste eleitor dos totais dos candidatos
+        for (const [c, a] of Object.entries(this.votes[tx.from] ?? {})) {
+          const left = (this.candidateVotes[c] ?? 0n) - BigInt(a);
+          if (left > 0n) this.candidateVotes[c] = left; else delete this.candidateVotes[c];
+        }
+        // aplica a nova alocação
+        const rec = {};
+        for (const [c, a] of parsed) {
+          this.candidateVotes[c] = (this.candidateVotes[c] ?? 0n) + a;
+          rec[c] = a.toString();
+        }
+        this.votes[tx.from] = rec;
+        break;
+      }
+
       case 'UNSTAKE': {
         if (amount <= 0n) throw new Error('unstake deve ser positivo');
         if (acc.staked < amount) throw new Error('stake insuficiente');
         if (acc.balance + amount < fee) throw new Error('saldo insuficiente para a taxa');
+        // Votos precisam continuar lastreados por stake: não pode dessteikar abaixo do
+        // total já votado (senão votaria com stake, dessteikaria e votaria de novo) (#4).
+        if (acc.staked - amount < this.votedTotal(tx.from)) {
+          throw new Error('unstake deixaria votos sem lastro; refaça VOTE (reduza os votos) primeiro');
+        }
         acc.staked -= amount;
         // não permitir esvaziar o conjunto de validadores (halt permanente da cadeia)
         if (this.validators().length === 0) {
