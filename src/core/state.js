@@ -228,6 +228,19 @@ export class State {
     return v;
   }
 
+  // Fix 3: valida um valor de comitê de ponte proposto por governança.
+  #validateCommitteeValue(v) {
+    if (!v || typeof v !== 'object') throw new Error('valor de comitê inválido');
+    const sourceChain = String(v.sourceChain ?? '');
+    if (!/^[A-Z0-9_-]{2,32}$/i.test(sourceChain)) throw new Error('sourceChain inválida');
+    const members = (v.members ?? []).map((m) => String(m).toLowerCase());
+    if (members.length === 0 || members.length > 200) throw new Error('nº de membros inválido');
+    if (new Set(members).size !== members.length) throw new Error('membros duplicados');
+    const quorum = Number(v.quorum);
+    if (!Number.isSafeInteger(quorum) || quorum <= 0 || quorum > members.length) throw new Error('quorum inválido');
+    return { sourceChain: sourceChain.toUpperCase(), members, quorum };
+  }
+
   // #9: conta votos de validadores ATUAIS numa proposta; ao atingir 2/3+1, aplica o
   // override e marca EXECUTED. Determinístico (validadores e votos são estado).
   #tallyProposal(p, height) {
@@ -252,7 +265,13 @@ export class State {
     // governança madura + poda de propostas
     for (const [id, p] of Object.entries(this.proposals)) {
       if (p.status === 'QUEUED' && height >= p.executeAt) {
-        this.params[p.param] = p.value; // aplica o override (efeito persiste em params)
+        if (p.param === 'BRIDGE_COMMITTEE') {
+          const v = p.value;
+          const prevEpoch = this.bridgeSourceCommittees[v.sourceChain]?.epoch ?? -1;
+          this.bridgeSourceCommittees[v.sourceChain] = { members: v.members, quorum: v.quorum, epoch: prevEpoch + 1 };
+        } else {
+          this.params[p.param] = p.value; // aplica o override (efeito persiste em params)
+        }
         delete this.proposals[id]; // poda: o registro não é mais necessário
       } else if (p.status === 'VOTING' && height > p.deadline) {
         delete this.proposals[id]; // expirou sem atingir quórum
@@ -588,10 +607,27 @@ export class State {
         const key = `${offender}:${blockA.height}`;
         if (this.slashed[key]) throw new Error('essa assinatura dupla já foi penalizada');
         const off = this.accounts[offender];
-        if (!off || off.staked <= 0n) throw new Error('infrator sem stake para penalizar');
-        const penalty = (off.staked * BigInt(CHAIN.SLASH_PERCENT)) / 100n;
+        // Fundos EM UNBONDING continuam penalizáveis — senão o infrator dava UNSTAKE
+        // logo após a ofensa e escapava com o grosso. A penalidade incide sobre stake
+        // ATIVO + unbonding pendente do infrator.
+        const unbondTotal = this.unbonding.reduce((s, u) => (u.address === offender ? s + BigInt(u.amount) : s), 0n);
+        const atRisk = (off?.staked ?? 0n) + unbondTotal;
+        if (atRisk <= 0n) throw new Error('infrator sem stake para penalizar');
+        const penalty = (atRisk * BigInt(CHAIN.SLASH_PERCENT)) / 100n;
         const bounty = (penalty * BigInt(CHAIN.SLASH_REPORTER_PERCENT)) / 100n;
-        off.staked -= penalty;
+        let remaining = penalty;
+        if (off) { const fromStake = off.staked < remaining ? off.staked : remaining; off.staked -= fromStake; remaining -= fromStake; }
+        if (remaining > 0n) {
+          const kept = [];
+          for (const u of this.unbonding) {
+            if (u.address !== offender || remaining === 0n) { kept.push(u); continue; }
+            const amt = BigInt(u.amount);
+            const take = amt < remaining ? amt : remaining;
+            remaining -= take;
+            if (amt - take > 0n) kept.push({ ...u, amount: (amt - take).toString() });
+          }
+          this.unbonding = kept;
+        }
         this.totalBurned += penalty - bounty; // a maior parte da penalidade some do supply
         this.credit(tx.from, bounty); // prêmio ao denunciante
         this.slashed[key] = true;
@@ -646,9 +682,16 @@ export class State {
         if (height < CHAIN.GOVERNANCE_HEIGHT) throw new Error('governança ainda não ativa');
         if (!this.validators().some((v) => v.address === tx.from)) throw new Error('só validador ativo pode propor');
         const param = tx.data?.param;
-        const spec = CHAIN.GOVERNABLE[param];
-        if (!spec) throw new Error(`parâmetro não governável: ${param}`);
-        const value = this.#coerceGovValue(spec, tx.data?.value);
+        // Comitê de ponte via governança (bootstrap + troca): sem isto, um gênese sem
+        // comitê não teria como criar o primeiro (o handoff (d) exige um comitê atual).
+        let value;
+        if (param === 'BRIDGE_COMMITTEE') {
+          value = this.#validateCommitteeValue(tx.data?.value);
+        } else {
+          const spec = CHAIN.GOVERNABLE[param];
+          if (!spec) throw new Error(`parâmetro não governável: ${param}`);
+          value = this.#coerceGovValue(spec, tx.data?.value);
+        }
         const vb = Number(tx.data?.votingBlocks ?? CHAIN.GOV_MAX_VOTING_BLOCKS);
         if (!Number.isSafeInteger(vb) || vb <= 0 || vb > CHAIN.GOV_MAX_VOTING_BLOCKS) throw new Error('votingBlocks inválido');
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
@@ -679,6 +722,10 @@ export class State {
       case 'PERMISSION_UPDATE': {
         if (height < CHAIN.PERMISSIONS_HEIGHT) throw new Error('permissões ainda não ativas');
         // (a guarda no topo já garante que tx.from ainda NÃO tem permissão)
+        // Conta COM stake não pode virar multisig: as ops multisig só fazem TRANSFER/
+        // PERMISSION_CHANGE (não STAKE/UNSTAKE/VOTE), então um validador ficaria com stake
+        // e voto PRESOS. Dessteike primeiro. (Multisig é para contas de custódia/tesouraria.)
+        if (acc.staked > 0n) throw new Error('conta com stake não pode virar multisig — faça UNSTAKE primeiro');
         const perm = this.#normalizePermission(tx.data?.permission);
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
         acc.balance -= fee;
