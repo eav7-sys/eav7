@@ -233,9 +233,27 @@ export class State {
     let yes = 0;
     for (const a of Object.keys(p.votes)) if (active.has(a)) yes++;
     if (yes >= quorum) {
-      this.params[p.param] = p.value;
-      p.status = 'EXECUTED';
-      p.executedAt = height;
+      // Timelock: não aplica na hora — ENFILEIRA. O tick aplica em `executeAt`, dando
+      // janela pros usuários reagirem antes de o parâmetro valer.
+      p.status = 'QUEUED';
+      p.executeAt = height + CHAIN.GOV_TIMELOCK_BLOCKS;
+    }
+  }
+
+  // Tick de governança/limpeza, rodado UMA vez por bloco (após as txs) — determinístico.
+  // Aplica propostas maduras, expira as que passaram do prazo sem quórum, e poda estado
+  // terminal (propostas aplicadas/expiradas e ops multisig vencidas) para não crescer sem fim.
+  governanceTick(height) {
+    for (const [id, p] of Object.entries(this.proposals)) {
+      if (p.status === 'QUEUED' && height >= p.executeAt) {
+        this.params[p.param] = p.value; // aplica o override (efeito persiste em params)
+        delete this.proposals[id]; // poda: o registro não é mais necessário
+      } else if (p.status === 'VOTING' && height > p.deadline) {
+        delete this.proposals[id]; // expirou sem atingir quórum
+      }
+    }
+    for (const [id, op] of Object.entries(this.pendingOps)) {
+      if (op.deadline !== undefined && height > op.deadline) delete this.pendingOps[id];
     }
   }
 
@@ -639,7 +657,7 @@ export class State {
         if (weight >= perm.threshold) {
           this.#executeMultisigOp(account, op); // quórum imediato (1 chave já basta)
         } else {
-          this.pendingOps[tx.id] = { account, op, approvals, weight, createdAt: tx.timestamp };
+          this.pendingOps[tx.id] = { account, op, approvals, weight, createdAt: tx.timestamp, deadline: height + CHAIN.MULTISIG_OP_TTL_BLOCKS };
         }
         break;
       }

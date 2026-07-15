@@ -1,4 +1,4 @@
-// Testes da governança on-chain (feature #9): propostas + votação de parâmetros.
+// Testes da governança on-chain (#9) + timelock e poda de estado ((a)).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CHAIN } from '../src/config.js';
@@ -15,22 +15,32 @@ function govState(n = 4) {
   for (const w of vals) { const a = walletAddress(w); s.getAccount(a).staked = 2n * CHAIN.MIN_VALIDATOR_STAKE; s.credit(a, 1n * U); }
   return { s, vals };
 }
+// Leva uma proposta ao quórum: proponente + (quorum-1) votos.
+function passProposal(s, vals, prop, atHeight) {
+  const N = s.validators().length;
+  const quorum = Math.floor((2 * N) / 3) + 1;
+  s.applyTransaction(prop, atHeight, now());
+  for (let i = 1; i < quorum; i++) {
+    s.applyTransaction(buildTransaction(vals[i], { type: 'GOV_VOTE', nonce: 1, data: { proposalId: prop.id } }), atHeight, now());
+  }
+}
 
-test('#9: proposta aprovada por 2/3+1 aplica o parâmetro on-chain', () => {
-  const saved = CHAIN.GOVERNANCE_HEIGHT; CHAIN.GOVERNANCE_HEIGHT = 1;
+test('#9: proposta aprovada ENFILEIRA e só aplica após o timelock', () => {
+  const sH = CHAIN.GOVERNANCE_HEIGHT, sT = CHAIN.GOV_TIMELOCK_BLOCKS;
+  CHAIN.GOVERNANCE_HEIGHT = 1; CHAIN.GOV_TIMELOCK_BLOCKS = 100;
   try {
-    const { s, vals } = govState(4); // quórum = floor(8/3)+1 = 3
-    assert.equal(s.validators().length, 4);
-    assert.equal(s.param('BLOCK_REWARD'), CHAIN.BLOCK_REWARD); // default antes
+    const { s, vals } = govState(4);
     const prop = buildTransaction(vals[0], { type: 'GOV_PROPOSE', nonce: 1, data: { param: 'BLOCK_REWARD', value: (5n * U).toString() } });
-    s.applyTransaction(prop, 5, now());
-    assert.equal(s.proposals[prop.id].status, 'VOTING'); // 1 voto < 3
-    s.applyTransaction(buildTransaction(vals[1], { type: 'GOV_VOTE', nonce: 1, data: { proposalId: prop.id } }), 5, now());
-    assert.equal(s.proposals[prop.id].status, 'VOTING'); // 2 < 3
-    s.applyTransaction(buildTransaction(vals[2], { type: 'GOV_VOTE', nonce: 1, data: { proposalId: prop.id } }), 5, now());
-    assert.equal(s.proposals[prop.id].status, 'EXECUTED'); // 3 >= 3
-    assert.equal(s.param('BLOCK_REWARD'), 5n * U); // override aplicado
-  } finally { CHAIN.GOVERNANCE_HEIGHT = saved; }
+    passProposal(s, vals, prop, 5);
+    assert.equal(s.proposals[prop.id].status, 'QUEUED');
+    assert.equal(s.proposals[prop.id].executeAt, 105);
+    assert.equal(s.param('BLOCK_REWARD'), CHAIN.BLOCK_REWARD, 'ainda não aplicado (timelock)');
+    s.governanceTick(50); // antes do executeAt → nada
+    assert.equal(s.param('BLOCK_REWARD'), CHAIN.BLOCK_REWARD);
+    s.governanceTick(105); // no executeAt → aplica e poda
+    assert.equal(s.param('BLOCK_REWARD'), 5n * U);
+    assert.equal(s.proposals[prop.id], undefined, 'proposta podada após aplicar');
+  } finally { CHAIN.GOVERNANCE_HEIGHT = sH; CHAIN.GOV_TIMELOCK_BLOCKS = sT; }
 });
 
 test('#9: só validador ativo propõe/vota', () => {
@@ -59,21 +69,34 @@ test('#9: validador não vota duas vezes na mesma proposta', () => {
   try {
     const { s, vals } = govState(4);
     const prop = buildTransaction(vals[0], { type: 'GOV_PROPOSE', nonce: 1, data: { param: 'MAX_VALIDATORS', value: '21' } });
-    s.applyTransaction(prop, 5, now()); // proponente já votou
+    s.applyTransaction(prop, 5, now());
     assert.throws(() => s.applyTransaction(buildTransaction(vals[0], { type: 'GOV_VOTE', nonce: 2, data: { proposalId: prop.id } }), 5, now()), /já votou/);
   } finally { CHAIN.GOVERNANCE_HEIGHT = saved; }
 });
 
-test('#9: governança pode alterar MAX_VALIDATORS e o conjunto ativo reflete', () => {
+test('#9+(a): governança altera MAX_VALIDATORS após o timelock; conjunto reflete', () => {
+  const sH = CHAIN.GOVERNANCE_HEIGHT, sT = CHAIN.GOV_TIMELOCK_BLOCKS;
+  CHAIN.GOVERNANCE_HEIGHT = 1; CHAIN.GOV_TIMELOCK_BLOCKS = 0;
+  try {
+    const { s, vals } = govState(4);
+    const prop = buildTransaction(vals[0], { type: 'GOV_PROPOSE', nonce: 1, data: { param: 'MAX_VALIDATORS', value: '2' } });
+    passProposal(s, vals, prop, 5);
+    s.governanceTick(5); // timelock 0 → aplica já
+    assert.equal(s.validators().length, 2, 'conjunto ativo limitado a 2');
+  } finally { CHAIN.GOVERNANCE_HEIGHT = sH; CHAIN.GOV_TIMELOCK_BLOCKS = sT; }
+});
+
+test('(a): proposta que expira sem quórum é podada pelo tick', () => {
   const saved = CHAIN.GOVERNANCE_HEIGHT; CHAIN.GOVERNANCE_HEIGHT = 1;
   try {
     const { s, vals } = govState(4);
-    // aprova MAX_VALIDATORS = 2 (quórum 3 dos 4 atuais)
-    const prop = buildTransaction(vals[0], { type: 'GOV_PROPOSE', nonce: 1, data: { param: 'MAX_VALIDATORS', value: '2' } });
+    // só o proponente vota; janela de votação curta
+    const prop = buildTransaction(vals[0], { type: 'GOV_PROPOSE', nonce: 1, data: { param: 'BLOCK_REWARD', value: (2n * U).toString(), votingBlocks: 10 } });
     s.applyTransaction(prop, 5, now());
-    s.applyTransaction(buildTransaction(vals[1], { type: 'GOV_VOTE', nonce: 1, data: { proposalId: prop.id } }), 5, now());
-    s.applyTransaction(buildTransaction(vals[2], { type: 'GOV_VOTE', nonce: 1, data: { proposalId: prop.id } }), 5, now());
-    assert.equal(s.proposals[prop.id].status, 'EXECUTED');
-    assert.equal(s.validators().length, 2, 'conjunto ativo agora limitado a 2');
+    assert.equal(s.proposals[prop.id].status, 'VOTING');
+    assert.equal(s.proposals[prop.id].deadline, 15);
+    s.governanceTick(16); // passou do prazo sem quórum → podada
+    assert.equal(s.proposals[prop.id], undefined);
+    assert.equal(s.param('BLOCK_REWARD'), CHAIN.BLOCK_REWARD, 'não aplicou');
   } finally { CHAIN.GOVERNANCE_HEIGHT = saved; }
 });

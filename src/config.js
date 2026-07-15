@@ -69,6 +69,11 @@ export const CHAIN = {
   // manual por SSH. No gênese novo = 0 (ativo já).
   GOVERNANCE_HEIGHT: 1_700_000,
   GOV_MAX_VOTING_BLOCKS: 200_000, // janela máx. de votação (~2,3 dias a 1 bloco/s)
+  // Timelock: proposta aprovada só APLICA após esta janela (dá tempo pros usuários
+  // reagirem a uma mudança de parâmetro antes dela valer). Aplicação e poda acontecem
+  // no tick de governança, por bloco.
+  GOV_TIMELOCK_BLOCKS: 40_000, // ~11h a 1 bloco/s
+  MULTISIG_OP_TTL_BLOCKS: 100_000, // operação multisig pendente expira (evita lixo eterno)
   // Parâmetros que a governança pode alterar, com tipo e limites (anti-valor-absurdo).
   GOVERNABLE: {
     BLOCK_REWARD: { kind: 'bigint', min: 0n, max: 1_000n * UNIT },
