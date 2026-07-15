@@ -196,6 +196,31 @@ export class State {
       if (acc.balance < amt) throw new Error('saldo insuficiente na conta multisig');
       acc.balance -= amt;
       this.credit(op.to, amt);
+    } else if (op.type === 'STAKE') {
+      const amt = BigInt(op.amount);
+      if (amt <= 0n) throw new Error('valor deve ser positivo');
+      const a = this.getAccount(account);
+      if (a.balance < amt) throw new Error('saldo insuficiente na conta multisig');
+      a.balance -= amt; a.staked += amt;
+    } else if (op.type === 'TOKEN_TRANSFER') {
+      const token = this.tokens[op.token];
+      if (!token) throw new Error('token inexistente');
+      this.#tokenGuard(token, account, op.to);
+      const amt = BigInt(op.amount);
+      if (amt <= 0n) throw new Error('valor deve ser positivo');
+      if (!isValidAddress(op.to)) throw new Error('destino inválido');
+      const bal = token.balances[account] ?? 0n;
+      if (bal < amt) throw new Error('saldo do token insuficiente');
+      token.balances[account] = bal - amt;
+      token.balances[op.to] = (token.balances[op.to] ?? 0n) + amt;
+    } else if (op.type === 'NFT_TRANSFER') {
+      const col = this.nfts[op.collection];
+      if (!col) throw new Error('coleção inexistente');
+      const nft = col.tokens[String(op.tokenId)];
+      if (!nft || nft.owner !== account) throw new Error('a conta multisig não é dona deste NFT');
+      if (!isValidAddress(op.to)) throw new Error('destino inválido');
+      nft.owner = op.to;
+      delete col.approvals[String(op.tokenId)];
     } else if (op.type === 'PERMISSION_CHANGE') {
       if (op.permission === null) delete this.permissions[account]; // remove multisig (volta a single-sig)
       else this.permissions[account] = this.#normalizePermission(op.permission);
