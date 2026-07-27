@@ -1,0 +1,125 @@
+{
+  "cases": [
+    {
+      "encoded": "00",
+      "input": null
+    },
+    {
+      "encoded": "02",
+      "input": true
+    },
+    {
+      "encoded": "01",
+      "input": false
+    },
+    {
+      "encoded": "030000000130",
+      "input": 0,
+      "note": "0 e -0 codificam igual"
+    },
+    {
+      "encoded": "03000000023432",
+      "input": 42
+    },
+    {
+      "encoded": "03000000022d31",
+      "input": -1
+    },
+    {
+      "encoded": "030000001039303037313939323534373430393933",
+      "input": "9007199254740993",
+      "kind": "bigint",
+      "note": "acima de 2^53: JSON.stringify truncaria para ...992"
+    },
+    {
+      "encoded": "03000000293130303030303030303030303030303030303030303030303030303030303030303030303030303037",
+      "input": "10000000000000000000000000000000000000007",
+      "kind": "bigint"
+    },
+    {
+      "encoded": "0400000000",
+      "input": ""
+    },
+    {
+      "encoded": "040000000465617637",
+      "input": "eav7"
+    },
+    {
+      "encoded": "0400000005636166c3a9",
+      "input": "café",
+      "note": "UTF-8 cru, sem escape"
+    },
+    {
+      "encoded": "0500000000",
+      "input": []
+    },
+    {
+      "encoded": "050000000104000000026162",
+      "input": [
+        "ab"
+      ],
+      "note": "não pode colidir com [\"a\",\"b\"]"
+    },
+    {
+      "encoded": "0500000002040000000161040000000162",
+      "input": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "encoded": "0600000000",
+      "input": {}
+    },
+    {
+      "encoded": "0600000002040000000161030000000131040000000162030000000132",
+      "input": {
+        "a": 1,
+        "b": 2
+      }
+    },
+    {
+      "encoded": "0600000002040000000161030000000131040000000162030000000132",
+      "input": {
+        "a": 1,
+        "b": 2
+      },
+      "note": "ordem de inserção é irrelevante"
+    },
+    {
+      "encoded": "0600000002040000000141030000000132040000000161030000000131",
+      "input": {
+        "A": 2,
+        "a": 1
+      },
+      "note": "ordenação por BYTE: 'A' antes de 'a'"
+    },
+    {
+      "encoded": "0600000001040000000161030000000131",
+      "input": {
+        "a": 1
+      },
+      "note": "undefined é omitido"
+    },
+    {
+      "encoded": "060000000104000000056c6973746105000000030300000001310400000004646f697300",
+      "input": {
+        "lista": [
+          1,
+          "dois",
+          null
+        ]
+      }
+    }
+  ],
+  "description": "Codificação canônica do estado (src/core/canonical.js). Substitui JSON.stringify, que não é especificação: no V8, inteiro acima de 2^53 perde precisão, 1e21 vira \"1e+21\" e -0 vira 0. Formato: tag + u32BE(comprimento) + carga.",
+  "format": {
+    "0x00": "nulo",
+    "0x01": "falso",
+    "0x02": "verdadeiro",
+    "0x03": "inteiro: u32BE(n) + n bytes ASCII decimal",
+    "0x04": "texto: u32BE(n) + n bytes UTF-8",
+    "0x05": "lista: u32BE(n) + n valores",
+    "0x06": "mapa: u32BE(n) + n pares (texto, valor), ordenados por bytes da chave"
+  }
+}

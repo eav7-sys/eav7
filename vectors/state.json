@@ -1,0 +1,1031 @@
+{
+  "cases": [
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "de": null,
+            "para": {
+              "balance": "5000000",
+              "nonce": 0,
+              "staked": "0"
+            }
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "1000000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "995000000",
+              "nonce": 1,
+              "staked": "0"
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1901000,
+      "name": "TRANSFER: caminho feliz",
+      "rootAfter": "5ec8e2377c4584355326993827c3899c717c98eb88021d6df2f76f7740e84894",
+      "rootBefore": "6dffbc3092443b186a1dd04f786f5fac2c8c8ea360f30ec80a58f79d529d5c16",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "1000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "5000000",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "e740f4e75ac491d528801b8e33dcc1e9643ed0e874875872ce6aeffa33216d01",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": "E74FE1240972091DE7BE392072067581DC",
+        "type": "TRANSFER"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "error": "saldo insuficiente",
+      "height": 1901000,
+      "name": "TRANSFER: saldo insuficiente é rejeitado sem sujar o estado",
+      "note": "rootAfter tem de ser IGUAL a rootBefore — rejeição não pode mutar nada",
+      "rejected": true,
+      "rootAfter": "14190de777b9a95a0549e2ffadfc4a0cf7d6279c11afb077b702ebfed9f5f9a9",
+      "rootBefore": "14190de777b9a95a0549e2ffadfc4a0cf7d6279c11afb077b702ebfed9f5f9a9",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "100"
+          }
+        }
+      },
+      "tx": {
+        "amount": "5000000",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "e740f4e75ac491d528801b8e33dcc1e9643ed0e874875872ce6aeffa33216d01",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": "E74FE1240972091DE7BE392072067581DC",
+        "type": "TRANSFER"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "error": "nonce inválido (esperado 6, recebido 3)",
+      "height": 1901000,
+      "name": "TRANSFER: nonce fora de ordem é rejeitado",
+      "rejected": true,
+      "rootAfter": "c355317563722b149b34e588181e7a9b27ea0a739792a831839ee453f5d9ce09",
+      "rootBefore": "c355317563722b149b34e588181e7a9b27ea0a739792a831839ee453f5d9ce09",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "1000000000",
+            "nonce": 5
+          }
+        }
+      },
+      "tx": {
+        "amount": "1",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "2988c76e5fec6dd7a0c182ee27a502436f29d76e8e9b500fcda40ed0a305a02f",
+        "nonce": 3,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": "E74FE1240972091DE7BE392072067581DC",
+        "type": "TRANSFER"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "error": "valor da transferência deve ser positivo",
+      "height": 1901000,
+      "name": "TRANSFER: valor zero é REJEITADO",
+      "note": "eu presumi que zero passaria ao escrever este vetor; o protocolo exige valor positivo. Transferência de zero só serviria para poluir o histórico ao custo da taxa.",
+      "rejected": true,
+      "rootAfter": "a3f0d9326e53f127dcbde91518d0f1467b2e90932be62bb967c5615aaec4d89f",
+      "rootBefore": "a3f0d9326e53f127dcbde91518d0f1467b2e90932be62bb967c5615aaec4d89f",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "10000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "0",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "e740f4e75ac491d528801b8e33dcc1e9643ed0e874875872ce6aeffa33216d01",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": "E74FE1240972091DE7BE392072067581DC",
+        "type": "TRANSFER"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "10000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "10000000",
+              "nonce": 1,
+              "staked": "0"
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1901000,
+      "name": "TRANSFER: para si mesmo",
+      "rootAfter": "819fd0c2909865b9c883129d5de6520cae95707e3d1e3d3b52dc2abe58eccdaa",
+      "rootBefore": "a3f0d9326e53f127dcbde91518d0f1467b2e90932be62bb967c5615aaec4d89f",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "10000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "1000000",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "e740f4e75ac491d528801b8e33dcc1e9643ed0e874875872ce6aeffa33216d01",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": "E7D36986E47AC3768974578F7CCD3123AE",
+        "type": "TRANSFER"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "10000000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "5000000000",
+              "nonce": 1,
+              "staked": "5000000000"
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1901000,
+      "name": "STAKE: move saldo para stake",
+      "rootAfter": "0614fabf60ea4fc3dda481354049ffcc32281ebc1522b339b3db151c861f3468",
+      "rootBefore": "5f9e011a6a26863c6a70217dd51d8d35ef57262bcbbdbbfae4ab5ea36117ba5e",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "10000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "5000000000",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "511bddad78fb613d768835e86f5130e3d37f681e99eb4060e197e9915c7fdf01",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "STAKE"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "100000000",
+              "nonce": 0,
+              "staked": "5000000000"
+            },
+            "para": {
+              "balance": "100000000",
+              "nonce": 1,
+              "staked": "4000000000"
+            }
+          }
+        },
+        "unbonding": {
+          "0": {
+            "de": null,
+            "para": {
+              "address": "E7D36986E47AC3768974578F7CCD3123AE",
+              "amount": "1000000000",
+              "matureAt": 2505800
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1901000,
+      "name": "UNSTAKE: entra na fila de unbonding, não volta na hora",
+      "note": "o saldo NÃO volta imediatamente — é o que impede sair-e-dumpar e ataque long-range",
+      "rootAfter": "c96fed9ddb301bfd57d177b75d7135d049b8664612955a676985c2c4306c3ec1",
+      "rootBefore": "af02ecde5b422769ed466f118f77527d19af0b8f9e7aa8bccd6522d54c188e19",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "100000000",
+            "staked": "5000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "1000000000",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "c4827af1f470e8a93d775eecd45370d3540a36fbc444939b7c2539a6829b5427",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "UNSTAKE"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "error": "stake insuficiente",
+      "height": 1901000,
+      "name": "UNSTAKE: acima do stake é rejeitado",
+      "rejected": true,
+      "rootAfter": "23d7e861861360a292e09f119bbc51d5b9f9d1fcfca2a61a3f7e0acbd32ed334",
+      "rootBefore": "23d7e861861360a292e09f119bbc51d5b9f9d1fcfca2a61a3f7e0acbd32ed334",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "100000000",
+            "staked": "10000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "1000000000",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "c4827af1f470e8a93d775eecd45370d3540a36fbc444939b7c2539a6829b5427",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "UNSTAKE"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "100000000",
+              "nonce": 0,
+              "staked": "5000000000"
+            },
+            "para": {
+              "balance": "100000000",
+              "nonce": 1,
+              "staked": "5000000000"
+            }
+          }
+        },
+        "candidateVotes": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "de": null,
+            "para": "3000000000"
+          }
+        },
+        "votes": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": null,
+            "para": {
+              "E74FE1240972091DE7BE392072067581DC": "3000000000"
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1901000,
+      "name": "VOTE: aloca poder de voto e credita o candidato",
+      "rootAfter": "9c92946dfefbdc9fddf5c84262539c234a6f768e14334a1cdab43a56f2e39565",
+      "rootBefore": "8f62a9ad244bfee6fb0a8cc319a07aeb8ee9d985092681811ec8cd9c8af4cf6b",
+      "setup": {
+        "accounts": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "balance": "100000000",
+            "staked": "2000000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "100000000",
+            "staked": "5000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "0",
+        "data": {
+          "votes": {
+            "E74FE1240972091DE7BE392072067581DC": "3000000000"
+          }
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "9ee0e2e99cae617198fa77ba9ce669493f464123aadb2027c06936b56635f40b",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "VOTE"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "error": "votos excedem o poder de voto (stake)",
+      "height": 1901000,
+      "name": "VOTE: acima do stake é rejeitado — voto precisa de lastro",
+      "rejected": true,
+      "rootAfter": "f765a5ab7e3cfcd0d27c2f7debc9a97ef5c5745a8aa6d7f36715d35841364940",
+      "rootBefore": "f765a5ab7e3cfcd0d27c2f7debc9a97ef5c5745a8aa6d7f36715d35841364940",
+      "setup": {
+        "accounts": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "balance": "100000000",
+            "staked": "2000000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "100000000",
+            "staked": "100000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "0",
+        "data": {
+          "votes": {
+            "E74FE1240972091DE7BE392072067581DC": "9000000000"
+          }
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "9ee0e2e99cae617198fa77ba9ce669493f464123aadb2027c06936b56635f40b",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "VOTE"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "100000000",
+              "nonce": 0,
+              "staked": "5000000000"
+            },
+            "para": {
+              "balance": "100000000",
+              "nonce": 1,
+              "staked": "5000000000"
+            }
+          }
+        },
+        "pendingCommission": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": null,
+            "para": {
+              "activeAt": 1922600,
+              "pct": 15
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1901000,
+      "name": "SET_COMMISSION: entra em FILA, não vale na hora",
+      "note": "sem o atraso, o validador sobe para 100% no próprio slot, captura a recompensa dos eleitores e baixa de volta — ataque verificado",
+      "rootAfter": "202c8d259673d68c47aa418db765861b48ec1564e346a28f80ec9ebc237f2525",
+      "rootBefore": "af02ecde5b422769ed466f118f77527d19af0b8f9e7aa8bccd6522d54c188e19",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "100000000",
+            "staked": "5000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "0",
+        "data": {
+          "percent": 15
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "d72abcab960dae4a4a76c0ee493d170716a02ff805b59f0b8e2abbc2ec9e4b39",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "SET_COMMISSION"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "error": "comissão deve ser 0..100",
+      "height": 1901000,
+      "name": "SET_COMMISSION: acima de 100% é rejeitado",
+      "rejected": true,
+      "rootAfter": "af02ecde5b422769ed466f118f77527d19af0b8f9e7aa8bccd6522d54c188e19",
+      "rootBefore": "af02ecde5b422769ed466f118f77527d19af0b8f9e7aa8bccd6522d54c188e19",
+      "setup": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "100000000",
+            "staked": "5000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "0",
+        "data": {
+          "percent": 150
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "d72abcab960dae4a4a76c0ee493d170716a02ff805b59f0b8e2abbc2ec9e4b39",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "SET_COMMISSION"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "1000000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "1000000000",
+              "nonce": 1,
+              "staked": "0"
+            }
+          }
+        },
+        "tokens": {
+          "1b2f6ab16173f5d3304ce6a9f8f7263325844454e79b626e6f7def61e08fa8d0": {
+            "de": {
+              "balances": {
+                "E7D36986E47AC3768974578F7CCD3123AE": "1000000000"
+              },
+              "paused": false,
+              "totalSupply": "1000000000"
+            },
+            "para": {
+              "balances": {
+                "E74FE1240972091DE7BE392072067581DC": "250000",
+                "E7D36986E47AC3768974578F7CCD3123AE": "999750000"
+              },
+              "paused": false,
+              "totalSupply": "1000000000"
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1901000,
+      "name": "TOKEN_TRANSFER: move saldo do token, não o nativo",
+      "rootAfter": "e390d1f3fe415dfcb8927cbd58049b99b17e5a40b7e9250ad008c3eff1f5d8fc",
+      "rootBefore": "08bc96546c258cca439d10fb2dd74f106740a223849f30bd884d316bb6ae7e7f",
+      "setup": {
+        "accounts": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "balance": "1000000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "1000000000"
+          }
+        },
+        "tokens": {
+          "1b2f6ab16173f5d3304ce6a9f8f7263325844454e79b626e6f7def61e08fa8d0": {
+            "balances": {
+              "E7D36986E47AC3768974578F7CCD3123AE": "1000000000"
+            },
+            "creator": "E7D36986E47AC3768974578F7CCD3123AE",
+            "decimals": 6,
+            "name": "Vetor",
+            "symbol": "VET",
+            "totalSupply": "1000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "250000",
+        "data": {
+          "token": "1b2f6ab16173f5d3304ce6a9f8f7263325844454e79b626e6f7def61e08fa8d0"
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "a472641bfeee53f555099693c175cec9db0f76d3436f8e6b8c22054b8716ed50",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": "E74FE1240972091DE7BE392072067581DC",
+        "type": "TOKEN_TRANSFER"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "error": "saldo do token insuficiente ou congelado",
+      "height": 1901000,
+      "name": "TOKEN_TRANSFER: acima do saldo do token é rejeitado",
+      "rejected": true,
+      "rootAfter": "08bc96546c258cca439d10fb2dd74f106740a223849f30bd884d316bb6ae7e7f",
+      "rootBefore": "08bc96546c258cca439d10fb2dd74f106740a223849f30bd884d316bb6ae7e7f",
+      "setup": {
+        "accounts": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "balance": "1000000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "1000000000"
+          }
+        },
+        "tokens": {
+          "1b2f6ab16173f5d3304ce6a9f8f7263325844454e79b626e6f7def61e08fa8d0": {
+            "balances": {
+              "E7D36986E47AC3768974578F7CCD3123AE": "1000000000"
+            },
+            "creator": "E7D36986E47AC3768974578F7CCD3123AE",
+            "decimals": 6,
+            "name": "Vetor",
+            "symbol": "VET",
+            "totalSupply": "1000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "1",
+        "data": {
+          "token": "1b2f6ab16173f5d3304ce6a9f8f7263325844454e79b626e6f7def61e08fa8d0"
+        },
+        "fee": "10000",
+        "from": "E74FE1240972091DE7BE392072067581DC",
+        "id": "a472641bfeee53f555099693c175cec9db0f76d3436f8e6b8c22054b8716ed50",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": "E7D36986E47AC3768974578F7CCD3123AE",
+        "type": "TOKEN_TRANSFER"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "error": "token EAV20 inexistente",
+      "height": 1901000,
+      "name": "TOKEN_TRANSFER: token inexistente é rejeitado",
+      "rejected": true,
+      "rootAfter": "08bc96546c258cca439d10fb2dd74f106740a223849f30bd884d316bb6ae7e7f",
+      "rootBefore": "08bc96546c258cca439d10fb2dd74f106740a223849f30bd884d316bb6ae7e7f",
+      "setup": {
+        "accounts": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "balance": "1000000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "1000000000"
+          }
+        },
+        "tokens": {
+          "1b2f6ab16173f5d3304ce6a9f8f7263325844454e79b626e6f7def61e08fa8d0": {
+            "balances": {
+              "E7D36986E47AC3768974578F7CCD3123AE": "1000000000"
+            },
+            "creator": "E7D36986E47AC3768974578F7CCD3123AE",
+            "decimals": 6,
+            "name": "Vetor",
+            "symbol": "VET",
+            "totalSupply": "1000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "1",
+        "data": {
+          "token": "f4a6fb9d6e58e25e30b9aa78b4611f55103d609e11425c79b3e65140d7a849c5"
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "a472641bfeee53f555099693c175cec9db0f76d3436f8e6b8c22054b8716ed50",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": "E74FE1240972091DE7BE392072067581DC",
+        "type": "TOKEN_TRANSFER"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "error": "votação de validadores ainda não ativa",
+      "height": 1399999,
+      "name": "FORK: VOTE abaixo de VOTING_HEIGHT é rejeitado",
+      "note": "a MESMA transação é válida acima da altura — é isto que um cliente precisa acertar para não cindir a rede",
+      "rejected": true,
+      "rootAfter": "8f62a9ad244bfee6fb0a8cc319a07aeb8ee9d985092681811ec8cd9c8af4cf6b",
+      "rootBefore": "8f62a9ad244bfee6fb0a8cc319a07aeb8ee9d985092681811ec8cd9c8af4cf6b",
+      "setup": {
+        "accounts": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "balance": "100000000",
+            "staked": "2000000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "100000000",
+            "staked": "5000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "0",
+        "data": {
+          "votes": {
+            "E74FE1240972091DE7BE392072067581DC": "1000000000"
+          }
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "9ee0e2e99cae617198fa77ba9ce669493f464123aadb2027c06936b56635f40b",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "VOTE"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "100000000",
+              "nonce": 0,
+              "staked": "5000000000"
+            },
+            "para": {
+              "balance": "100000000",
+              "nonce": 1,
+              "staked": "5000000000"
+            }
+          }
+        },
+        "candidateVotes": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "de": null,
+            "para": "1000000000"
+          }
+        },
+        "votes": {
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": null,
+            "para": {
+              "E74FE1240972091DE7BE392072067581DC": "1000000000"
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1400000,
+      "name": "FORK: a mesma VOTE é aceita acima de VOTING_HEIGHT",
+      "rootAfter": "3f0df525dc5e628bfd0719bad57a5a230aaccd16005edf6da8c8aa196ff9f514",
+      "rootBefore": "8f62a9ad244bfee6fb0a8cc319a07aeb8ee9d985092681811ec8cd9c8af4cf6b",
+      "setup": {
+        "accounts": {
+          "E74FE1240972091DE7BE392072067581DC": {
+            "balance": "100000000",
+            "staked": "2000000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "100000000",
+            "staked": "5000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "0",
+        "data": {
+          "votes": {
+            "E74FE1240972091DE7BE392072067581DC": "1000000000"
+          }
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "id": "9ee0e2e99cae617198fa77ba9ce669493f464123aadb2027c06936b56635f40b",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "VOTE"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E72C3EA79EBF7AE5B3936344D4122D87A9": {
+            "de": {
+              "balance": "10000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "10000001",
+              "nonce": 1,
+              "staked": "0"
+            }
+          },
+          "E74FE1240972091DE7BE392072067581DC": {
+            "de": {
+              "balance": "10000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "10000001",
+              "nonce": 0,
+              "staked": "0"
+            }
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "10000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "10000001",
+              "nonce": 0,
+              "staked": "0"
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1780000,
+      "name": "AI_REVEAL quórum: apuração com chegada A,B",
+      "note": "recompensa 3 dividida por 3 vencedores: resto 0 — winners em ordem canônica",
+      "rootAfter": "86fc3c362be8dfb07f5098d532df166d18038a5f8d6a71edf5230ce5cff6fc5b",
+      "rootBefore": "a45e1c5eb3f94f88f7c624aa56d80f361dd4ddc6e0569bcde91d0a8e39acd514",
+      "setup": {
+        "accounts": {
+          "E72C3EA79EBF7AE5B3936344D4122D87A9": {
+            "balance": "10000000"
+          },
+          "E74FE1240972091DE7BE392072067581DC": {
+            "balance": "10000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "10000000"
+          }
+        },
+        "aiTasks": {
+          "7bf5f3e1d115c2dd65c160ce7ca8b89ff16a62d20612b892faf90ec599d63957": {
+            "commitDeadline": 1699999999999,
+            "commits": {
+              "E72C3EA79EBF7AE5B3936344D4122D87A9": "076712d80d63945c12b752d45e2c0dece25b6454ae005ccb6ba560291bfb0ec5",
+              "E74FE1240972091DE7BE392072067581DC": "076712d80d63945c12b752d45e2c0dece25b6454ae005ccb6ba560291bfb0ec5",
+              "E7D36986E47AC3768974578F7CCD3123AE": "076712d80d63945c12b752d45e2c0dece25b6454ae005ccb6ba560291bfb0ec5"
+            },
+            "quorum": 2,
+            "requester": "E7D36986E47AC3768974578F7CCD3123AE",
+            "revealDeadline": 1700001000000,
+            "reveals": [
+              [
+                "E7D36986E47AC3768974578F7CCD3123AE",
+                {
+                  "output": "resposta",
+                  "resultHash": "f06252cc116cbc843b00a1fa39d28d5da221631460cdba1400842e0034b182f1"
+                }
+              ],
+              [
+                "E74FE1240972091DE7BE392072067581DC",
+                {
+                  "output": "resposta",
+                  "resultHash": "f06252cc116cbc843b00a1fa39d28d5da221631460cdba1400842e0034b182f1"
+                }
+              ]
+            ],
+            "reward": "3"
+          }
+        },
+        "oracles": {
+          "E72C3EA79EBF7AE5B3936344D4122D87A9": {
+            "stake": "1000000000"
+          },
+          "E74FE1240972091DE7BE392072067581DC": {
+            "stake": "1000000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "stake": "1000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "0",
+        "data": {
+          "output": "resposta",
+          "salt": "sal",
+          "taskId": "7bf5f3e1d115c2dd65c160ce7ca8b89ff16a62d20612b892faf90ec599d63957"
+        },
+        "fee": "10000",
+        "from": "E72C3EA79EBF7AE5B3936344D4122D87A9",
+        "id": "84791c8f829a950845dbbf95f6f02e761e321087877bb56bf806044394872074",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "AI_REVEAL"
+      }
+    },
+    {
+      "blockTs": 1700000000000,
+      "effects": {
+        "accounts": {
+          "E72C3EA79EBF7AE5B3936344D4122D87A9": {
+            "de": {
+              "balance": "10000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "10000001",
+              "nonce": 1,
+              "staked": "0"
+            }
+          },
+          "E74FE1240972091DE7BE392072067581DC": {
+            "de": {
+              "balance": "10000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "10000001",
+              "nonce": 0,
+              "staked": "0"
+            }
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "de": {
+              "balance": "10000000",
+              "nonce": 0,
+              "staked": "0"
+            },
+            "para": {
+              "balance": "10000001",
+              "nonce": 0,
+              "staked": "0"
+            }
+          }
+        }
+      },
+      "feeCharged": "0",
+      "height": 1780000,
+      "name": "AI_REVEAL quórum: MESMO cenário com chegada B,A",
+      "note": "raiz final IDÊNTICA à do caso anterior: a ordem de chegada não entra no consenso",
+      "rootAfter": "86fc3c362be8dfb07f5098d532df166d18038a5f8d6a71edf5230ce5cff6fc5b",
+      "rootBefore": "a45e1c5eb3f94f88f7c624aa56d80f361dd4ddc6e0569bcde91d0a8e39acd514",
+      "setup": {
+        "accounts": {
+          "E72C3EA79EBF7AE5B3936344D4122D87A9": {
+            "balance": "10000000"
+          },
+          "E74FE1240972091DE7BE392072067581DC": {
+            "balance": "10000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "balance": "10000000"
+          }
+        },
+        "aiTasks": {
+          "7bf5f3e1d115c2dd65c160ce7ca8b89ff16a62d20612b892faf90ec599d63957": {
+            "commitDeadline": 1699999999999,
+            "commits": {
+              "E72C3EA79EBF7AE5B3936344D4122D87A9": "076712d80d63945c12b752d45e2c0dece25b6454ae005ccb6ba560291bfb0ec5",
+              "E74FE1240972091DE7BE392072067581DC": "076712d80d63945c12b752d45e2c0dece25b6454ae005ccb6ba560291bfb0ec5",
+              "E7D36986E47AC3768974578F7CCD3123AE": "076712d80d63945c12b752d45e2c0dece25b6454ae005ccb6ba560291bfb0ec5"
+            },
+            "quorum": 2,
+            "requester": "E7D36986E47AC3768974578F7CCD3123AE",
+            "revealDeadline": 1700001000000,
+            "reveals": [
+              [
+                "E74FE1240972091DE7BE392072067581DC",
+                {
+                  "output": "resposta",
+                  "resultHash": "f06252cc116cbc843b00a1fa39d28d5da221631460cdba1400842e0034b182f1"
+                }
+              ],
+              [
+                "E7D36986E47AC3768974578F7CCD3123AE",
+                {
+                  "output": "resposta",
+                  "resultHash": "f06252cc116cbc843b00a1fa39d28d5da221631460cdba1400842e0034b182f1"
+                }
+              ]
+            ],
+            "reward": "3"
+          }
+        },
+        "oracles": {
+          "E72C3EA79EBF7AE5B3936344D4122D87A9": {
+            "stake": "1000000000"
+          },
+          "E74FE1240972091DE7BE392072067581DC": {
+            "stake": "1000000000"
+          },
+          "E7D36986E47AC3768974578F7CCD3123AE": {
+            "stake": "1000000000"
+          }
+        }
+      },
+      "tx": {
+        "amount": "0",
+        "data": {
+          "output": "resposta",
+          "salt": "sal",
+          "taskId": "7bf5f3e1d115c2dd65c160ce7ca8b89ff16a62d20612b892faf90ec599d63957"
+        },
+        "fee": "10000",
+        "from": "E72C3EA79EBF7AE5B3936344D4122D87A9",
+        "id": "84791c8f829a950845dbbf95f6f02e761e321087877bb56bf806044394872074",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": null,
+        "type": "AI_REVEAL"
+      }
+    }
+  ],
+  "description": "Transições da máquina de estado. Cada caso: estado inicial declarativo + transação + altura -> raiz resultante (ou erro). `rootAfter` prova equivalência de TODO o estado; `effects` existe para a falha dizer o que divergiu, não só que divergiu.",
+  "heightAboveAllForks": 1901000,
+  "invariants": [
+    "transação rejeitada não altera o estado: rootAfter == rootBefore",
+    "a altura decide quais forks estão ativos; a mesma transação pode ser válida ou não",
+    "a taxa é cobrada do remetente e some do supply (queima)"
+  ]
+}

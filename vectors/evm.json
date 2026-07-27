@@ -1,0 +1,133 @@
+{
+  "cases": [
+    {
+      "blockNumber": 1900000,
+      "code": "0x600160020160005260206000f3",
+      "gasUsed": "24",
+      "kind": "runEavm",
+      "name": "ADD",
+      "returnData": "0x0000000000000000000000000000000000000000000000000000000000000003",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x600360040260005260206000f3",
+      "gasUsed": "26",
+      "kind": "runEavm",
+      "name": "MUL",
+      "returnData": "0x000000000000000000000000000000000000000000000000000000000000000c",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x600260010360005260206000f3",
+      "gasUsed": "24",
+      "kind": "runEavm",
+      "name": "SUB com underflow (wrap em 2^256)",
+      "returnData": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x600060010460005260206000f3",
+      "gasUsed": "26",
+      "kind": "runEavm",
+      "name": "DIV por zero é 0, não erro",
+      "returnData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x600860020560005260206000f3",
+      "gasUsed": "26",
+      "kind": "runEavm",
+      "name": "SDIV",
+      "returnData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x600860020a60005260206000f3",
+      "gasUsed": "81",
+      "kind": "runEavm",
+      "name": "EXP (0x0a)",
+      "returnData": "0x0000000000000000000000000000000000000000000000000000000000000100",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x600060002060005260206000f3",
+      "gasUsed": "51",
+      "kind": "runEavm",
+      "name": "KECCAK256 de vazio",
+      "returnData": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x600160ff1b60005260206000f3",
+      "gasUsed": "24",
+      "kind": "runEavm",
+      "name": "SHL",
+      "returnData": "0x8000000000000000000000000000000000000000000000000000000000000000",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x60011e60005260206000f3",
+      "gasUsed": "23",
+      "kind": "runEavm",
+      "name": "CLZ de 1 (Osaka)",
+      "returnData": "0x00000000000000000000000000000000000000000000000000000000000000ff",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x60001e60005260206000f3",
+      "gasUsed": "23",
+      "kind": "runEavm",
+      "name": "CLZ de 0 é 256",
+      "returnData": "0x0000000000000000000000000000000000000000000000000000000000000100",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x7faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa6000526020600060205e60206020f3",
+      "gasUsed": "36",
+      "kind": "runEavm",
+      "name": "MCOPY (Cancun)",
+      "returnData": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x602a60075d60075c60005260206000f3",
+      "gasUsed": "224",
+      "kind": "runEavm",
+      "name": "TSTORE/TLOAD (Cancun)",
+      "returnData": "0x000000000000000000000000000000000000000000000000000000000000002a",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x60004960005260206000f3",
+      "gasUsed": "21",
+      "kind": "runEavm",
+      "name": "BLOBHASH sem blobs é 0",
+      "returnData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "success": true
+    },
+    {
+      "blockNumber": 1900000,
+      "code": "0x4a60005260206000f3",
+      "gasUsed": "17",
+      "kind": "runEavm",
+      "name": "BLOBBASEFEE é 1",
+      "returnData": "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "success": true
+    }
+  ],
+  "description": "Execução de bytecode na EAVM. Cada caso traz o gás consumido: um cliente que produza o mesmo retorno com gás diferente DIVERGE — o gás é consenso.",
+  "evmVersion": "osaka",
+  "forkHeight": 1900000
+}
