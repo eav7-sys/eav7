@@ -1081,6 +1081,133 @@ pub fn verify_eavm_envelope(tx: &Tx) -> Result<(), String> {
 // Testes unitários — RLP de ida e volta e regras locais. A conformidade com a
 // referência vive em `tests/eavm_envelope.rs`, sobre `vectors/eavm-envelope.json`.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Assinatura de transação EAVM crua — `createSignedTx` (`eavm/tx.js:106-114`)
+// ---------------------------------------------------------------------------
+//
+// A ponta que faltava: o porte sabia DECODIFICAR uma transação EVM assinada
+// (`decode_raw_transaction`) e não sabia PRODUZIR uma. Quem quisesse assinar
+// tinha de reimplementar RLP + EIP-155 por fora — e é exatamente o que as três
+// cópias da carteira no navegador fazem hoje, cada uma por conta própria.
+
+/// Campos de uma transação EAVM legada (tipo 0), antes de assinar.
+///
+/// "Legada" e "tipo 0" são a nomenclatura do ETHEREUM, e continuam sendo — o
+/// formato de fio é o dele (RLP + EIP-155), e renomear um padrão externo só
+/// atrapalharia quem for conferir contra a especificação. O que é nosso é a
+/// máquina que executa: a EAVM.
+///
+/// `to: None` é IMPLANTAÇÃO de contrato — campo vazio no RLP, como no Ethereum.
+/// `data` carrega o bytecode do deploy ou o calldata da chamada.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TxEavm {
+    pub nonce: u128,
+    pub gas_price: u128,
+    pub gas_limit: u128,
+    /// Endereço `0x` de 20 bytes, ou `None` para deploy.
+    pub to: Option<[u8; 20]>,
+    pub value: u128,
+    pub data: Vec<u8>,
+    pub chain_id: u64,
+}
+
+/// Inteiro em RLP: big-endian MÍNIMO, e zero vira string VAZIA.
+///
+/// Não é detalhe estético — é consenso. `0` codificado como `0x00` produz outros
+/// bytes, outro hash de assinatura e portanto outra transação. É a mesma regra
+/// que `decode_raw_transaction` já exige na leitura.
+fn rlp_uint(v: u128) -> Rlp {
+    let bytes = v.to_be_bytes();
+    let inicio = bytes.iter().position(|b| *b != 0).unwrap_or(bytes.len());
+    Rlp::Bytes(bytes[inicio..].to_vec())
+}
+
+/// Assina uma transação EAVM legada com EIP-155 e devolve o `raw` `0x…`.
+///
+/// O `v` é `chainId * 2 + 35 + recId` (EIP-155): é ele que amarra a assinatura à
+/// CADEIA. Sem isso, a mesma transação assinada valeria em qualquer rede com o
+/// mesmo `chainId` ausente — que é o ataque de repetição entre cadeias que o
+/// EIP-155 existe para fechar.
+///
+/// `chave_privada` é o escalar secp256k1 de 32 bytes.
+pub fn create_signed_tx(tx: &TxEavm, chave_privada: &[u8; 32]) -> Result<String, String> {
+    use k256::ecdsa::signature::hazmat::PrehashSigner;
+
+    let campos = |extra: Vec<Rlp>| -> Rlp {
+        let mut v = vec![
+            rlp_uint(tx.nonce),
+            rlp_uint(tx.gas_price),
+            rlp_uint(tx.gas_limit),
+            match tx.to {
+                Some(a) => Rlp::Bytes(a.to_vec()),
+                None => Rlp::Bytes(Vec::new()),
+            },
+            rlp_uint(tx.value),
+            Rlp::Bytes(tx.data.clone()),
+        ];
+        v.extend(extra);
+        Rlp::List(v)
+    };
+
+    // Pré-imagem da assinatura: os campos + (chainId, 0, 0) — EIP-155.
+    let para_assinar = campos(vec![
+        rlp_uint(u128::from(tx.chain_id)),
+        Rlp::Bytes(Vec::new()),
+        Rlp::Bytes(Vec::new()),
+    ]);
+    let digest = <sha3::Keccak256 as sha3::Digest>::digest(rlp_encode(&para_assinar));
+
+    let chave = k256::ecdsa::SigningKey::from_bytes(chave_privada.into())
+        .map_err(|e| format!("chave privada inválida: {e}"))?;
+    let (assinatura, rec_id): (k256::ecdsa::Signature, k256::ecdsa::RecoveryId) = chave
+        .sign_prehash(&digest)
+        .map_err(|e| format!("falha ao assinar: {e}"))?;
+    // `sign_prehash` do `k256` já normaliza `s` para a metade BAIXA da curva —
+    // é o que o Ethereum exige (EIP-2) e o que `decode_raw_transaction` aceita.
+
+    let v = u128::from(tx.chain_id) * 2 + 35 + u128::from(rec_id.to_byte());
+    let assinada = campos(vec![
+        rlp_uint(v),
+        Rlp::Bytes(recorta_zeros(&assinatura.r().to_bytes())),
+        Rlp::Bytes(recorta_zeros(&assinatura.s().to_bytes())),
+    ]);
+    Ok(format!("0x{}", hex::encode(rlp_encode(&assinada))))
+}
+
+/// Endereço EAVM (`0x…`) de uma chave PRIVADA secp256k1 — os 20 bytes finais do
+/// keccak256 da chave pública não comprimida.
+///
+/// Vive aqui, e não em quem precisa: é a mesma regra que `decode_raw_transaction`
+/// aplica ao RECUPERAR o remetente de uma assinatura. Duas versões dela fariam a
+/// carteira mostrar um endereço e a rede creditar outro — e o usuário só
+/// descobriria depois de mandar o dinheiro.
+///
+/// A FORMA do endereço é a do Ethereum, e a derivação também; o que ele endereça
+/// é uma conta da EAVM. Daí o nome seguir o resto do crate (`is_eavm_address`,
+/// `eavm_to_e7`, `EAVM_CHAIN_ID`) e não o `evmToE7` que a carteira do navegador
+/// usa — lá o nome escorregou, e é um dos motivos de aquela cópia sair.
+pub fn eavm_address_from_private(chave_privada: &[u8; 32]) -> Result<String, String> {
+    let chave = k256::ecdsa::SigningKey::from_bytes(chave_privada.into())
+        .map_err(|e| format!("chave privada inválida: {e}"))?;
+    // `to_sec1_point(false)` = ponto NÃO comprimido, e o `[1..]` descarta o
+    // prefixo `0x04`: é sobre as coordenadas X‖Y cruas que o keccak é calculado.
+    // A mesma travessia de `recover_eth_address` (`eavm/host.rs`), que é como o
+    // ecrecover deriva o endereço — é por isso que assinar e recuperar batem.
+    let ponto = chave.verifying_key().to_sec1_point(false);
+    let bytes = ponto.as_bytes();
+    if bytes.len() != 65 {
+        return Err("ponto SEC1 inesperado".into());
+    }
+    let d = <sha3::Keccak256 as sha3::Digest>::digest(&bytes[1..]);
+    Ok(format!("0x{}", hex::encode(&d[12..])))
+}
+
+/// `r` e `s` entram no RLP como inteiros: sem zeros à esquerda.
+fn recorta_zeros(b: &[u8]) -> Vec<u8> {
+    let inicio = b.iter().position(|x| *x != 0).unwrap_or(b.len());
+    b[inicio..].to_vec()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1600,5 +1727,169 @@ mod tests {
         assert!(de[0].starts_with("E7"), "recebe o E7 derivado do raw: {}", de[0]);
         assert_eq!(tx.from, de[0], "e é EXATAMENTE o remetente do envelope");
         assert_eq!(tx.fee, "0", "remetente isento → teto de queima zero");
+    }
+
+    // ----------------------------------------------- assinatura de tx EAVM
+
+    /// A transação que a lib ASSINA é aceita pelo decodificador da própria lib —
+    /// e o remetente recuperado é o dono da chave.
+    ///
+    /// É o círculo que faltava: o porte sabia ler transação EAVM e não sabia
+    /// produzir uma. Sem este caminho, quem precisasse assinar reimplementaria
+    /// RLP + EIP-155 por fora — que é o que as cópias da carteira no navegador
+    /// fazem hoje, cada uma por conta própria.
+    #[test]
+    fn transacao_eavm_assinada_pela_lib_e_decodificada_pela_lib() {
+        let chave = [7u8; 32];
+        let tx = TxEavm {
+            nonce: 3,
+            gas_price: 476_190_476_190,
+            gas_limit: 21_000,
+            to: Some([0x77; 20]),
+            value: 1_000_000_000_000,
+            data: Vec::new(),
+            chain_id: crate::config::EAVM_CHAIN_ID,
+        };
+
+        let raw = create_signed_tx(&tx, &chave).expect("assina");
+        assert!(raw.starts_with("0x"));
+
+        let lida = decode_raw_transaction(&raw).expect("a própria lib tem de conseguir ler");
+        assert_eq!(lida.nonce, 3.0);
+        assert_eq!(lida.value.to_string(), tx.value.to_string());
+        assert_eq!(
+            lida.chain_id.map(|c| c.to_string()),
+            Some(crate::config::EAVM_CHAIN_ID.to_string())
+        );
+        assert_eq!(lida.to.as_deref(), Some(format!("0x{}", "77".repeat(20)).as_str()));
+
+        // O remetente recuperado é quem tem a chave — é isso que a assinatura prova.
+        // Assinar de novo com OUTRA chave tem de dar outro remetente.
+        let outra = create_signed_tx(&tx, &[8u8; 32]).expect("assina");
+        let lida2 = decode_raw_transaction(&outra).expect("lê");
+        assert_ne!(
+            lida.from, lida2.from,
+            "chaves diferentes têm de recuperar remetentes diferentes"
+        );
+        assert!(lida.from.starts_with("0x") && lida.from.len() == 42);
+    }
+
+    /// Zero em RLP é string VAZIA, não `0x00`.
+    ///
+    /// Não é estética: a forma errada muda os bytes, o hash de assinatura e
+    /// portanto a transação inteira. Uma transação com `value: 0` — toda chamada
+    /// de contrato sem valor — passaria a ser outra.
+    #[test]
+    fn zero_em_rlp_e_string_vazia() {
+        assert_eq!(rlp_uint(0), Rlp::Bytes(Vec::new()));
+        assert_eq!(rlp_uint(1), Rlp::Bytes(vec![1]));
+        assert_eq!(rlp_uint(256), Rlp::Bytes(vec![1, 0]));
+
+        // E a transação com valor zero continua legível.
+        let raw = create_signed_tx(
+            &TxEavm {
+                nonce: 0,
+                gas_price: 1,
+                gas_limit: 21_000,
+                to: Some([0x11; 20]),
+                value: 0,
+                data: Vec::new(),
+                chain_id: crate::config::EAVM_CHAIN_ID,
+            },
+            &[9u8; 32],
+        )
+        .expect("assina");
+        let lida = decode_raw_transaction(&raw).expect("lê");
+        assert_eq!(lida.value.to_string(), "0");
+        assert_eq!(lida.nonce, 0.0);
+    }
+
+    /// Sem `to` é DEPLOY: campo vazio no RLP, e o decodificador devolve `None`.
+    #[test]
+    fn transacao_sem_destino_e_deploy() {
+        let raw = create_signed_tx(
+            &TxEavm {
+                nonce: 1,
+                gas_price: 1,
+                gas_limit: 100_000,
+                to: None,
+                value: 0,
+                data: vec![0x60, 0x00],
+                chain_id: crate::config::EAVM_CHAIN_ID,
+            },
+            &[5u8; 32],
+        )
+        .expect("assina");
+        let lida = decode_raw_transaction(&raw).expect("lê");
+        assert_eq!(lida.to, None, "deploy não tem destino");
+        assert_eq!(lida.data_hex, "0x6000");
+    }
+
+    /// O `chainId` entra na assinatura (EIP-155): mudá-lo muda a transação.
+    ///
+    /// É o que impede repetir numa rede a transação assinada para outra.
+    #[test]
+    fn chain_id_diferente_produz_transacao_diferente() {
+        let base = |chain_id: u64| TxEavm {
+            nonce: 1,
+            gas_price: 1,
+            gas_limit: 21_000,
+            to: Some([0x22; 20]),
+            value: 5,
+            data: Vec::new(),
+            chain_id,
+        };
+        let a = create_signed_tx(&base(crate::config::EAVM_CHAIN_ID), &[3u8; 32]).expect("assina");
+        let b = create_signed_tx(&base(1), &[3u8; 32]).expect("assina");
+        assert_ne!(a, b, "a mesma transação em outra cadeia tem de ser outra transação");
+    }
+
+    /// A transação assinada pela lib é ACEITA e recupera o MESMO remetente que a
+    /// da referência — que é a equivalência que existe para ser verificada.
+    ///
+    /// NÃO é byte a byte, e não pode ser: a referência usa nonce ECDSA
+    /// ALEATÓRIO (`randomBytes` em `secp256k1.js:148`), então duas assinaturas
+    /// da mesma transação com a mesma chave já diferem entre si. A lib usa RFC
+    /// 6979 (determinístico), o que é estritamente melhor — mas torna qualquer
+    /// comparação de bytes sem sentido.
+    ///
+    /// O que TEM de bater é o que a rede enxerga: o remetente recuperado, o
+    /// destino, o valor e a cadeia. O vetor abaixo veio do cliente JS.
+    #[test]
+    fn assinatura_eavm_recupera_o_mesmo_remetente_da_referencia() {
+        // node: createSignedTx({ privateKey: BigInt('0x' + '07'.repeat(32)),
+        //   nonce: 3, to: '0x'+'77'.repeat(20), valueWei: 1000000000000n,
+        //   chainId: 72020, gasPriceWei: 476190476190n, gasLimit: 21000n })
+        const DA_REFERENCIA: &str = concat!(
+            "0xf86c03856edf2a079e82520894777777777777777777777777777777777777777785e8d4a51000",
+            "80830232cca066f870c456535b563ba4da210ceee54ec106d01d057839b75975f0220bdb0423a03c",
+            "49b78983d2cc7603b89bee32bf3e7c2a44b405256c7855709e8dc8486b254c"
+        );
+
+        let nossa = create_signed_tx(
+            &TxEavm {
+                nonce: 3,
+                gas_price: 476_190_476_190,
+                gas_limit: 21_000,
+                to: Some([0x77; 20]),
+                value: 1_000_000_000_000,
+                data: Vec::new(),
+                chain_id: 72_020,
+            },
+            &[7u8; 32],
+        )
+        .expect("assina");
+
+        let deles = decode_raw_transaction(DA_REFERENCIA).expect("a nossa lib lê a deles");
+        let nossa = decode_raw_transaction(&nossa).expect("e lê a nossa");
+
+        assert_eq!(nossa.from, deles.from, "o remetente recuperado tem de ser o mesmo");
+        assert_eq!(nossa.to, deles.to);
+        assert_eq!(nossa.value.to_string(), deles.value.to_string());
+        assert_eq!(nossa.nonce, deles.nonce);
+        assert_eq!(
+            nossa.chain_id.map(|c| c.to_string()),
+            deles.chain_id.map(|c| c.to_string())
+        );
     }
 }

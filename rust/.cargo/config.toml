@@ -1,0 +1,7 @@
+# O backend WASM do `getrandom` é escolhido por cfg, não por feature — a feature
+# só o disponibiliza. Sem esta linha o crate se recusa a compilar para wasm32 com
+# a mensagem de que o alvo não é suportado por padrão.
+#
+# Escopo NO ALVO: nada disto afeta o build do nó nem da lib para a máquina local.
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']

@@ -1,0 +1,42 @@
+[package]
+name = "eav7-wasm"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+description = "EAV7 no navegador — a lib de consenso compilada para WASM, para que a carteira web não tenha a própria cópia da criptografia."
+license = "MIT"
+
+# POR QUE ESTE CRATE EXISTE
+#
+# A cripto da carteira estava reimplementada TRÊS VEZES do lado cliente:
+# `public/eav7-wallet.js`, `web/src/lib/eav7-wallet.js` (byte a byte idêntica) e
+# `web-next/src/lib/wallet-crypto.ts` (re-porte manual em TypeScript). Cada uma
+# com seu próprio keccak, secp256k1, RLP e derivação de endereço E7.
+#
+# Mudar a regra de endereço hoje são TRÊS edições em DUAS linguagens, e uma
+# divergência produz um endereço que a rede não reconhece — com o usuário
+# achando que mandou para o lugar certo.
+#
+# Compilando a lib de consenso para WASM, a regra passa a ter UMA implementação:
+# a mesma que o nó usa para validar.
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+eav7 = { path = ".." }
+wasm-bindgen = "0.2"
+# `getrandom` com o backend do NAVEGADOR: sem isto a geração de chave falha em
+# WASM, porque não há `/dev/urandom` — a entropia vem do `crypto.getRandomValues`.
+#
+# Duas versões porque a árvore tem as duas: a 0.3 é a que este crate usa direto, e
+# a 0.4 entra por baixo (via `rand_core`, que o `k256` puxa). Habilitar o backend
+# só numa delas deixa a outra sem entropia, e o build para wasm32 falha na
+# compilação — melhor do que falhar em produção, mas é preciso tratar as duas.
+#
+# Além da feature, o backend exige o cfg `getrandom_backend="wasm_js"`; ele está
+# em `.cargo/config.toml`, aplicado só ao alvo wasm32.
+getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
+k256 = { version = "0.14", default-features = false, features = ["ecdsa", "std"] }
+hex = "0.4"

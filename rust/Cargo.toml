@@ -28,7 +28,7 @@ license = "MIT"
 # axum e serde vivem SÓ no crate de nó — este crate permanece auditável e enxuto,
 # como o cabeçalho acima exige. É a mesma divisão consenso/nó que reth e geth usam.
 [workspace]
-members = ["node", "sdk"]
+members = ["node", "sdk", "wasm"]
 
 [dependencies]
 # SHA3-256 — a hash do protocolo eav20. RustCrypto, implementação constante em tempo.
@@ -173,3 +173,17 @@ overflow-checks = true
 debug-assertions = false
 lto = true
 codegen-units = 1
+
+# Tamanho, para o WASM. O binário do navegador vai pela rede a cada visita, então
+# `strip` e o LTO acima valem por si.
+#
+# `opt-level` fica no PADRÃO (3) de propósito: otimizar para tamanho no workspace
+# inteiro custaria desempenho no nó, e o nó é quem verifica assinatura em lote no
+# boot. Se o WASM precisar de `opt-level = "z"`, a saída é
+# `[profile.release.package.eav7-wasm]` — nunca mudar o perfil de todos.
+strip = true
+
+# Só o crate do navegador otimiza para TAMANHO. Isolado por pacote para não
+# custar desempenho ao nó, que compartilha o mesmo perfil de release.
+[profile.release.package.eav7-wasm]
+opt-level = "z"

@@ -15,26 +15,40 @@
 //!
 //! Ver `tests/vectors.rs`.
 
+// AS REGRAS — compilam em qualquer alvo, inclusive `wasm32`. É o que permite a
+// carteira do navegador usar ESTA implementação em vez de manter a própria cópia
+// de keccak, secp256k1 e derivação de endereço.
 pub mod address;
 pub mod block;
-pub mod blockchain;
-pub mod blockstore;
 pub mod canonical;
 pub mod config;
-pub mod mempool;
 pub mod eavm;
 pub mod hash;
+pub mod mempool;
 pub mod signature;
 pub mod state;
-pub mod snapshot;
 pub mod stateroot;
 pub mod transaction;
+
+// O ARMAZENAMENTO — só onde há sistema de arquivos.
+//
+// `blockstore` usa `read_exact_at` (POSIX) e `snapshot` grava em disco; nenhum dos
+// dois faz sentido no navegador, e `blockchain` depende dos dois. Recortar por
+// alvo é o que torna a lib compilável para WASM sem inventar uma segunda lib "só
+// com as regras" — que seria mais uma cópia a manter em dia.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod blockchain;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod blockstore;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod snapshot;
 
 pub use address::{derive_address_from, is_valid_address, ADDRESS_LEN, ADDRESS_PREFIX};
 pub use block::{
     block_hash, block_validator, build_block, verify_block_integrity, Block, BlockSigner,
     BuildParams, GENESIS_PREVIOUS_HASH,
 };
+#[cfg(not(target_arch = "wasm32"))]
 pub use blockchain::{Blockchain, Reorg, Validator};
 pub use canonical::{encode as encode_canonical, encode_hex as canonical_hex, Value};
 pub use hash::{eav_hash, eav_hash_one, is_valid_hash, merkle_root, HASH_LEN};
