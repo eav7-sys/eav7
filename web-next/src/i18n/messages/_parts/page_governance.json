@@ -1,0 +1,45 @@
+{
+  "namespace": "page_governance",
+  "translations": {
+    "pt": {
+      "metaTitle": "Governança on-chain · EAV7 Scan",
+      "eyebrow": "governança on-chain",
+      "title": "Governança & Tesouraria",
+      "subtitle": "Validadores propõem e votam mudanças de parâmetro (2/3+1); um cofre governável recebe parte da recompensa",
+      "treasuryTitle": "Tesouraria",
+      "treasuryBalance": "Saldo do cofre",
+      "treasuryPct": "% da recompensa de bloco",
+      "validators": "validadores ativos",
+      "paramsTitle": "Parâmetros vigentes (governados)",
+      "noParams": "Nenhum parâmetro sobrescrito por governança — todos no padrão do protocolo",
+      "colParam": "Parâmetro",
+      "colValue": "Valor",
+      "proposalsTitle": "Propostas",
+      "colProposer": "Proponente",
+      "colStatus": "Status",
+      "colVotes": "Votos",
+      "colDeadline": "Prazo (bloco)",
+      "noProposals": "Nenhuma proposta ativa ou encerrada"
+    },
+    "en": {
+      "metaTitle": "On-chain governance · EAV7 Scan",
+      "eyebrow": "on-chain governance",
+      "title": "Governance & Treasury",
+      "subtitle": "Validators propose and vote parameter changes (2/3+1); a governable vault receives part of the reward",
+      "treasuryTitle": "Treasury",
+      "treasuryBalance": "Vault balance",
+      "treasuryPct": "% of block reward",
+      "validators": "active validators",
+      "paramsTitle": "Active (governed) parameters",
+      "noParams": "No parameter overridden by governance — all at protocol defaults",
+      "colParam": "Parameter",
+      "colValue": "Value",
+      "proposalsTitle": "Proposals",
+      "colProposer": "Proposer",
+      "colStatus": "Status",
+      "colVotes": "Votes",
+      "colDeadline": "Deadline (block)",
+      "noProposals": "No active or closed proposal"
+    }
+  }
+}

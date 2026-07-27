@@ -1,0 +1,317 @@
+{
+  "namespace": "home_appShowcase",
+  "translations": {
+    "pt": {
+      "nav": {
+        "overview": "Visão geral",
+        "blocks": "Blocos",
+        "transactions": "Transações",
+        "validators": "Validadores",
+        "tokens": "Tokens"
+      },
+      "cols": {
+        "block": "Bloco",
+        "age": "Idade",
+        "txs": "Txs",
+        "producer": "Produtor",
+        "reward": "Recompensa",
+        "hash": "Hash"
+      },
+      "sidebar": {
+        "explore": "Explorar",
+        "network": "Rede"
+      },
+      "toolbar": {
+        "filter": "Filtrar",
+        "sort": "Ordenar",
+        "live": "ao vivo"
+      }
+    },
+    "en": {
+      "nav": {
+        "overview": "Overview",
+        "blocks": "Blocks",
+        "transactions": "Transactions",
+        "validators": "Validators",
+        "tokens": "Tokens"
+      },
+      "cols": {
+        "block": "Block",
+        "age": "Age",
+        "txs": "Txs",
+        "producer": "Producer",
+        "reward": "Reward",
+        "hash": "Hash"
+      },
+      "sidebar": {
+        "explore": "Explore",
+        "network": "Network"
+      },
+      "toolbar": {
+        "filter": "Filter",
+        "sort": "Sort",
+        "live": "live"
+      }
+    },
+    "es": {
+      "nav": {
+        "overview": "Visión general",
+        "blocks": "Bloques",
+        "transactions": "Transacciones",
+        "validators": "Validadores",
+        "tokens": "Tokens"
+      },
+      "cols": {
+        "block": "Bloque",
+        "age": "Antigüedad",
+        "txs": "Txs",
+        "producer": "Productor",
+        "reward": "Recompensa",
+        "hash": "Hash"
+      },
+      "sidebar": {
+        "explore": "Explorar",
+        "network": "Red"
+      },
+      "toolbar": {
+        "filter": "Filtrar",
+        "sort": "Ordenar",
+        "live": "en vivo"
+      }
+    },
+    "zh": {
+      "nav": {
+        "overview": "概览",
+        "blocks": "区块",
+        "transactions": "交易",
+        "validators": "验证者",
+        "tokens": "代币"
+      },
+      "cols": {
+        "block": "区块",
+        "age": "时间",
+        "txs": "交易数",
+        "producer": "出块者",
+        "reward": "奖励",
+        "hash": "哈希"
+      },
+      "sidebar": {
+        "explore": "浏览",
+        "network": "网络"
+      },
+      "toolbar": {
+        "filter": "筛选",
+        "sort": "排序",
+        "live": "实时"
+      }
+    },
+    "fr": {
+      "nav": {
+        "overview": "Vue d'ensemble",
+        "blocks": "Blocs",
+        "transactions": "Transactions",
+        "validators": "Validateurs",
+        "tokens": "Jetons"
+      },
+      "cols": {
+        "block": "Bloc",
+        "age": "Âge",
+        "txs": "Txs",
+        "producer": "Producteur",
+        "reward": "Récompense",
+        "hash": "Hash"
+      },
+      "sidebar": {
+        "explore": "Explorer",
+        "network": "Réseau"
+      },
+      "toolbar": {
+        "filter": "Filtrer",
+        "sort": "Trier",
+        "live": "en direct"
+      }
+    },
+    "de": {
+      "nav": {
+        "overview": "Übersicht",
+        "blocks": "Blöcke",
+        "transactions": "Transaktionen",
+        "validators": "Validatoren",
+        "tokens": "Tokens"
+      },
+      "cols": {
+        "block": "Block",
+        "age": "Alter",
+        "txs": "Txs",
+        "producer": "Produzent",
+        "reward": "Belohnung",
+        "hash": "Hash"
+      },
+      "sidebar": {
+        "explore": "Erkunden",
+        "network": "Netzwerk"
+      },
+      "toolbar": {
+        "filter": "Filtern",
+        "sort": "Sortieren",
+        "live": "live"
+      }
+    },
+    "ja": {
+      "nav": {
+        "overview": "概要",
+        "blocks": "ブロック",
+        "transactions": "トランザクション",
+        "validators": "バリデーター",
+        "tokens": "トークン"
+      },
+      "cols": {
+        "block": "ブロック",
+        "age": "経過時間",
+        "txs": "Txs",
+        "producer": "生成者",
+        "reward": "報酬",
+        "hash": "ハッシュ"
+      },
+      "sidebar": {
+        "explore": "エクスプローラー",
+        "network": "ネットワーク"
+      },
+      "toolbar": {
+        "filter": "フィルター",
+        "sort": "並び替え",
+        "live": "ライブ"
+      }
+    },
+    "ru": {
+      "nav": {
+        "overview": "Обзор",
+        "blocks": "Блоки",
+        "transactions": "Транзакции",
+        "validators": "Валидаторы",
+        "tokens": "Токены"
+      },
+      "cols": {
+        "block": "Блок",
+        "age": "Возраст",
+        "txs": "Тр-ции",
+        "producer": "Производитель",
+        "reward": "Награда",
+        "hash": "Хеш"
+      },
+      "sidebar": {
+        "explore": "Обзор",
+        "network": "Сеть"
+      },
+      "toolbar": {
+        "filter": "Фильтр",
+        "sort": "Сортировка",
+        "live": "в реальном времени"
+      }
+    },
+    "ar": {
+      "nav": {
+        "overview": "نظرة عامة",
+        "blocks": "الكتل",
+        "transactions": "المعاملات",
+        "validators": "المدققون",
+        "tokens": "الرموز"
+      },
+      "cols": {
+        "block": "الكتلة",
+        "age": "العمر",
+        "txs": "المعاملات",
+        "producer": "المنتج",
+        "reward": "المكافأة",
+        "hash": "الهاش"
+      },
+      "sidebar": {
+        "explore": "استكشاف",
+        "network": "الشبكة"
+      },
+      "toolbar": {
+        "filter": "تصفية",
+        "sort": "ترتيب",
+        "live": "مباشر"
+      }
+    },
+    "hi": {
+      "nav": {
+        "overview": "अवलोकन",
+        "blocks": "ब्लॉक्स",
+        "transactions": "लेन-देन",
+        "validators": "वैलिडेटर्स",
+        "tokens": "टोकन"
+      },
+      "cols": {
+        "block": "ब्लॉक",
+        "age": "आयु",
+        "txs": "लेन-देन",
+        "producer": "निर्माता",
+        "reward": "इनाम",
+        "hash": "हैश"
+      },
+      "sidebar": {
+        "explore": "एक्सप्लोर करें",
+        "network": "नेटवर्क"
+      },
+      "toolbar": {
+        "filter": "फ़िल्टर करें",
+        "sort": "क्रमबद्ध करें",
+        "live": "लाइव"
+      }
+    },
+    "ko": {
+      "nav": {
+        "overview": "개요",
+        "blocks": "블록",
+        "transactions": "트랜잭션",
+        "validators": "검증자",
+        "tokens": "토큰"
+      },
+      "cols": {
+        "block": "블록",
+        "age": "경과 시간",
+        "txs": "Txs",
+        "producer": "생성자",
+        "reward": "보상",
+        "hash": "해시"
+      },
+      "sidebar": {
+        "explore": "탐색",
+        "network": "네트워크"
+      },
+      "toolbar": {
+        "filter": "필터",
+        "sort": "정렬",
+        "live": "실시간"
+      }
+    },
+    "it": {
+      "nav": {
+        "overview": "Panoramica",
+        "blocks": "Blocchi",
+        "transactions": "Transazioni",
+        "validators": "Validatori",
+        "tokens": "Token"
+      },
+      "cols": {
+        "block": "Blocco",
+        "age": "Età",
+        "txs": "Txs",
+        "producer": "Produttore",
+        "reward": "Ricompensa",
+        "hash": "Hash"
+      },
+      "sidebar": {
+        "explore": "Esplora",
+        "network": "Rete"
+      },
+      "toolbar": {
+        "filter": "Filtra",
+        "sort": "Ordina",
+        "live": "in diretta"
+      }
+    }
+  }
+}

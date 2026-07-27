@@ -1,0 +1,281 @@
+{
+  "namespace": "tokens_view",
+  "translations": {
+    "pt": {
+      "header": {
+        "badge": "padrão EAV20",
+        "title": "Tokens",
+        "subtitle": "ativos nativos do protocolo eav20 — equivalente ao TRC20 da Tron"
+      },
+      "empty": {
+        "title": "Nenhum token criado ainda",
+        "description": "Tokens aparecem aqui assim que forem criados na rede via"
+      },
+      "stats": {
+        "tokens": "Tokens EAV20",
+        "holders": "Holders (total)",
+        "supply": "Suprimento combinado",
+        "standard": "Padrão"
+      },
+      "card": {
+        "supply": "Suprimento",
+        "holders": "Holders",
+        "share": "participação",
+        "creator": "criador"
+      }
+    },
+    "en": {
+      "header": {
+        "badge": "EAV20 standard",
+        "title": "Tokens",
+        "subtitle": "native assets of the eav20 protocol — equivalent to Tron's TRC20"
+      },
+      "empty": {
+        "title": "No tokens created yet",
+        "description": "Tokens appear here as soon as they are created on the network via"
+      },
+      "stats": {
+        "tokens": "EAV20 Tokens",
+        "holders": "Holders (total)",
+        "supply": "Combined supply",
+        "standard": "Standard"
+      },
+      "card": {
+        "supply": "Supply",
+        "holders": "Holders",
+        "share": "share",
+        "creator": "creator"
+      }
+    },
+    "es": {
+      "header": {
+        "badge": "estándar EAV20",
+        "title": "Tokens",
+        "subtitle": "activos nativos del protocolo eav20 — equivalente al TRC20 de Tron"
+      },
+      "empty": {
+        "title": "Aún no se han creado tokens",
+        "description": "Los tokens aparecen aquí en cuanto se crean en la red mediante"
+      },
+      "stats": {
+        "tokens": "Tokens EAV20",
+        "holders": "Holders (total)",
+        "supply": "Suministro combinado",
+        "standard": "Estándar"
+      },
+      "card": {
+        "supply": "Suministro",
+        "holders": "Holders",
+        "share": "participación",
+        "creator": "creador"
+      }
+    },
+    "zh": {
+      "header": {
+        "badge": "EAV20 标准",
+        "title": "代币",
+        "subtitle": "eav20 协议的原生资产 — 相当于波场的 TRC20"
+      },
+      "empty": {
+        "title": "尚未创建任何代币",
+        "description": "代币一旦在网络上创建即会显示在此处，创建方式为"
+      },
+      "stats": {
+        "tokens": "EAV20 代币",
+        "holders": "持有人（总计）",
+        "supply": "合计供应量",
+        "standard": "标准"
+      },
+      "card": {
+        "supply": "供应量",
+        "holders": "持有人",
+        "share": "占比",
+        "creator": "创建者"
+      }
+    },
+    "fr": {
+      "header": {
+        "badge": "norme EAV20",
+        "title": "Tokens",
+        "subtitle": "actifs natifs du protocole eav20 — équivalent au TRC20 de Tron"
+      },
+      "empty": {
+        "title": "Aucun token créé pour le moment",
+        "description": "Les tokens apparaissent ici dès qu'ils sont créés sur le réseau via"
+      },
+      "stats": {
+        "tokens": "Tokens EAV20",
+        "holders": "Détenteurs (total)",
+        "supply": "Offre combinée",
+        "standard": "Norme"
+      },
+      "card": {
+        "supply": "Offre",
+        "holders": "Détenteurs",
+        "share": "part",
+        "creator": "créateur"
+      }
+    },
+    "de": {
+      "header": {
+        "badge": "EAV20-Standard",
+        "title": "Tokens",
+        "subtitle": "native Assets des eav20-Protokolls — entspricht dem TRC20 von Tron"
+      },
+      "empty": {
+        "title": "Noch keine Tokens erstellt",
+        "description": "Tokens erscheinen hier, sobald sie im Netzwerk erstellt wurden, über"
+      },
+      "stats": {
+        "tokens": "EAV20-Tokens",
+        "holders": "Halter (gesamt)",
+        "supply": "Kombiniertes Angebot",
+        "standard": "Standard"
+      },
+      "card": {
+        "supply": "Angebot",
+        "holders": "Halter",
+        "share": "Anteil",
+        "creator": "Ersteller"
+      }
+    },
+    "ja": {
+      "header": {
+        "badge": "EAV20 規格",
+        "title": "トークン",
+        "subtitle": "eav20プロトコルのネイティブ資産 — Tronの TRC20 に相当"
+      },
+      "empty": {
+        "title": "まだトークンが作成されていません",
+        "description": "トークンはネットワーク上で作成されると即座にここに表示されます。作成方法は"
+      },
+      "stats": {
+        "tokens": "EAV20 トークン",
+        "holders": "保有者（合計）",
+        "supply": "合計供給量",
+        "standard": "規格"
+      },
+      "card": {
+        "supply": "供給量",
+        "holders": "保有者",
+        "share": "割合",
+        "creator": "作成者"
+      }
+    },
+    "ru": {
+      "header": {
+        "badge": "стандарт EAV20",
+        "title": "Токены",
+        "subtitle": "нативные активы протокола eav20 — аналог TRC20 в сети Tron"
+      },
+      "empty": {
+        "title": "Токены пока не созданы",
+        "description": "Токены появятся здесь сразу после создания в сети через"
+      },
+      "stats": {
+        "tokens": "Токены EAV20",
+        "holders": "Холдеры (всего)",
+        "supply": "Совокупное предложение",
+        "standard": "Стандарт"
+      },
+      "card": {
+        "supply": "Предложение",
+        "holders": "Холдеры",
+        "share": "доля",
+        "creator": "создатель"
+      }
+    },
+    "ar": {
+      "header": {
+        "badge": "معيار EAV20",
+        "title": "الرموز",
+        "subtitle": "أصول أصلية لبروتوكول eav20 — تعادل TRC20 في شبكة Tron"
+      },
+      "empty": {
+        "title": "لم يتم إنشاء أي رموز بعد",
+        "description": "تظهر الرموز هنا بمجرد إنشائها على الشبكة عبر"
+      },
+      "stats": {
+        "tokens": "رموز EAV20",
+        "holders": "الحائزون (الإجمالي)",
+        "supply": "الإجمالي المجمّع للعرض",
+        "standard": "المعيار"
+      },
+      "card": {
+        "supply": "العرض",
+        "holders": "الحائزون",
+        "share": "الحصة",
+        "creator": "المُنشئ"
+      }
+    },
+    "hi": {
+      "header": {
+        "badge": "EAV20 मानक",
+        "title": "टोकन",
+        "subtitle": "eav20 प्रोटोकॉल की मूल संपत्तियाँ — Tron के TRC20 के समकक्ष"
+      },
+      "empty": {
+        "title": "अभी तक कोई टोकन नहीं बनाया गया",
+        "description": "टोकन नेटवर्क पर बनाए जाते ही यहाँ दिखाई देते हैं, इसके माध्यम से"
+      },
+      "stats": {
+        "tokens": "EAV20 टोकन",
+        "holders": "धारक (कुल)",
+        "supply": "संयुक्त आपूर्ति",
+        "standard": "मानक"
+      },
+      "card": {
+        "supply": "आपूर्ति",
+        "holders": "धारक",
+        "share": "हिस्सेदारी",
+        "creator": "निर्माता"
+      }
+    },
+    "ko": {
+      "header": {
+        "badge": "EAV20 표준",
+        "title": "토큰",
+        "subtitle": "eav20 프로토콜의 네이티브 자산 — Tron의 TRC20에 해당"
+      },
+      "empty": {
+        "title": "아직 생성된 토큰이 없습니다",
+        "description": "토큰은 네트워크에 생성되는 즉시 여기에 표시됩니다. 생성 방법은"
+      },
+      "stats": {
+        "tokens": "EAV20 토큰",
+        "holders": "보유자 (전체)",
+        "supply": "합산 공급량",
+        "standard": "표준"
+      },
+      "card": {
+        "supply": "공급량",
+        "holders": "보유자",
+        "share": "비중",
+        "creator": "생성자"
+      }
+    },
+    "it": {
+      "header": {
+        "badge": "standard EAV20",
+        "title": "Token",
+        "subtitle": "asset nativi del protocollo eav20 — equivalente al TRC20 di Tron"
+      },
+      "empty": {
+        "title": "Nessun token creato ancora",
+        "description": "I token appaiono qui non appena vengono creati sulla rete tramite"
+      },
+      "stats": {
+        "tokens": "Token EAV20",
+        "holders": "Holder (totale)",
+        "supply": "Offerta combinata",
+        "standard": "Standard"
+      },
+      "card": {
+        "supply": "Offerta",
+        "holders": "Holder",
+        "share": "quota",
+        "creator": "creatore"
+      }
+    }
+  }
+}

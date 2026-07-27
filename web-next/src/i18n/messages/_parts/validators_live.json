@@ -1,0 +1,423 @@
+{
+  "namespace": "validators_live",
+  "translations": {
+    "pt": {
+      "unavailable": "nó indisponível",
+      "header": {
+        "eyebrow": "consenso DPoS",
+        "title": "Validadores",
+        "live": "ao vivo",
+        "subtitle": "{active} ativos de {max} slots · stake mínimo {min} EAV7 · rodízio a cada bloco"
+      },
+      "producer": {
+        "label": "produtor do slot atual",
+        "producingBlock": "produzindo o bloco"
+      },
+      "slot": {
+        "label": "slot · {n}s",
+        "staked": "{n} EAV7 em stake"
+      },
+      "rotation": {
+        "label": "rodízio de produção"
+      },
+      "stats": {
+        "activeValidators": "Validadores ativos",
+        "rewardPerBlock": "Recompensa / bloco",
+        "totalStaked": "Total em stake",
+        "peers": "Peers na rede"
+      },
+      "ranking": {
+        "title": "Conjunto ativo",
+        "sortedBy": "ordenado por peso (stake + votos)",
+        "producing": "produzindo",
+        "active": "ativo",
+        "stakedCaption": "EAV7 em stake",
+        "votesCaption": "votos"
+      },
+      "health": {
+        "summary": "saúde média {avg}/100 · {degraded} degradado(s)",
+        "degradedBanner": "{n} validador(es) com desempenho degradado — a IA redigiu recomendação de governança (não executada; só a governança decide).",
+        "status": {
+          "healthy": "saudável",
+          "lagging": "lento",
+          "degraded": "degradado",
+          "offline": "offline"
+        }
+      }
+    },
+    "en": {
+      "unavailable": "node unavailable",
+      "header": {
+        "eyebrow": "DPoS consensus",
+        "title": "Validators",
+        "live": "live",
+        "subtitle": "{active} active out of {max} slots · minimum stake {min} EAV7 · rotation every block"
+      },
+      "producer": {
+        "label": "current slot producer",
+        "producingBlock": "producing block"
+      },
+      "slot": {
+        "label": "slot · {n}s",
+        "staked": "{n} EAV7 staked"
+      },
+      "rotation": {
+        "label": "production rotation"
+      },
+      "stats": {
+        "activeValidators": "Active validators",
+        "rewardPerBlock": "Reward / block",
+        "totalStaked": "Total staked",
+        "peers": "Network peers"
+      },
+      "ranking": {
+        "title": "Active set",
+        "sortedBy": "sorted by weight (stake + votes)",
+        "producing": "producing",
+        "active": "active",
+        "stakedCaption": "EAV7 staked",
+        "votesCaption": "votes"
+      },
+      "health": {
+        "summary": "avg health {avg}/100 · {degraded} degraded",
+        "degradedBanner": "{n} validator(s) underperforming — the AI drafted a governance recommendation (not executed; only governance decides).",
+        "status": {
+          "healthy": "healthy",
+          "lagging": "lagging",
+          "degraded": "degraded",
+          "offline": "offline"
+        }
+      }
+    },
+    "es": {
+      "unavailable": "nodo no disponible",
+      "header": {
+        "eyebrow": "consenso DPoS",
+        "title": "Validadores",
+        "live": "en vivo",
+        "subtitle": "{active} activos de {max} slots · stake mínimo {min} EAV7 · rotación en cada bloque"
+      },
+      "producer": {
+        "label": "productor del slot actual",
+        "producingBlock": "produciendo el bloque"
+      },
+      "slot": {
+        "label": "slot · {n}s",
+        "staked": "{n} EAV7 en stake"
+      },
+      "rotation": {
+        "label": "rotación de producción"
+      },
+      "stats": {
+        "activeValidators": "Validadores activos",
+        "rewardPerBlock": "Recompensa / bloque",
+        "totalStaked": "Total en stake",
+        "peers": "Peers en la red"
+      },
+      "ranking": {
+        "title": "Conjunto activo",
+        "sortedBy": "ordenado por stake",
+        "producing": "produciendo",
+        "active": "activo",
+        "stakedCaption": "EAV7 en stake"
+      }
+    },
+    "zh": {
+      "unavailable": "节点不可用",
+      "header": {
+        "eyebrow": "DPoS 共识",
+        "title": "验证者",
+        "live": "实时",
+        "subtitle": "{active} 个活跃 / 共 {max} 个席位 · 最低质押 {min} EAV7 · 每个区块轮换"
+      },
+      "producer": {
+        "label": "当前时段出块者",
+        "producingBlock": "正在生成区块"
+      },
+      "slot": {
+        "label": "时段 · {n}秒",
+        "staked": "质押 {n} EAV7"
+      },
+      "rotation": {
+        "label": "出块轮换"
+      },
+      "stats": {
+        "activeValidators": "活跃验证者",
+        "rewardPerBlock": "每区块奖励",
+        "totalStaked": "总质押量",
+        "peers": "网络节点数"
+      },
+      "ranking": {
+        "title": "活跃集合",
+        "sortedBy": "按质押量排序",
+        "producing": "出块中",
+        "active": "活跃",
+        "stakedCaption": "EAV7 质押"
+      }
+    },
+    "fr": {
+      "unavailable": "nœud indisponible",
+      "header": {
+        "eyebrow": "consensus DPoS",
+        "title": "Validateurs",
+        "live": "en direct",
+        "subtitle": "{active} actifs sur {max} emplacements · stake minimum {min} EAV7 · rotation à chaque bloc"
+      },
+      "producer": {
+        "label": "producteur du slot actuel",
+        "producingBlock": "production du bloc"
+      },
+      "slot": {
+        "label": "slot · {n}s",
+        "staked": "{n} EAV7 en stake"
+      },
+      "rotation": {
+        "label": "rotation de production"
+      },
+      "stats": {
+        "activeValidators": "Validateurs actifs",
+        "rewardPerBlock": "Récompense / bloc",
+        "totalStaked": "Total en stake",
+        "peers": "Pairs du réseau"
+      },
+      "ranking": {
+        "title": "Ensemble actif",
+        "sortedBy": "trié par stake",
+        "producing": "production",
+        "active": "actif",
+        "stakedCaption": "EAV7 en stake"
+      }
+    },
+    "de": {
+      "unavailable": "Knoten nicht verfügbar",
+      "header": {
+        "eyebrow": "DPoS-Konsens",
+        "title": "Validatoren",
+        "live": "live",
+        "subtitle": "{active} aktiv von {max} Slots · Mindeststake {min} EAV7 · Rotation bei jedem Block"
+      },
+      "producer": {
+        "label": "Produzent des aktuellen Slots",
+        "producingBlock": "erzeugt Block"
+      },
+      "slot": {
+        "label": "Slot · {n}s",
+        "staked": "{n} EAV7 gestaked"
+      },
+      "rotation": {
+        "label": "Produktionsrotation"
+      },
+      "stats": {
+        "activeValidators": "Aktive Validatoren",
+        "rewardPerBlock": "Belohnung / Block",
+        "totalStaked": "Gesamt gestaked",
+        "peers": "Netzwerk-Peers"
+      },
+      "ranking": {
+        "title": "Aktives Set",
+        "sortedBy": "sortiert nach Stake",
+        "producing": "erzeugt",
+        "active": "aktiv",
+        "stakedCaption": "EAV7 gestaked"
+      }
+    },
+    "ja": {
+      "unavailable": "ノードが利用できません",
+      "header": {
+        "eyebrow": "DPoS コンセンサス",
+        "title": "バリデーター",
+        "live": "ライブ",
+        "subtitle": "{max} スロット中 {active} がアクティブ · 最低ステーク {min} EAV7 · ブロックごとにローテーション"
+      },
+      "producer": {
+        "label": "現在のスロットの生成者",
+        "producingBlock": "ブロックを生成中"
+      },
+      "slot": {
+        "label": "スロット · {n}秒",
+        "staked": "{n} EAV7 をステーク"
+      },
+      "rotation": {
+        "label": "生成ローテーション"
+      },
+      "stats": {
+        "activeValidators": "アクティブなバリデーター",
+        "rewardPerBlock": "ブロックあたりの報酬",
+        "totalStaked": "合計ステーク量",
+        "peers": "ネットワークピア数"
+      },
+      "ranking": {
+        "title": "アクティブセット",
+        "sortedBy": "ステーク順",
+        "producing": "生成中",
+        "active": "アクティブ",
+        "stakedCaption": "EAV7 ステーク"
+      }
+    },
+    "ru": {
+      "unavailable": "узел недоступен",
+      "header": {
+        "eyebrow": "консенсус DPoS",
+        "title": "Валидаторы",
+        "live": "в реальном времени",
+        "subtitle": "{active} активных из {max} слотов · минимальный стейк {min} EAV7 · ротация каждый блок"
+      },
+      "producer": {
+        "label": "производитель текущего слота",
+        "producingBlock": "производит блок"
+      },
+      "slot": {
+        "label": "слот · {n}с",
+        "staked": "{n} EAV7 в стейке"
+      },
+      "rotation": {
+        "label": "ротация производства"
+      },
+      "stats": {
+        "activeValidators": "Активные валидаторы",
+        "rewardPerBlock": "Награда / блок",
+        "totalStaked": "Всего в стейке",
+        "peers": "Пиры сети"
+      },
+      "ranking": {
+        "title": "Активный набор",
+        "sortedBy": "отсортировано по стейку",
+        "producing": "производит",
+        "active": "активен",
+        "stakedCaption": "EAV7 в стейке"
+      }
+    },
+    "ar": {
+      "unavailable": "العقدة غير متاحة",
+      "header": {
+        "eyebrow": "إجماع DPoS",
+        "title": "المدققون",
+        "live": "مباشر",
+        "subtitle": "{active} نشط من أصل {max} فتحة · الحد الأدنى للحصة {min} EAV7 · تناوب في كل كتلة"
+      },
+      "producer": {
+        "label": "منتج الفتحة الحالية",
+        "producingBlock": "يقوم بإنتاج الكتلة"
+      },
+      "slot": {
+        "label": "الفتحة · {n} ثانية",
+        "staked": "{n} EAV7 محجوزة كحصة"
+      },
+      "rotation": {
+        "label": "تناوب الإنتاج"
+      },
+      "stats": {
+        "activeValidators": "المدققون النشطون",
+        "rewardPerBlock": "المكافأة / الكتلة",
+        "totalStaked": "إجمالي الحصة",
+        "peers": "أقران الشبكة"
+      },
+      "ranking": {
+        "title": "المجموعة النشطة",
+        "sortedBy": "مرتب حسب الحصة",
+        "producing": "قيد الإنتاج",
+        "active": "نشط",
+        "stakedCaption": "EAV7 محجوزة كحصة"
+      }
+    },
+    "hi": {
+      "unavailable": "नोड उपलब्ध नहीं है",
+      "header": {
+        "eyebrow": "DPoS सर्वसम्मति",
+        "title": "वैलिडेटर्स",
+        "live": "लाइव",
+        "subtitle": "{max} स्लॉट में से {active} सक्रिय · न्यूनतम स्टेक {min} EAV7 · हर ब्लॉक पर रोटेशन"
+      },
+      "producer": {
+        "label": "वर्तमान स्लॉट का निर्माता",
+        "producingBlock": "ब्लॉक बना रहा है"
+      },
+      "slot": {
+        "label": "स्लॉट · {n}s",
+        "staked": "{n} EAV7 स्टेक किया गया"
+      },
+      "rotation": {
+        "label": "उत्पादन रोटेशन"
+      },
+      "stats": {
+        "activeValidators": "सक्रिय वैलिडेटर्स",
+        "rewardPerBlock": "इनाम / ब्लॉक",
+        "totalStaked": "कुल स्टेक",
+        "peers": "नेटवर्क पीयर्स"
+      },
+      "ranking": {
+        "title": "सक्रिय समूह",
+        "sortedBy": "स्टेक के अनुसार क्रमबद्ध",
+        "producing": "उत्पादन जारी",
+        "active": "सक्रिय",
+        "stakedCaption": "EAV7 स्टेक किया गया"
+      }
+    },
+    "ko": {
+      "unavailable": "노드를 사용할 수 없습니다",
+      "header": {
+        "eyebrow": "DPoS 합의",
+        "title": "검증자",
+        "live": "실시간",
+        "subtitle": "{max}개 슬롯 중 {active}개 활성 · 최소 스테이크 {min} EAV7 · 블록마다 순환"
+      },
+      "producer": {
+        "label": "현재 슬롯 생산자",
+        "producingBlock": "블록 생성 중"
+      },
+      "slot": {
+        "label": "슬롯 · {n}초",
+        "staked": "{n} EAV7 스테이킹됨"
+      },
+      "rotation": {
+        "label": "생산 순환"
+      },
+      "stats": {
+        "activeValidators": "활성 검증자",
+        "rewardPerBlock": "블록당 보상",
+        "totalStaked": "총 스테이킹량",
+        "peers": "네트워크 피어"
+      },
+      "ranking": {
+        "title": "활성 집합",
+        "sortedBy": "스테이크 순 정렬",
+        "producing": "생성 중",
+        "active": "활성",
+        "stakedCaption": "EAV7 스테이킹됨"
+      }
+    },
+    "it": {
+      "unavailable": "nodo non disponibile",
+      "header": {
+        "eyebrow": "consenso DPoS",
+        "title": "Validatori",
+        "live": "in diretta",
+        "subtitle": "{active} attivi su {max} slot · stake minimo {min} EAV7 · rotazione ad ogni blocco"
+      },
+      "producer": {
+        "label": "produttore dello slot attuale",
+        "producingBlock": "produzione del blocco"
+      },
+      "slot": {
+        "label": "slot · {n}s",
+        "staked": "{n} EAV7 in stake"
+      },
+      "rotation": {
+        "label": "rotazione di produzione"
+      },
+      "stats": {
+        "activeValidators": "Validatori attivi",
+        "rewardPerBlock": "Ricompensa / blocco",
+        "totalStaked": "Totale in stake",
+        "peers": "Peer di rete"
+      },
+      "ranking": {
+        "title": "Insieme attivo",
+        "sortedBy": "ordinato per stake",
+        "producing": "in produzione",
+        "active": "attivo",
+        "stakedCaption": "EAV7 in stake"
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "namespace": "page_docs",
+  "translations": {
+    "pt": {
+      "metaTitleFallback": "Documentação · EAV7 Scan",
+      "breadcrumb": "documentação",
+      "terminal": "terminal",
+      "onThisPage": "nesta página"
+    },
+    "en": {
+      "metaTitleFallback": "Documentation · EAV7 Scan",
+      "breadcrumb": "documentation",
+      "terminal": "terminal",
+      "onThisPage": "on this page"
+    },
+    "es": {
+      "metaTitleFallback": "Documentación · EAV7 Scan",
+      "breadcrumb": "documentación",
+      "terminal": "terminal",
+      "onThisPage": "en esta página"
+    },
+    "zh": {
+      "metaTitleFallback": "文档 · EAV7 Scan",
+      "breadcrumb": "文档",
+      "terminal": "终端",
+      "onThisPage": "本页内容"
+    },
+    "fr": {
+      "metaTitleFallback": "Documentation · EAV7 Scan",
+      "breadcrumb": "documentation",
+      "terminal": "terminal",
+      "onThisPage": "sur cette page"
+    },
+    "de": {
+      "metaTitleFallback": "Dokumentation · EAV7 Scan",
+      "breadcrumb": "Dokumentation",
+      "terminal": "Terminal",
+      "onThisPage": "auf dieser Seite"
+    },
+    "ja": {
+      "metaTitleFallback": "ドキュメント · EAV7 Scan",
+      "breadcrumb": "ドキュメント",
+      "terminal": "ターミナル",
+      "onThisPage": "このページの内容"
+    },
+    "ru": {
+      "metaTitleFallback": "Документация · EAV7 Scan",
+      "breadcrumb": "документация",
+      "terminal": "терминал",
+      "onThisPage": "на этой странице"
+    },
+    "ar": {
+      "metaTitleFallback": "التوثيق · EAV7 Scan",
+      "breadcrumb": "التوثيق",
+      "terminal": "الطرفية",
+      "onThisPage": "في هذه الصفحة"
+    },
+    "hi": {
+      "metaTitleFallback": "दस्तावेज़ीकरण · EAV7 Scan",
+      "breadcrumb": "दस्तावेज़ीकरण",
+      "terminal": "टर्मिनल",
+      "onThisPage": "इस पेज पर"
+    },
+    "ko": {
+      "metaTitleFallback": "문서 · EAV7 Scan",
+      "breadcrumb": "문서",
+      "terminal": "터미널",
+      "onThisPage": "이 페이지의 내용"
+    },
+    "it": {
+      "metaTitleFallback": "Documentazione · EAV7 Scan",
+      "breadcrumb": "documentazione",
+      "terminal": "terminale",
+      "onThisPage": "in questa pagina"
+    }
+  }
+}

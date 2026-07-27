@@ -1,0 +1,41 @@
+{
+  "namespace": "page_mining",
+  "translations": {
+    "pt": {
+      "metaTitle": "Mineração · EAV7 Scan"
+    },
+    "en": {
+      "metaTitle": "Mining · EAV7 Scan"
+    },
+    "es": {
+      "metaTitle": "Minería · EAV7 Scan"
+    },
+    "zh": {
+      "metaTitle": "挖矿 · EAV7 Scan"
+    },
+    "fr": {
+      "metaTitle": "Minage · EAV7 Scan"
+    },
+    "de": {
+      "metaTitle": "Mining · EAV7 Scan"
+    },
+    "ja": {
+      "metaTitle": "マイニング · EAV7 Scan"
+    },
+    "ru": {
+      "metaTitle": "Майнинг · EAV7 Scan"
+    },
+    "ar": {
+      "metaTitle": "التعدين · EAV7 Scan"
+    },
+    "hi": {
+      "metaTitle": "माइनिंग · EAV7 Scan"
+    },
+    "ko": {
+      "metaTitle": "마이닝 · EAV7 Scan"
+    },
+    "it": {
+      "metaTitle": "Mining · EAV7 Scan"
+    }
+  }
+}

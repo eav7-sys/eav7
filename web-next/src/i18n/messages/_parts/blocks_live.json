@@ -1,0 +1,281 @@
+{
+  "namespace": "blocks_live",
+  "translations": {
+    "pt": {
+      "networkLabel": "cadeia eav20",
+      "title": "Blocos",
+      "live": "ao vivo",
+      "blockTimeInfo": "um novo bloco a cada {n}s · consenso DPoS",
+      "searchPlaceholder": "Buscar bloco por altura ou hash…",
+      "stats": {
+        "height": "Altura atual",
+        "blockTime": "Tempo de bloco",
+        "avgTx": "Txs / bloco (méd.)",
+        "activeProducers": "Produtores ativos"
+      },
+      "latestBlocks": "Últimos blocos",
+      "updating": "atualizando",
+      "columns": {
+        "block": "Bloco",
+        "age": "Idade",
+        "txs": "Txs",
+        "producer": "Produtor",
+        "reward": "Recompensa",
+        "hash": "Hash"
+      }
+    },
+    "en": {
+      "networkLabel": "eav20 chain",
+      "title": "Blocks",
+      "live": "live",
+      "blockTimeInfo": "a new block every {n}s · DPoS consensus",
+      "searchPlaceholder": "Search block by height or hash…",
+      "stats": {
+        "height": "Current height",
+        "blockTime": "Block time",
+        "avgTx": "Txs / block (avg.)",
+        "activeProducers": "Active producers"
+      },
+      "latestBlocks": "Latest blocks",
+      "updating": "updating",
+      "columns": {
+        "block": "Block",
+        "age": "Age",
+        "txs": "Txs",
+        "producer": "Producer",
+        "reward": "Reward",
+        "hash": "Hash"
+      }
+    },
+    "es": {
+      "networkLabel": "cadena eav20",
+      "title": "Bloques",
+      "live": "en vivo",
+      "blockTimeInfo": "un nuevo bloque cada {n}s · consenso DPoS",
+      "searchPlaceholder": "Buscar bloque por altura o hash…",
+      "stats": {
+        "height": "Altura actual",
+        "blockTime": "Tiempo de bloque",
+        "avgTx": "Txs / bloque (prom.)",
+        "activeProducers": "Productores activos"
+      },
+      "latestBlocks": "Últimos bloques",
+      "updating": "actualizando",
+      "columns": {
+        "block": "Bloque",
+        "age": "Antigüedad",
+        "txs": "Txs",
+        "producer": "Productor",
+        "reward": "Recompensa",
+        "hash": "Hash"
+      }
+    },
+    "zh": {
+      "networkLabel": "eav20 链",
+      "title": "区块",
+      "live": "实时",
+      "blockTimeInfo": "每 {n} 秒产生一个新区块 · DPoS 共识",
+      "searchPlaceholder": "按高度或哈希搜索区块…",
+      "stats": {
+        "height": "当前高度",
+        "blockTime": "出块时间",
+        "avgTx": "每区块交易数（均值）",
+        "activeProducers": "活跃生产者"
+      },
+      "latestBlocks": "最新区块",
+      "updating": "更新中",
+      "columns": {
+        "block": "区块",
+        "age": "时间",
+        "txs": "交易数",
+        "producer": "生产者",
+        "reward": "奖励",
+        "hash": "哈希"
+      }
+    },
+    "fr": {
+      "networkLabel": "chaîne eav20",
+      "title": "Blocs",
+      "live": "en direct",
+      "blockTimeInfo": "un nouveau bloc toutes les {n}s · consensus DPoS",
+      "searchPlaceholder": "Rechercher un bloc par hauteur ou hash…",
+      "stats": {
+        "height": "Hauteur actuelle",
+        "blockTime": "Temps de bloc",
+        "avgTx": "Txs / bloc (moy.)",
+        "activeProducers": "Producteurs actifs"
+      },
+      "latestBlocks": "Derniers blocs",
+      "updating": "mise à jour",
+      "columns": {
+        "block": "Bloc",
+        "age": "Âge",
+        "txs": "Txs",
+        "producer": "Producteur",
+        "reward": "Récompense",
+        "hash": "Hash"
+      }
+    },
+    "de": {
+      "networkLabel": "eav20-Kette",
+      "title": "Blöcke",
+      "live": "live",
+      "blockTimeInfo": "alle {n}s ein neuer Block · DPoS-Konsens",
+      "searchPlaceholder": "Block nach Höhe oder Hash suchen…",
+      "stats": {
+        "height": "Aktuelle Höhe",
+        "blockTime": "Blockzeit",
+        "avgTx": "Txs / Block (Ø)",
+        "activeProducers": "Aktive Produzenten"
+      },
+      "latestBlocks": "Neueste Blöcke",
+      "updating": "aktualisiert",
+      "columns": {
+        "block": "Block",
+        "age": "Alter",
+        "txs": "Txs",
+        "producer": "Produzent",
+        "reward": "Belohnung",
+        "hash": "Hash"
+      }
+    },
+    "ja": {
+      "networkLabel": "eav20 チェーン",
+      "title": "ブロック",
+      "live": "ライブ",
+      "blockTimeInfo": "{n}秒ごとに新しいブロック · DPoSコンセンサス",
+      "searchPlaceholder": "高さまたはハッシュでブロックを検索…",
+      "stats": {
+        "height": "現在の高さ",
+        "blockTime": "ブロック時間",
+        "avgTx": "Txs / ブロック（平均）",
+        "activeProducers": "アクティブなプロデューサー"
+      },
+      "latestBlocks": "最新のブロック",
+      "updating": "更新中",
+      "columns": {
+        "block": "ブロック",
+        "age": "経過時間",
+        "txs": "Txs",
+        "producer": "プロデューサー",
+        "reward": "報酬",
+        "hash": "ハッシュ"
+      }
+    },
+    "ru": {
+      "networkLabel": "сеть eav20",
+      "title": "Блоки",
+      "live": "в реальном времени",
+      "blockTimeInfo": "новый блок каждые {n} с · консенсус DPoS",
+      "searchPlaceholder": "Поиск блока по высоте или хешу…",
+      "stats": {
+        "height": "Текущая высота",
+        "blockTime": "Время блока",
+        "avgTx": "Тр. / блок (средн.)",
+        "activeProducers": "Активные производители"
+      },
+      "latestBlocks": "Последние блоки",
+      "updating": "обновление",
+      "columns": {
+        "block": "Блок",
+        "age": "Возраст",
+        "txs": "Тр.",
+        "producer": "Производитель",
+        "reward": "Награда",
+        "hash": "Хеш"
+      }
+    },
+    "ar": {
+      "networkLabel": "سلسلة eav20",
+      "title": "الكتل",
+      "live": "مباشر",
+      "blockTimeInfo": "كتلة جديدة كل {n} ثانية · إجماع DPoS",
+      "searchPlaceholder": "ابحث عن كتلة حسب الارتفاع أو التجزئة…",
+      "stats": {
+        "height": "الارتفاع الحالي",
+        "blockTime": "زمن الكتلة",
+        "avgTx": "المعاملات / كتلة (متوسط)",
+        "activeProducers": "المنتجون النشطون"
+      },
+      "latestBlocks": "أحدث الكتل",
+      "updating": "جارٍ التحديث",
+      "columns": {
+        "block": "الكتلة",
+        "age": "العمر",
+        "txs": "المعاملات",
+        "producer": "المنتج",
+        "reward": "المكافأة",
+        "hash": "التجزئة"
+      }
+    },
+    "hi": {
+      "networkLabel": "eav20 श्रृंखला",
+      "title": "ब्लॉक",
+      "live": "लाइव",
+      "blockTimeInfo": "हर {n} सेकंड में एक नया ब्लॉक · DPoS सर्वसम्मति",
+      "searchPlaceholder": "ऊँचाई या हैश से ब्लॉक खोजें…",
+      "stats": {
+        "height": "वर्तमान ऊँचाई",
+        "blockTime": "ब्लॉक समय",
+        "avgTx": "टीएक्स / ब्लॉक (औसत)",
+        "activeProducers": "सक्रिय उत्पादक"
+      },
+      "latestBlocks": "नवीनतम ब्लॉक",
+      "updating": "अपडेट हो रहा है",
+      "columns": {
+        "block": "ब्लॉक",
+        "age": "आयु",
+        "txs": "टीएक्स",
+        "producer": "उत्पादक",
+        "reward": "इनाम",
+        "hash": "हैश"
+      }
+    },
+    "ko": {
+      "networkLabel": "eav20 체인",
+      "title": "블록",
+      "live": "실시간",
+      "blockTimeInfo": "{n}초마다 새 블록 · DPoS 합의",
+      "searchPlaceholder": "높이 또는 해시로 블록 검색…",
+      "stats": {
+        "height": "현재 높이",
+        "blockTime": "블록 시간",
+        "avgTx": "블록당 Txs (평균)",
+        "activeProducers": "활성 생산자"
+      },
+      "latestBlocks": "최신 블록",
+      "updating": "업데이트 중",
+      "columns": {
+        "block": "블록",
+        "age": "경과 시간",
+        "txs": "Txs",
+        "producer": "생산자",
+        "reward": "보상",
+        "hash": "해시"
+      }
+    },
+    "it": {
+      "networkLabel": "catena eav20",
+      "title": "Blocchi",
+      "live": "in diretta",
+      "blockTimeInfo": "un nuovo blocco ogni {n}s · consenso DPoS",
+      "searchPlaceholder": "Cerca blocco per altezza o hash…",
+      "stats": {
+        "height": "Altezza attuale",
+        "blockTime": "Tempo di blocco",
+        "avgTx": "Txs / blocco (media)",
+        "activeProducers": "Produttori attivi"
+      },
+      "latestBlocks": "Ultimi blocchi",
+      "updating": "aggiornamento",
+      "columns": {
+        "block": "Blocco",
+        "age": "Età",
+        "txs": "Txs",
+        "producer": "Produttore",
+        "reward": "Ricompensa",
+        "hash": "Hash"
+      }
+    }
+  }
+}

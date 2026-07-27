@@ -1,0 +1,245 @@
+{
+  "namespace": "home_netPulse",
+  "translations": {
+    "pt": {
+      "eyebrow": "tempo real",
+      "title": "O pulso da rede",
+      "subtitle": "A cada segundo um novo bloco. Acompanhe a rede EAV7 batendo em tempo real.",
+      "stats": {
+        "blockHeight": "Altura do bloco",
+        "txLast30": "Txs · últimos 30 blocos",
+        "mempool": "Mempool",
+        "rewardPerBlock": "EAV7 / bloco"
+      },
+      "activity": {
+        "title": "Atividade da rede",
+        "txInLastBlocks": "transações nos últimos {n} blocos"
+      },
+      "slots": {
+        "title": "Slots DPoS",
+        "activeValidators": "validadores ativos",
+        "supply": "supply {n} EAV7"
+      }
+    },
+    "en": {
+      "eyebrow": "real time",
+      "title": "The network's pulse",
+      "subtitle": "A new block every second. Watch the EAV7 network beating in real time.",
+      "stats": {
+        "blockHeight": "Block height",
+        "txLast30": "Txs · last 30 blocks",
+        "mempool": "Mempool",
+        "rewardPerBlock": "EAV7 / block"
+      },
+      "activity": {
+        "title": "Network activity",
+        "txInLastBlocks": "transactions in the last {n} blocks"
+      },
+      "slots": {
+        "title": "DPoS slots",
+        "activeValidators": "active validators",
+        "supply": "supply {n} EAV7"
+      }
+    },
+    "es": {
+      "eyebrow": "tiempo real",
+      "title": "El pulso de la red",
+      "subtitle": "Un nuevo bloque cada segundo. Sigue a la red EAV7 latiendo en tiempo real.",
+      "stats": {
+        "blockHeight": "Altura del bloque",
+        "txLast30": "Txs · últimos 30 bloques",
+        "mempool": "Mempool",
+        "rewardPerBlock": "EAV7 / bloque"
+      },
+      "activity": {
+        "title": "Actividad de la red",
+        "txInLastBlocks": "transacciones en los últimos {n} bloques"
+      },
+      "slots": {
+        "title": "Slots DPoS",
+        "activeValidators": "validadores activos",
+        "supply": "suministro {n} EAV7"
+      }
+    },
+    "zh": {
+      "eyebrow": "实时",
+      "title": "网络脉动",
+      "subtitle": "每秒一个新区块。实时关注 EAV7 网络的跳动。",
+      "stats": {
+        "blockHeight": "区块高度",
+        "txLast30": "交易数 · 最近 30 个区块",
+        "mempool": "内存池",
+        "rewardPerBlock": "EAV7 / 区块"
+      },
+      "activity": {
+        "title": "网络活动",
+        "txInLastBlocks": "最近 {n} 个区块的交易数"
+      },
+      "slots": {
+        "title": "DPoS 席位",
+        "activeValidators": "活跃验证者",
+        "supply": "流通量 {n} EAV7"
+      }
+    },
+    "fr": {
+      "eyebrow": "temps réel",
+      "title": "Le pouls du réseau",
+      "subtitle": "Un nouveau bloc chaque seconde. Suivez le réseau EAV7 battre en temps réel.",
+      "stats": {
+        "blockHeight": "Hauteur du bloc",
+        "txLast30": "Tx · 30 derniers blocs",
+        "mempool": "Mempool",
+        "rewardPerBlock": "EAV7 / bloc"
+      },
+      "activity": {
+        "title": "Activité du réseau",
+        "txInLastBlocks": "transactions sur les {n} derniers blocs"
+      },
+      "slots": {
+        "title": "Emplacements DPoS",
+        "activeValidators": "validateurs actifs",
+        "supply": "offre {n} EAV7"
+      }
+    },
+    "de": {
+      "eyebrow": "Echtzeit",
+      "title": "Der Puls des Netzwerks",
+      "subtitle": "Jede Sekunde ein neuer Block. Verfolge das EAV7-Netzwerk in Echtzeit.",
+      "stats": {
+        "blockHeight": "Blockhöhe",
+        "txLast30": "Txs · letzte 30 Blöcke",
+        "mempool": "Mempool",
+        "rewardPerBlock": "EAV7 / Block"
+      },
+      "activity": {
+        "title": "Netzwerkaktivität",
+        "txInLastBlocks": "Transaktionen in den letzten {n} Blöcken"
+      },
+      "slots": {
+        "title": "DPoS-Slots",
+        "activeValidators": "aktive Validatoren",
+        "supply": "Umlauf {n} EAV7"
+      }
+    },
+    "ja": {
+      "eyebrow": "リアルタイム",
+      "title": "ネットワークの鼓動",
+      "subtitle": "毎秒新しいブロックが生成されます。EAV7ネットワークの鼓動をリアルタイムで確認しましょう。",
+      "stats": {
+        "blockHeight": "ブロック高",
+        "txLast30": "取引数 · 直近30ブロック",
+        "mempool": "メンプール",
+        "rewardPerBlock": "EAV7 / ブロック"
+      },
+      "activity": {
+        "title": "ネットワークアクティビティ",
+        "txInLastBlocks": "直近{n}ブロックの取引数"
+      },
+      "slots": {
+        "title": "DPoSスロット",
+        "activeValidators": "アクティブなバリデーター",
+        "supply": "供給量 {n} EAV7"
+      }
+    },
+    "ru": {
+      "eyebrow": "реальное время",
+      "title": "Пульс сети",
+      "subtitle": "Новый блок каждую секунду. Следите за биением сети EAV7 в реальном времени.",
+      "stats": {
+        "blockHeight": "Высота блока",
+        "txLast30": "Тр-ции · последние 30 блоков",
+        "mempool": "Мемпул",
+        "rewardPerBlock": "EAV7 / блок"
+      },
+      "activity": {
+        "title": "Активность сети",
+        "txInLastBlocks": "транзакций за последние {n} блоков"
+      },
+      "slots": {
+        "title": "Слоты DPoS",
+        "activeValidators": "активных валидаторов",
+        "supply": "предложение {n} EAV7"
+      }
+    },
+    "ar": {
+      "eyebrow": "الوقت الفعلي",
+      "title": "نبض الشبكة",
+      "subtitle": "كتلة جديدة كل ثانية. تابع نبض شبكة EAV7 في الوقت الفعلي.",
+      "stats": {
+        "blockHeight": "ارتفاع الكتلة",
+        "txLast30": "المعاملات · آخر 30 كتلة",
+        "mempool": "الذاكرة المؤقتة (Mempool)",
+        "rewardPerBlock": "EAV7 / كتلة"
+      },
+      "activity": {
+        "title": "نشاط الشبكة",
+        "txInLastBlocks": "معاملات في آخر {n} كتلة"
+      },
+      "slots": {
+        "title": "فتحات DPoS",
+        "activeValidators": "المدققون النشطون",
+        "supply": "المعروض {n} EAV7"
+      }
+    },
+    "hi": {
+      "eyebrow": "रीयल टाइम",
+      "title": "नेटवर्क की धड़कन",
+      "subtitle": "हर सेकंड एक नया ब्लॉक। EAV7 नेटवर्क की धड़कन को रीयल टाइम में देखें।",
+      "stats": {
+        "blockHeight": "ब्लॉक ऊंचाई",
+        "txLast30": "लेनदेन · पिछले 30 ब्लॉक",
+        "mempool": "मेमपूल",
+        "rewardPerBlock": "EAV7 / ब्लॉक"
+      },
+      "activity": {
+        "title": "नेटवर्क गतिविधि",
+        "txInLastBlocks": "पिछले {n} ब्लॉकों में लेनदेन"
+      },
+      "slots": {
+        "title": "DPoS स्लॉट्स",
+        "activeValidators": "सक्रिय वैलिडेटर",
+        "supply": "आपूर्ति {n} EAV7"
+      }
+    },
+    "ko": {
+      "eyebrow": "실시간",
+      "title": "네트워크의 맥박",
+      "subtitle": "매초 새로운 블록이 생성됩니다. EAV7 네트워크의 실시간 맥박을 확인하세요.",
+      "stats": {
+        "blockHeight": "블록 높이",
+        "txLast30": "거래 수 · 최근 30개 블록",
+        "mempool": "멤풀",
+        "rewardPerBlock": "EAV7 / 블록"
+      },
+      "activity": {
+        "title": "네트워크 활동",
+        "txInLastBlocks": "최근 {n}개 블록의 거래 수"
+      },
+      "slots": {
+        "title": "DPoS 슬롯",
+        "activeValidators": "활성 검증인",
+        "supply": "공급량 {n} EAV7"
+      }
+    },
+    "it": {
+      "eyebrow": "tempo reale",
+      "title": "Il battito della rete",
+      "subtitle": "Un nuovo blocco ogni secondo. Segui la rete EAV7 pulsare in tempo reale.",
+      "stats": {
+        "blockHeight": "Altezza del blocco",
+        "txLast30": "Tx · ultimi 30 blocchi",
+        "mempool": "Mempool",
+        "rewardPerBlock": "EAV7 / blocco"
+      },
+      "activity": {
+        "title": "Attività della rete",
+        "txInLastBlocks": "transazioni negli ultimi {n} blocchi"
+      },
+      "slots": {
+        "title": "Slot DPoS",
+        "activeValidators": "validatori attivi",
+        "supply": "offerta {n} EAV7"
+      }
+    }
+  }
+}

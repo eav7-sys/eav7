@@ -1,0 +1,389 @@
+{
+  "namespace": "txs_live",
+  "translations": {
+    "pt": {
+      "chainLabel": "cadeia eav20",
+      "title": "Transações",
+      "live": "ao vivo",
+      "subtitleLive": "mais recentes primeiro · valores em EAV7",
+      "subtitleOlder": "transações mais antigas · valores em EAV7",
+      "searchPlaceholder": "Buscar tx, bloco ou endereço…",
+      "cols": {
+        "hash": "Hash",
+        "block": "Bloco",
+        "type": "Tipo",
+        "from": "De",
+        "to": "Para",
+        "value": "Valor",
+        "age": "Idade"
+      },
+      "stats": {
+        "totalTx": "Total de transações",
+        "mempool": "Na mempool",
+        "volume": "Volume (EAV7)",
+        "avgFee": "Taxa média"
+      },
+      "table": {
+        "latest": "Últimas transações",
+        "older": "Transações anteriores",
+        "updating": "atualizando",
+        "empty": "nenhuma transação encontrada",
+        "count": "{n} transações",
+        "loadMore": "Carregar mais antigas →",
+        "genesis": "início da cadeia"
+      }
+    },
+    "en": {
+      "chainLabel": "eav20 chain",
+      "title": "Transactions",
+      "live": "live",
+      "subtitleLive": "newest first · values in EAV7",
+      "subtitleOlder": "older transactions · values in EAV7",
+      "searchPlaceholder": "Search tx, block or address…",
+      "cols": {
+        "hash": "Hash",
+        "block": "Block",
+        "type": "Type",
+        "from": "From",
+        "to": "To",
+        "value": "Value",
+        "age": "Age"
+      },
+      "stats": {
+        "totalTx": "Total transactions",
+        "mempool": "In mempool",
+        "volume": "Volume (EAV7)",
+        "avgFee": "Average fee"
+      },
+      "table": {
+        "latest": "Latest transactions",
+        "older": "Previous transactions",
+        "updating": "updating",
+        "empty": "no transactions found",
+        "count": "{n} transactions",
+        "loadMore": "Load older →",
+        "genesis": "start of chain"
+      }
+    },
+    "es": {
+      "chainLabel": "cadena eav20",
+      "title": "Transacciones",
+      "live": "en vivo",
+      "subtitleLive": "más recientes primero · valores en EAV7",
+      "subtitleOlder": "transacciones más antiguas · valores en EAV7",
+      "searchPlaceholder": "Buscar tx, bloque o dirección…",
+      "cols": {
+        "hash": "Hash",
+        "block": "Bloque",
+        "type": "Tipo",
+        "from": "De",
+        "to": "Para",
+        "value": "Valor",
+        "age": "Antigüedad"
+      },
+      "stats": {
+        "totalTx": "Total de transacciones",
+        "mempool": "En mempool",
+        "volume": "Volumen (EAV7)",
+        "avgFee": "Tarifa media"
+      },
+      "table": {
+        "latest": "Últimas transacciones",
+        "older": "Transacciones anteriores",
+        "updating": "actualizando",
+        "empty": "no se encontraron transacciones",
+        "count": "{n} transacciones",
+        "loadMore": "Cargar más antiguas →",
+        "genesis": "inicio de la cadena"
+      }
+    },
+    "zh": {
+      "chainLabel": "eav20 链",
+      "title": "交易",
+      "live": "实时",
+      "subtitleLive": "最新优先 · 数值单位为 EAV7",
+      "subtitleOlder": "较早的交易 · 数值单位为 EAV7",
+      "searchPlaceholder": "搜索交易、区块或地址…",
+      "cols": {
+        "hash": "哈希",
+        "block": "区块",
+        "type": "类型",
+        "from": "发送方",
+        "to": "接收方",
+        "value": "金额",
+        "age": "时间"
+      },
+      "stats": {
+        "totalTx": "交易总数",
+        "mempool": "内存池中",
+        "volume": "交易量 (EAV7)",
+        "avgFee": "平均手续费"
+      },
+      "table": {
+        "latest": "最新交易",
+        "older": "历史交易",
+        "updating": "更新中",
+        "empty": "未找到交易",
+        "count": "{n} 笔交易",
+        "loadMore": "加载更早 →",
+        "genesis": "链的起点"
+      }
+    },
+    "fr": {
+      "chainLabel": "chaîne eav20",
+      "title": "Transactions",
+      "live": "en direct",
+      "subtitleLive": "les plus récentes en premier · valeurs en EAV7",
+      "subtitleOlder": "transactions plus anciennes · valeurs en EAV7",
+      "searchPlaceholder": "Rechercher tx, bloc ou adresse…",
+      "cols": {
+        "hash": "Hash",
+        "block": "Bloc",
+        "type": "Type",
+        "from": "De",
+        "to": "Vers",
+        "value": "Valeur",
+        "age": "Âge"
+      },
+      "stats": {
+        "totalTx": "Total des transactions",
+        "mempool": "Dans la mempool",
+        "volume": "Volume (EAV7)",
+        "avgFee": "Frais moyens"
+      },
+      "table": {
+        "latest": "Dernières transactions",
+        "older": "Transactions précédentes",
+        "updating": "mise à jour",
+        "empty": "aucune transaction trouvée",
+        "count": "{n} transactions",
+        "loadMore": "Charger plus anciennes →",
+        "genesis": "début de la chaîne"
+      }
+    },
+    "de": {
+      "chainLabel": "eav20-Chain",
+      "title": "Transaktionen",
+      "live": "live",
+      "subtitleLive": "neueste zuerst · Werte in EAV7",
+      "subtitleOlder": "ältere Transaktionen · Werte in EAV7",
+      "searchPlaceholder": "Tx, Block oder Adresse suchen…",
+      "cols": {
+        "hash": "Hash",
+        "block": "Block",
+        "type": "Typ",
+        "from": "Von",
+        "to": "An",
+        "value": "Wert",
+        "age": "Alter"
+      },
+      "stats": {
+        "totalTx": "Transaktionen gesamt",
+        "mempool": "In der Mempool",
+        "volume": "Volumen (EAV7)",
+        "avgFee": "Durchschnittsgebühr"
+      },
+      "table": {
+        "latest": "Neueste Transaktionen",
+        "older": "Frühere Transaktionen",
+        "updating": "wird aktualisiert",
+        "empty": "keine Transaktionen gefunden",
+        "count": "{n} Transaktionen",
+        "loadMore": "Ältere laden →",
+        "genesis": "Beginn der Chain"
+      }
+    },
+    "ja": {
+      "chainLabel": "eav20 チェーン",
+      "title": "トランザクション",
+      "live": "ライブ",
+      "subtitleLive": "新しい順 · 単位は EAV7",
+      "subtitleOlder": "過去のトランザクション · 単位は EAV7",
+      "searchPlaceholder": "トランザクション、ブロック、アドレスを検索…",
+      "cols": {
+        "hash": "ハッシュ",
+        "block": "ブロック",
+        "type": "種別",
+        "from": "送信元",
+        "to": "送信先",
+        "value": "金額",
+        "age": "経過時間"
+      },
+      "stats": {
+        "totalTx": "総トランザクション数",
+        "mempool": "メンプール内",
+        "volume": "取引量 (EAV7)",
+        "avgFee": "平均手数料"
+      },
+      "table": {
+        "latest": "最新のトランザクション",
+        "older": "過去のトランザクション",
+        "updating": "更新中",
+        "empty": "トランザクションが見つかりません",
+        "count": "{n} 件のトランザクション",
+        "loadMore": "さらに古いものを読み込む →",
+        "genesis": "チェーンの起点"
+      }
+    },
+    "ru": {
+      "chainLabel": "цепочка eav20",
+      "title": "Транзакции",
+      "live": "в реальном времени",
+      "subtitleLive": "сначала новые · значения в EAV7",
+      "subtitleOlder": "более старые транзакции · значения в EAV7",
+      "searchPlaceholder": "Поиск tx, блока или адреса…",
+      "cols": {
+        "hash": "Хеш",
+        "block": "Блок",
+        "type": "Тип",
+        "from": "От",
+        "to": "Кому",
+        "value": "Сумма",
+        "age": "Возраст"
+      },
+      "stats": {
+        "totalTx": "Всего транзакций",
+        "mempool": "В мемпуле",
+        "volume": "Объём (EAV7)",
+        "avgFee": "Средняя комиссия"
+      },
+      "table": {
+        "latest": "Последние транзакции",
+        "older": "Предыдущие транзакции",
+        "updating": "обновление",
+        "empty": "транзакции не найдены",
+        "count": "{n} транзакций",
+        "loadMore": "Загрузить более старые →",
+        "genesis": "начало цепочки"
+      }
+    },
+    "ar": {
+      "chainLabel": "سلسلة eav20",
+      "title": "المعاملات",
+      "live": "مباشر",
+      "subtitleLive": "الأحدث أولاً · القيم بـ EAV7",
+      "subtitleOlder": "معاملات أقدم · القيم بـ EAV7",
+      "searchPlaceholder": "ابحث عن معاملة أو كتلة أو عنوان…",
+      "cols": {
+        "hash": "التجزئة",
+        "block": "الكتلة",
+        "type": "النوع",
+        "from": "من",
+        "to": "إلى",
+        "value": "القيمة",
+        "age": "العمر"
+      },
+      "stats": {
+        "totalTx": "إجمالي المعاملات",
+        "mempool": "في المجمع",
+        "volume": "الحجم (EAV7)",
+        "avgFee": "متوسط الرسوم"
+      },
+      "table": {
+        "latest": "أحدث المعاملات",
+        "older": "المعاملات السابقة",
+        "updating": "جارٍ التحديث",
+        "empty": "لم يتم العثور على معاملات",
+        "count": "{n} معاملة",
+        "loadMore": "تحميل الأقدم →",
+        "genesis": "بداية السلسلة"
+      }
+    },
+    "hi": {
+      "chainLabel": "eav20 चेन",
+      "title": "लेन-देन",
+      "live": "लाइव",
+      "subtitleLive": "नवीनतम पहले · मूल्य EAV7 में",
+      "subtitleOlder": "पुराने लेन-देन · मूल्य EAV7 में",
+      "searchPlaceholder": "tx, ब्लॉक या पता खोजें…",
+      "cols": {
+        "hash": "हैश",
+        "block": "ब्लॉक",
+        "type": "प्रकार",
+        "from": "से",
+        "to": "प्रति",
+        "value": "मूल्य",
+        "age": "आयु"
+      },
+      "stats": {
+        "totalTx": "कुल लेन-देन",
+        "mempool": "मेमपूल में",
+        "volume": "वॉल्यूम (EAV7)",
+        "avgFee": "औसत शुल्क"
+      },
+      "table": {
+        "latest": "नवीनतम लेन-देन",
+        "older": "पिछले लेन-देन",
+        "updating": "अपडेट हो रहा है",
+        "empty": "कोई लेन-देन नहीं मिला",
+        "count": "{n} लेन-देन",
+        "loadMore": "पुराने लोड करें →",
+        "genesis": "चेन की शुरुआत"
+      }
+    },
+    "ko": {
+      "chainLabel": "eav20 체인",
+      "title": "거래",
+      "live": "실시간",
+      "subtitleLive": "최신순 · 단위 EAV7",
+      "subtitleOlder": "이전 거래 · 단위 EAV7",
+      "searchPlaceholder": "tx, 블록 또는 주소 검색…",
+      "cols": {
+        "hash": "해시",
+        "block": "블록",
+        "type": "유형",
+        "from": "보낸 주소",
+        "to": "받는 주소",
+        "value": "금액",
+        "age": "경과 시간"
+      },
+      "stats": {
+        "totalTx": "총 거래 수",
+        "mempool": "멤풀 내",
+        "volume": "거래량 (EAV7)",
+        "avgFee": "평균 수수료"
+      },
+      "table": {
+        "latest": "최신 거래",
+        "older": "이전 거래",
+        "updating": "업데이트 중",
+        "empty": "거래를 찾을 수 없습니다",
+        "count": "{n}건의 거래",
+        "loadMore": "이전 항목 더 보기 →",
+        "genesis": "체인의 시작"
+      }
+    },
+    "it": {
+      "chainLabel": "catena eav20",
+      "title": "Transazioni",
+      "live": "in diretta",
+      "subtitleLive": "più recenti prima · valori in EAV7",
+      "subtitleOlder": "transazioni più vecchie · valori in EAV7",
+      "searchPlaceholder": "Cerca tx, blocco o indirizzo…",
+      "cols": {
+        "hash": "Hash",
+        "block": "Blocco",
+        "type": "Tipo",
+        "from": "Da",
+        "to": "A",
+        "value": "Valore",
+        "age": "Età"
+      },
+      "stats": {
+        "totalTx": "Totale transazioni",
+        "mempool": "Nella mempool",
+        "volume": "Volume (EAV7)",
+        "avgFee": "Commissione media"
+      },
+      "table": {
+        "latest": "Ultime transazioni",
+        "older": "Transazioni precedenti",
+        "updating": "aggiornamento",
+        "empty": "nessuna transazione trovata",
+        "count": "{n} transazioni",
+        "loadMore": "Carica più vecchie →",
+        "genesis": "inizio della catena"
+      }
+    }
+  }
+}

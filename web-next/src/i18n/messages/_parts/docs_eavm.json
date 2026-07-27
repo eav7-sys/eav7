@@ -1,0 +1,557 @@
+{
+  "namespace": "docs_eavm",
+  "translations": {
+    "pt": {
+      "badge": {
+        "customNetwork": "rede customizada"
+      },
+      "title": "Use a EAV7 na sua carteira",
+      "description": "A EAV7 fala o dialeto JSON-RPC que carteiras universais entendem — adicione a rede em um clique.",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "qualquer carteira EVM"
+      },
+      "params": {
+        "networkName": "Nome da rede",
+        "rpcUrl": "URL do RPC",
+        "chainId": "Chain ID",
+        "symbol": "Símbolo",
+        "explorer": "Explorer",
+        "decimals": "Decimais"
+      },
+      "button": {
+        "adding": "Adicionando…",
+        "addToMetamask": "Adicionar à MetaMask",
+        "addToTrust": "Adicionar na Trust Wallet",
+        "openInMetamask": "Abrir na MetaMask"
+      },
+      "status": {
+        "added": "rede adicionada!",
+        "noWallet": "MetaMask não detectada — copie os dados ao lado.",
+        "mobileHint": "No celular: abra pelo app da carteira para adicionar a rede.",
+        "addManually": "Se falhar, adicione manualmente com os dados acima (rede customizada).",
+        "otherWallets": "Usa outra carteira (Trust, etc.)? Adicione manualmente com os dados acima (rede customizada)."
+      },
+      "error": {
+        "addFailed": "Não foi possível adicionar a rede.",
+        "userRejected": "Você cancelou a operação na carteira."
+      },
+      "mapping": {
+        "badge": "mesma conta",
+        "title": "Duas identidades, uma conta",
+        "labelEavm": "EAVM",
+        "labelNative": "nativo",
+        "desc1": "A MetaMask exibe o",
+        "desc2": "; on-chain o saldo vive no",
+        "desc3": "correspondente. São a mesma conta."
+      },
+      "steps": {
+        "step1": "Clique em adicionar a rede EAV7",
+        "step2": "Sua conta aparece como 0x… na carteira",
+        "step3": "On-chain o saldo vive no E7 correspondente"
+      }
+    },
+    "en": {
+      "badge": {
+        "customNetwork": "custom network"
+      },
+      "title": "Use EAV7 in your wallet",
+      "description": "EAV7 speaks the JSON-RPC dialect that universal wallets understand — add the network in one click.",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "any EVM wallet"
+      },
+      "params": {
+        "networkName": "Network name",
+        "rpcUrl": "RPC URL",
+        "chainId": "Chain ID",
+        "symbol": "Symbol",
+        "explorer": "Explorer",
+        "decimals": "Decimals"
+      },
+      "button": {
+        "adding": "Adding…",
+        "addToMetamask": "Add to MetaMask",
+        "addToTrust": "Add to Trust Wallet",
+        "openInMetamask": "Open in MetaMask"
+      },
+      "status": {
+        "added": "network added!",
+        "noWallet": "MetaMask not detected — copy the details alongside.",
+        "mobileHint": "On mobile: open in your wallet app to add the network.",
+        "addManually": "If it fails, add it manually with the details above (custom network).",
+        "otherWallets": "Using another wallet (Trust, etc.)? Add it manually with the details above (custom network)."
+      },
+      "error": {
+        "addFailed": "Could not add the network.",
+        "userRejected": "You rejected the request in your wallet."
+      },
+      "mapping": {
+        "badge": "same account",
+        "title": "Two identities, one account",
+        "labelEavm": "EAVM",
+        "labelNative": "native",
+        "desc1": "MetaMask displays the",
+        "desc2": "; on-chain the balance lives in the",
+        "desc3": "corresponding address. They're the same account."
+      },
+      "steps": {
+        "step1": "Click to add the EAV7 network",
+        "step2": "Your account appears as 0x… in the wallet",
+        "step3": "On-chain the balance lives in the corresponding E7"
+      }
+    },
+    "es": {
+      "badge": {
+        "customNetwork": "red personalizada"
+      },
+      "title": "Usa la EAV7 en tu billetera",
+      "description": "La EAV7 habla el dialecto JSON-RPC que las billeteras universales entienden — agrega la red en un clic.",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "cualquier billetera EVM"
+      },
+      "params": {
+        "networkName": "Nombre de la red",
+        "rpcUrl": "URL del RPC",
+        "chainId": "Chain ID",
+        "symbol": "Símbolo",
+        "explorer": "Explorer",
+        "decimals": "Decimales"
+      },
+      "button": {
+        "adding": "Agregando…",
+        "addToMetamask": "Agregar a MetaMask"
+      },
+      "status": {
+        "added": "¡red agregada!",
+        "noWallet": "MetaMask no detectada — copia los datos al lado."
+      },
+      "error": {
+        "addFailed": "no se pudo agregar la red"
+      },
+      "mapping": {
+        "badge": "misma cuenta",
+        "title": "Dos identidades, una cuenta",
+        "labelEavm": "EAVM",
+        "labelNative": "nativo",
+        "desc1": "MetaMask muestra el",
+        "desc2": "; on-chain el saldo vive en el",
+        "desc3": "correspondiente. Son la misma cuenta."
+      },
+      "steps": {
+        "step1": "Haz clic para agregar la red EAV7",
+        "step2": "Tu cuenta aparece como 0x… en la billetera",
+        "step3": "On-chain el saldo vive en el E7 correspondiente"
+      }
+    },
+    "zh": {
+      "badge": {
+        "customNetwork": "自定义网络"
+      },
+      "title": "在你的钱包中使用 EAV7",
+      "description": "EAV7 使用通用钱包能理解的 JSON-RPC 方言——一键添加网络。",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "任意 EVM 钱包"
+      },
+      "params": {
+        "networkName": "网络名称",
+        "rpcUrl": "RPC 网址",
+        "chainId": "链 ID",
+        "symbol": "代币符号",
+        "explorer": "浏览器",
+        "decimals": "小数位数"
+      },
+      "button": {
+        "adding": "添加中…",
+        "addToMetamask": "添加到 MetaMask"
+      },
+      "status": {
+        "added": "网络已添加!",
+        "noWallet": "未检测到 MetaMask —— 请复制旁边的信息。"
+      },
+      "error": {
+        "addFailed": "无法添加该网络"
+      },
+      "mapping": {
+        "badge": "同一账户",
+        "title": "两种身份,一个账户",
+        "labelEavm": "EAVM",
+        "labelNative": "原生",
+        "desc1": "MetaMask 显示的是",
+        "desc2": ";链上余额则存放在对应的",
+        "desc3": "地址中。两者是同一个账户。"
+      },
+      "steps": {
+        "step1": "点击添加 EAV7 网络",
+        "step2": "你的账户会以 0x… 的形式显示在钱包中",
+        "step3": "链上余额存放在对应的 E7 地址中"
+      }
+    },
+    "fr": {
+      "badge": {
+        "customNetwork": "réseau personnalisé"
+      },
+      "title": "Utilisez l'EAV7 dans votre portefeuille",
+      "description": "L'EAV7 parle le dialecte JSON-RPC que les portefeuilles universels comprennent — ajoutez le réseau en un clic.",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "n'importe quel portefeuille EVM"
+      },
+      "params": {
+        "networkName": "Nom du réseau",
+        "rpcUrl": "URL du RPC",
+        "chainId": "Chain ID",
+        "symbol": "Symbole",
+        "explorer": "Explorer",
+        "decimals": "Décimales"
+      },
+      "button": {
+        "adding": "Ajout en cours…",
+        "addToMetamask": "Ajouter à MetaMask"
+      },
+      "status": {
+        "added": "réseau ajouté !",
+        "noWallet": "MetaMask non détectée — copiez les données ci-contre."
+      },
+      "error": {
+        "addFailed": "impossible d'ajouter le réseau"
+      },
+      "mapping": {
+        "badge": "même compte",
+        "title": "Deux identités, un seul compte",
+        "labelEavm": "EAVM",
+        "labelNative": "natif",
+        "desc1": "MetaMask affiche le",
+        "desc2": "; on-chain le solde vit dans le",
+        "desc3": "correspondant. C'est le même compte."
+      },
+      "steps": {
+        "step1": "Cliquez pour ajouter le réseau EAV7",
+        "step2": "Votre compte apparaît sous la forme 0x… dans le portefeuille",
+        "step3": "On-chain le solde vit dans l'E7 correspondant"
+      }
+    },
+    "de": {
+      "badge": {
+        "customNetwork": "benutzerdefiniertes netzwerk"
+      },
+      "title": "Nutze EAV7 in deiner Wallet",
+      "description": "EAV7 spricht den JSON-RPC-Dialekt, den universelle Wallets verstehen — füge das Netzwerk mit einem Klick hinzu.",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "jede EVM-Wallet"
+      },
+      "params": {
+        "networkName": "Netzwerkname",
+        "rpcUrl": "RPC-URL",
+        "chainId": "Chain ID",
+        "symbol": "Symbol",
+        "explorer": "Explorer",
+        "decimals": "Dezimalstellen"
+      },
+      "button": {
+        "adding": "Wird hinzugefügt…",
+        "addToMetamask": "Zu MetaMask hinzufügen"
+      },
+      "status": {
+        "added": "Netzwerk hinzugefügt!",
+        "noWallet": "MetaMask nicht erkannt — kopiere die Daten daneben."
+      },
+      "error": {
+        "addFailed": "Netzwerk konnte nicht hinzugefügt werden"
+      },
+      "mapping": {
+        "badge": "gleiches konto",
+        "title": "Zwei Identitäten, ein Konto",
+        "labelEavm": "EAVM",
+        "labelNative": "nativ",
+        "desc1": "MetaMask zeigt die",
+        "desc2": "; on-chain lebt das Guthaben in der entsprechenden",
+        "desc3": "Adresse. Es ist dasselbe Konto."
+      },
+      "steps": {
+        "step1": "Klicke, um das EAV7-Netzwerk hinzuzufügen",
+        "step2": "Dein Konto erscheint als 0x… in der Wallet",
+        "step3": "On-chain lebt das Guthaben in der entsprechenden E7"
+      }
+    },
+    "ja": {
+      "badge": {
+        "customNetwork": "カスタムネットワーク"
+      },
+      "title": "ウォレットで EAV7 を使う",
+      "description": "EAV7 は汎用ウォレットが理解できる JSON-RPC 方言を話します — ワンクリックでネットワークを追加。",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "任意の EVM ウォレット"
+      },
+      "params": {
+        "networkName": "ネットワーク名",
+        "rpcUrl": "RPC URL",
+        "chainId": "チェーン ID",
+        "symbol": "シンボル",
+        "explorer": "エクスプローラー",
+        "decimals": "小数桁数"
+      },
+      "button": {
+        "adding": "追加中…",
+        "addToMetamask": "MetaMask に追加"
+      },
+      "status": {
+        "added": "ネットワークを追加しました!",
+        "noWallet": "MetaMask が検出されません — 隣のデータをコピーしてください。"
+      },
+      "error": {
+        "addFailed": "ネットワークを追加できませんでした"
+      },
+      "mapping": {
+        "badge": "同一アカウント",
+        "title": "2つのID、1つのアカウント",
+        "labelEavm": "EAVM",
+        "labelNative": "ネイティブ",
+        "desc1": "MetaMask には",
+        "desc2": "が表示されます。オンチェーンでは残高は対応する",
+        "desc3": "に存在します。同じアカウントです。"
+      },
+      "steps": {
+        "step1": "クリックして EAV7 ネットワークを追加",
+        "step2": "アカウントはウォレット内で 0x… として表示されます",
+        "step3": "オンチェーンの残高は対応する E7 に存在します"
+      }
+    },
+    "ru": {
+      "badge": {
+        "customNetwork": "пользовательская сеть"
+      },
+      "title": "Используйте EAV7 в своём кошельке",
+      "description": "EAV7 говорит на диалекте JSON-RPC, понятном универсальным кошелькам — добавьте сеть в один клик.",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "любой EVM-кошелёк"
+      },
+      "params": {
+        "networkName": "Имя сети",
+        "rpcUrl": "URL RPC",
+        "chainId": "Chain ID",
+        "symbol": "Символ",
+        "explorer": "Обозреватель",
+        "decimals": "Десятичные знаки"
+      },
+      "button": {
+        "adding": "Добавление…",
+        "addToMetamask": "Добавить в MetaMask"
+      },
+      "status": {
+        "added": "сеть добавлена!",
+        "noWallet": "MetaMask не обнаружена — скопируйте данные рядом."
+      },
+      "error": {
+        "addFailed": "не удалось добавить сеть"
+      },
+      "mapping": {
+        "badge": "один и тот же аккаунт",
+        "title": "Две идентичности, один аккаунт",
+        "labelEavm": "EAVM",
+        "labelNative": "нативный",
+        "desc1": "MetaMask отображает",
+        "desc2": "; в блокчейне баланс хранится в соответствующем",
+        "desc3": "адресе. Это один и тот же аккаунт."
+      },
+      "steps": {
+        "step1": "Нажмите, чтобы добавить сеть EAV7",
+        "step2": "Ваш аккаунт отображается в кошельке как 0x…",
+        "step3": "В блокчейне баланс хранится в соответствующем E7"
+      }
+    },
+    "ar": {
+      "badge": {
+        "customNetwork": "شبكة مخصصة"
+      },
+      "title": "استخدم EAV7 في محفظتك",
+      "description": "تتحدث EAV7 لهجة JSON-RPC التي تفهمها المحافظ الشاملة — أضف الشبكة بنقرة واحدة.",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "أي محفظة EVM"
+      },
+      "params": {
+        "networkName": "اسم الشبكة",
+        "rpcUrl": "رابط RPC",
+        "chainId": "معرّف السلسلة",
+        "symbol": "الرمز",
+        "explorer": "المستكشف",
+        "decimals": "الخانات العشرية"
+      },
+      "button": {
+        "adding": "جارٍ الإضافة…",
+        "addToMetamask": "إضافة إلى MetaMask"
+      },
+      "status": {
+        "added": "تمت إضافة الشبكة!",
+        "noWallet": "لم يتم اكتشاف MetaMask — انسخ البيانات المجاورة."
+      },
+      "error": {
+        "addFailed": "تعذّرت إضافة الشبكة"
+      },
+      "mapping": {
+        "badge": "نفس الحساب",
+        "title": "هويتان، حساب واحد",
+        "labelEavm": "EAVM",
+        "labelNative": "أصلي",
+        "desc1": "تعرض MetaMask العنوان",
+        "desc2": "؛ وعلى السلسلة يعيش الرصيد في العنوان المقابل",
+        "desc3": "إنه نفس الحساب."
+      },
+      "steps": {
+        "step1": "انقر لإضافة شبكة EAV7",
+        "step2": "يظهر حسابك بصيغة 0x… في المحفظة",
+        "step3": "على السلسلة يعيش الرصيد في العنوان E7 المقابل"
+      }
+    },
+    "hi": {
+      "badge": {
+        "customNetwork": "कस्टम नेटवर्क"
+      },
+      "title": "अपने वॉलेट में EAV7 का उपयोग करें",
+      "description": "EAV7 वही JSON-RPC भाषा बोलती है जिसे यूनिवर्सल वॉलेट समझते हैं — एक क्लिक में नेटवर्क जोड़ें।",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "कोई भी EVM वॉलेट"
+      },
+      "params": {
+        "networkName": "नेटवर्क का नाम",
+        "rpcUrl": "RPC URL",
+        "chainId": "चेन आईडी",
+        "symbol": "प्रतीक",
+        "explorer": "एक्सप्लोरर",
+        "decimals": "दशमलव अंक"
+      },
+      "button": {
+        "adding": "जोड़ा जा रहा है…",
+        "addToMetamask": "MetaMask में जोड़ें"
+      },
+      "status": {
+        "added": "नेटवर्क जोड़ा गया!",
+        "noWallet": "MetaMask नहीं मिली — बगल का डेटा कॉपी करें।"
+      },
+      "error": {
+        "addFailed": "नेटवर्क जोड़ा नहीं जा सका"
+      },
+      "mapping": {
+        "badge": "वही खाता",
+        "title": "दो पहचान, एक खाता",
+        "labelEavm": "EAVM",
+        "labelNative": "नेटिव",
+        "desc1": "MetaMask दिखाता है",
+        "desc2": "; चेन पर बैलेंस संबंधित",
+        "desc3": "पते में रहता है। यह वही खाता है।"
+      },
+      "steps": {
+        "step1": "EAV7 नेटवर्क जोड़ने के लिए क्लिक करें",
+        "step2": "आपका खाता वॉलेट में 0x… के रूप में दिखता है",
+        "step3": "चेन पर बैलेंस संबंधित E7 में रहता है"
+      }
+    },
+    "ko": {
+      "badge": {
+        "customNetwork": "사용자 지정 네트워크"
+      },
+      "title": "지갑에서 EAV7 사용하기",
+      "description": "EAV7는 범용 지갑이 이해하는 JSON-RPC 방언을 사용합니다 — 클릭 한 번으로 네트워크를 추가하세요.",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "모든 EVM 지갑"
+      },
+      "params": {
+        "networkName": "네트워크 이름",
+        "rpcUrl": "RPC URL",
+        "chainId": "체인 ID",
+        "symbol": "심볼",
+        "explorer": "탐색기",
+        "decimals": "소수 자릿수"
+      },
+      "button": {
+        "adding": "추가 중…",
+        "addToMetamask": "MetaMask에 추가"
+      },
+      "status": {
+        "added": "네트워크가 추가되었습니다!",
+        "noWallet": "MetaMask가 감지되지 않았습니다 — 옆의 데이터를 복사하세요."
+      },
+      "error": {
+        "addFailed": "네트워크를 추가할 수 없습니다"
+      },
+      "mapping": {
+        "badge": "동일 계정",
+        "title": "두 개의 정체성, 하나의 계정",
+        "labelEavm": "EAVM",
+        "labelNative": "네이티브",
+        "desc1": "MetaMask는",
+        "desc2": "를 표시합니다. 온체인에서는 잔액이 해당",
+        "desc3": "에 존재합니다. 동일한 계정입니다."
+      },
+      "steps": {
+        "step1": "EAV7 네트워크를 추가하려면 클릭하세요",
+        "step2": "지갑에 계정이 0x… 형태로 표시됩니다",
+        "step3": "온체인 잔액은 해당 E7에 존재합니다"
+      }
+    },
+    "it": {
+      "badge": {
+        "customNetwork": "rete personalizzata"
+      },
+      "title": "Usa EAV7 nel tuo wallet",
+      "description": "EAV7 parla il dialetto JSON-RPC che i wallet universali comprendono — aggiungi la rete in un clic.",
+      "wallets": {
+        "metamask": "MetaMask",
+        "trustWallet": "Trust Wallet",
+        "anyEvm": "qualsiasi wallet EVM"
+      },
+      "params": {
+        "networkName": "Nome della rete",
+        "rpcUrl": "URL RPC",
+        "chainId": "Chain ID",
+        "symbol": "Simbolo",
+        "explorer": "Explorer",
+        "decimals": "Decimali"
+      },
+      "button": {
+        "adding": "Aggiunta in corso…",
+        "addToMetamask": "Aggiungi a MetaMask"
+      },
+      "status": {
+        "added": "rete aggiunta!",
+        "noWallet": "MetaMask non rilevata — copia i dati a fianco."
+      },
+      "error": {
+        "addFailed": "impossibile aggiungere la rete"
+      },
+      "mapping": {
+        "badge": "stesso account",
+        "title": "Due identità, un solo account",
+        "labelEavm": "EAVM",
+        "labelNative": "nativo",
+        "desc1": "MetaMask mostra lo",
+        "desc2": "; on-chain il saldo risiede nel corrispondente",
+        "desc3": "indirizzo. Sono lo stesso account."
+      },
+      "steps": {
+        "step1": "Clicca per aggiungere la rete EAV7",
+        "step2": "Il tuo account appare come 0x… nel wallet",
+        "step3": "On-chain il saldo risiede nel corrispondente E7"
+      }
+    }
+  }
+}

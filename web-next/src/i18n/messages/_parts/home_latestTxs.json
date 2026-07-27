@@ -1,0 +1,137 @@
+{
+  "namespace": "home_latestTxs",
+  "translations": {
+    "pt": {
+      "title": "Últimas transações",
+      "viewAll": "ver todas",
+      "table": {
+        "hash": "Hash",
+        "type": "Tipo",
+        "fromTo": "De → Para",
+        "value": "Valor"
+      },
+      "empty": "nenhuma transação ainda"
+    },
+    "en": {
+      "title": "Latest transactions",
+      "viewAll": "view all",
+      "table": {
+        "hash": "Hash",
+        "type": "Type",
+        "fromTo": "From → To",
+        "value": "Value"
+      },
+      "empty": "no transactions yet"
+    },
+    "es": {
+      "title": "Últimas transacciones",
+      "viewAll": "ver todas",
+      "table": {
+        "hash": "Hash",
+        "type": "Tipo",
+        "fromTo": "De → Para",
+        "value": "Valor"
+      },
+      "empty": "aún no hay transacciones"
+    },
+    "zh": {
+      "title": "最新交易",
+      "viewAll": "查看全部",
+      "table": {
+        "hash": "哈希",
+        "type": "类型",
+        "fromTo": "从 → 到",
+        "value": "金额"
+      },
+      "empty": "暂无交易"
+    },
+    "fr": {
+      "title": "Dernières transactions",
+      "viewAll": "voir tout",
+      "table": {
+        "hash": "Hash",
+        "type": "Type",
+        "fromTo": "De → Vers",
+        "value": "Valeur"
+      },
+      "empty": "aucune transaction pour le moment"
+    },
+    "de": {
+      "title": "Neueste Transaktionen",
+      "viewAll": "alle anzeigen",
+      "table": {
+        "hash": "Hash",
+        "type": "Typ",
+        "fromTo": "Von → An",
+        "value": "Wert"
+      },
+      "empty": "noch keine Transaktionen"
+    },
+    "ja": {
+      "title": "最新のトランザクション",
+      "viewAll": "すべて表示",
+      "table": {
+        "hash": "ハッシュ",
+        "type": "種類",
+        "fromTo": "送信元 → 送信先",
+        "value": "金額"
+      },
+      "empty": "まだトランザクションがありません"
+    },
+    "ru": {
+      "title": "Последние транзакции",
+      "viewAll": "смотреть все",
+      "table": {
+        "hash": "Хеш",
+        "type": "Тип",
+        "fromTo": "От → Кому",
+        "value": "Сумма"
+      },
+      "empty": "транзакций пока нет"
+    },
+    "ar": {
+      "title": "أحدث المعاملات",
+      "viewAll": "عرض الكل",
+      "table": {
+        "hash": "التجزئة",
+        "type": "النوع",
+        "fromTo": "من ← إلى",
+        "value": "القيمة"
+      },
+      "empty": "لا توجد معاملات بعد"
+    },
+    "hi": {
+      "title": "नवीनतम लेन-देन",
+      "viewAll": "सभी देखें",
+      "table": {
+        "hash": "हैश",
+        "type": "प्रकार",
+        "fromTo": "से → तक",
+        "value": "मूल्य"
+      },
+      "empty": "अभी तक कोई लेन-देन नहीं"
+    },
+    "ko": {
+      "title": "최신 거래",
+      "viewAll": "전체 보기",
+      "table": {
+        "hash": "해시",
+        "type": "유형",
+        "fromTo": "보낸 주소 → 받는 주소",
+        "value": "금액"
+      },
+      "empty": "아직 거래가 없습니다"
+    },
+    "it": {
+      "title": "Ultime transazioni",
+      "viewAll": "vedi tutte",
+      "table": {
+        "hash": "Hash",
+        "type": "Tipo",
+        "fromTo": "Da → A",
+        "value": "Valore"
+      },
+      "empty": "ancora nessuna transazione"
+    }
+  }
+}

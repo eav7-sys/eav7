@@ -1,0 +1,65 @@
+{
+  "namespace": "energyGauge",
+  "translations": {
+    "pt": {
+      "ariaLabel": "Energia {available} de {max}",
+      "title": "Energia",
+      "description": "Recurso que cobre o custo das transações. Regenera com o tempo e cresce com EAV7 travado em stake."
+    },
+    "en": {
+      "ariaLabel": "Energy {available} of {max}",
+      "title": "Energy",
+      "description": "Resource that covers transaction costs. Regenerates over time and grows with EAV7 locked in stake."
+    },
+    "es": {
+      "ariaLabel": "Energía {available} de {max}",
+      "title": "Energía",
+      "description": "Recurso que cubre el costo de las transacciones. Se regenera con el tiempo y crece con EAV7 bloqueado en staking."
+    },
+    "zh": {
+      "ariaLabel": "能量 {available} / {max}",
+      "title": "能量",
+      "description": "用于支付交易费用的资源。随时间恢复,并随质押锁定的EAV7增长。"
+    },
+    "fr": {
+      "ariaLabel": "Énergie {available} sur {max}",
+      "title": "Énergie",
+      "description": "Ressource qui couvre le coût des transactions. Se régénère avec le temps et augmente avec l'EAV7 verrouillé en staking."
+    },
+    "de": {
+      "ariaLabel": "Energie {available} von {max}",
+      "title": "Energie",
+      "description": "Ressource, die die Transaktionskosten deckt. Regeneriert sich mit der Zeit und wächst mit im Staking gesperrtem EAV7."
+    },
+    "ja": {
+      "ariaLabel": "エネルギー {available} / {max}",
+      "title": "エネルギー",
+      "description": "取引コストを賄うリソース。時間とともに回復し、ステーキングでロックされたEAV7に応じて増加します。"
+    },
+    "ru": {
+      "ariaLabel": "Энергия {available} из {max}",
+      "title": "Энергия",
+      "description": "Ресурс, покрывающий стоимость транзакций. Восстанавливается со временем и растёт вместе с заблокированным в стейкинге EAV7."
+    },
+    "ar": {
+      "ariaLabel": "الطاقة {available} من {max}",
+      "title": "الطاقة",
+      "description": "مورد يغطي تكلفة المعاملات. يتجدد بمرور الوقت وينمو مع EAV7 المقفل في التخزين."
+    },
+    "hi": {
+      "ariaLabel": "ऊर्जा {available} में से {max}",
+      "title": "ऊर्जा",
+      "description": "वह संसाधन जो लेनदेन की लागत को कवर करता है। समय के साथ पुनर्जीवित होता है और स्टेक में लॉक किए गए EAV7 के साथ बढ़ता है।"
+    },
+    "ko": {
+      "ariaLabel": "에너지 {available} / {max}",
+      "title": "에너지",
+      "description": "거래 비용을 충당하는 자원입니다. 시간이 지나면 재생되며 스테이킹된 EAV7에 따라 증가합니다."
+    },
+    "it": {
+      "ariaLabel": "Energia {available} di {max}",
+      "title": "Energia",
+      "description": "Risorsa che copre il costo delle transazioni. Si rigenera nel tempo e cresce con l'EAV7 bloccato in staking."
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "namespace": "nav_headerSearch",
+  "translations": {
+    "pt": {
+      "buscar": "Buscar",
+      "dica": "bloco (número) · transação (E7…) · endereço (E7… ou 0x…)"
+    },
+    "en": {
+      "buscar": "Search",
+      "dica": "block (number) · transaction (E7…) · address (E7… or 0x…)"
+    },
+    "es": {
+      "buscar": "Buscar",
+      "dica": "bloque (número) · transacción (E7…) · dirección (E7… o 0x…)"
+    },
+    "zh": {
+      "buscar": "搜索",
+      "dica": "区块（编号）· 交易（E7…）· 地址（E7… 或 0x…）"
+    },
+    "fr": {
+      "buscar": "Rechercher",
+      "dica": "bloc (numéro) · transaction (E7…) · adresse (E7… ou 0x…)"
+    },
+    "de": {
+      "buscar": "Suchen",
+      "dica": "Block (Nummer) · Transaktion (E7…) · Adresse (E7… oder 0x…)"
+    },
+    "ja": {
+      "buscar": "検索",
+      "dica": "ブロック（番号）・トランザクション（E7…）・アドレス（E7… または 0x…）"
+    },
+    "ru": {
+      "buscar": "Поиск",
+      "dica": "блок (номер) · транзакция (E7…) · адрес (E7… или 0x…)"
+    },
+    "ar": {
+      "buscar": "بحث",
+      "dica": "كتلة (رقم) · معاملة (E7…) · عنوان (E7… أو 0x…)"
+    },
+    "hi": {
+      "buscar": "खोजें",
+      "dica": "ब्लॉक (संख्या) · लेन-देन (E7…) · पता (E7… या 0x…)"
+    },
+    "ko": {
+      "buscar": "검색",
+      "dica": "블록(번호) · 트랜잭션(E7…) · 주소(E7… 또는 0x…)"
+    },
+    "it": {
+      "buscar": "Cerca",
+      "dica": "blocco (numero) · transazione (E7…) · indirizzo (E7… o 0x…)"
+    }
+  }
+}

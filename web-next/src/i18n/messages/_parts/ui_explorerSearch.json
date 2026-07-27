@@ -1,0 +1,53 @@
+{
+  "namespace": "ui_explorerSearch",
+  "translations": {
+    "pt": {
+      "placeholder": "Buscar bloco, tx ou endereço…",
+      "searchButton": "Buscar"
+    },
+    "en": {
+      "placeholder": "Search block, tx or address…",
+      "searchButton": "Search"
+    },
+    "es": {
+      "placeholder": "Buscar bloque, tx o dirección…",
+      "searchButton": "Buscar"
+    },
+    "zh": {
+      "placeholder": "搜索区块、交易或地址…",
+      "searchButton": "搜索"
+    },
+    "fr": {
+      "placeholder": "Rechercher un bloc, une tx ou une adresse…",
+      "searchButton": "Rechercher"
+    },
+    "de": {
+      "placeholder": "Block, Tx oder Adresse suchen…",
+      "searchButton": "Suchen"
+    },
+    "ja": {
+      "placeholder": "ブロック、取引、アドレスを検索…",
+      "searchButton": "検索"
+    },
+    "ru": {
+      "placeholder": "Поиск блока, транзакции или адреса…",
+      "searchButton": "Поиск"
+    },
+    "ar": {
+      "placeholder": "ابحث عن كتلة أو معاملة أو عنوان…",
+      "searchButton": "بحث"
+    },
+    "hi": {
+      "placeholder": "ब्लॉक, टीएक्स या पता खोजें…",
+      "searchButton": "खोजें"
+    },
+    "ko": {
+      "placeholder": "블록, 트랜잭션 또는 주소 검색…",
+      "searchButton": "검색"
+    },
+    "it": {
+      "placeholder": "Cerca blocco, tx o indirizzo…",
+      "searchButton": "Cerca"
+    }
+  }
+}

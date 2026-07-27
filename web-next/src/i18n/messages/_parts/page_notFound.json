@@ -1,0 +1,53 @@
+{
+  "namespace": "page_notFound",
+  "translations": {
+    "pt": {
+      "description": "Esta página não existe na cadeia EAV7.",
+      "backLink": "← voltar ao início"
+    },
+    "en": {
+      "description": "This page does not exist on the EAV7 chain.",
+      "backLink": "← back to home"
+    },
+    "es": {
+      "description": "Esta página no existe en la cadena EAV7.",
+      "backLink": "← volver al inicio"
+    },
+    "zh": {
+      "description": "此页面在 EAV7 链上不存在。",
+      "backLink": "← 返回首页"
+    },
+    "fr": {
+      "description": "Cette page n'existe pas sur la chaîne EAV7.",
+      "backLink": "← retour à l'accueil"
+    },
+    "de": {
+      "description": "Diese Seite existiert nicht auf der EAV7-Chain.",
+      "backLink": "← zurück zur Startseite"
+    },
+    "ja": {
+      "description": "このページはEAV7チェーン上に存在しません。",
+      "backLink": "← ホームに戻る"
+    },
+    "ru": {
+      "description": "Эта страница не существует в цепочке EAV7.",
+      "backLink": "← вернуться на главную"
+    },
+    "ar": {
+      "description": "هذه الصفحة غير موجودة في سلسلة EAV7.",
+      "backLink": "← العودة إلى الصفحة الرئيسية"
+    },
+    "hi": {
+      "description": "यह पेज EAV7 चेन पर मौजूद नहीं है।",
+      "backLink": "← होम पर वापस जाएं"
+    },
+    "ko": {
+      "description": "이 페이지는 EAV7 체인에 존재하지 않습니다.",
+      "backLink": "← 홈으로 돌아가기"
+    },
+    "it": {
+      "description": "Questa pagina non esiste sulla chain EAV7.",
+      "backLink": "← torna alla home"
+    }
+  }
+}

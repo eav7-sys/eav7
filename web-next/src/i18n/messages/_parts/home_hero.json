@@ -1,0 +1,137 @@
+{
+  "namespace": "home_hero",
+  "translations": {
+    "pt": {
+      "coin_alt": "Moeda EAV7",
+      "title": "A nova era do explorador on-chain",
+      "subtitle": "Blocos a cada 1 segundo, segurança pós-quântica e uma camada nativa de IA. Investigue blocos, transações, validadores e endereços em tempo real.",
+      "search_placeholder": "Buscar bloco, transação ou endereço…",
+      "search_button": "Explorar",
+      "stat_height": "Altura",
+      "stat_block": "Bloco",
+      "stat_validators": "Validadores",
+      "stat_mempool": "Mempool"
+    },
+    "en": {
+      "coin_alt": "EAV7 Coin",
+      "title": "The new era of the on-chain explorer",
+      "subtitle": "Blocks every 1 second, post-quantum security, and a native AI layer. Investigate blocks, transactions, validators, and addresses in real time.",
+      "search_placeholder": "Search block, transaction, or address…",
+      "search_button": "Explore",
+      "stat_height": "Height",
+      "stat_block": "Block",
+      "stat_validators": "Validators",
+      "stat_mempool": "Mempool"
+    },
+    "es": {
+      "coin_alt": "Moneda EAV7",
+      "title": "La nueva era del explorador on-chain",
+      "subtitle": "Bloques cada 1 segundo, seguridad poscuántica y una capa nativa de IA. Investiga bloques, transacciones, validadores y direcciones en tiempo real.",
+      "search_placeholder": "Buscar bloque, transacción o dirección…",
+      "search_button": "Explorar",
+      "stat_height": "Altura",
+      "stat_block": "Bloque",
+      "stat_validators": "Validadores",
+      "stat_mempool": "Mempool"
+    },
+    "zh": {
+      "coin_alt": "EAV7 代币",
+      "title": "链上浏览器的新时代",
+      "subtitle": "每 1 秒出块，后量子安全性，原生 AI 层。实时查询区块、交易、验证者和地址。",
+      "search_placeholder": "搜索区块、交易或地址…",
+      "search_button": "探索",
+      "stat_height": "高度",
+      "stat_block": "出块时间",
+      "stat_validators": "验证者",
+      "stat_mempool": "内存池"
+    },
+    "fr": {
+      "coin_alt": "Pièce EAV7",
+      "title": "La nouvelle ère de l'explorateur on-chain",
+      "subtitle": "Des blocs toutes les 1 seconde, une sécurité post-quantique et une couche d'IA native. Explorez blocs, transactions, validateurs et adresses en temps réel.",
+      "search_placeholder": "Rechercher un bloc, une transaction ou une adresse…",
+      "search_button": "Explorer",
+      "stat_height": "Hauteur",
+      "stat_block": "Bloc",
+      "stat_validators": "Validateurs",
+      "stat_mempool": "Mempool"
+    },
+    "de": {
+      "coin_alt": "EAV7-Münze",
+      "title": "Die neue Ära des On-Chain-Explorers",
+      "subtitle": "Blöcke alle 1 Sekunde, postquantensichere Sicherheit und eine native KI-Ebene. Untersuchen Sie Blöcke, Transaktionen, Validatoren und Adressen in Echtzeit.",
+      "search_placeholder": "Block, Transaktion oder Adresse suchen…",
+      "search_button": "Erkunden",
+      "stat_height": "Höhe",
+      "stat_block": "Block",
+      "stat_validators": "Validatoren",
+      "stat_mempool": "Mempool"
+    },
+    "ja": {
+      "coin_alt": "EAV7コイン",
+      "title": "オンチェーンエクスプローラーの新時代",
+      "subtitle": "1秒ごとのブロック生成、ポスト量子セキュリティ、ネイティブAIレイヤー。ブロック、トランザクション、バリデーター、アドレスをリアルタイムで調査できます。",
+      "search_placeholder": "ブロック、トランザクション、アドレスを検索…",
+      "search_button": "探索する",
+      "stat_height": "高さ",
+      "stat_block": "ブロック時間",
+      "stat_validators": "バリデーター",
+      "stat_mempool": "メモリプール"
+    },
+    "ru": {
+      "coin_alt": "Монета EAV7",
+      "title": "Новая эра ончейн-обозревателя",
+      "subtitle": "Блоки каждую 1 секунду, постквантовая безопасность и встроенный слой ИИ. Исследуйте блоки, транзакции, валидаторов и адреса в реальном времени.",
+      "search_placeholder": "Поиск блока, транзакции или адреса…",
+      "search_button": "Исследовать",
+      "stat_height": "Высота",
+      "stat_block": "Блок",
+      "stat_validators": "Валидаторы",
+      "stat_mempool": "Мемпул"
+    },
+    "ar": {
+      "coin_alt": "عملة EAV7",
+      "title": "العصر الجديد لمستكشف السلسلة",
+      "subtitle": "كتل كل ثانية واحدة، وأمان ما بعد الكم، وطبقة ذكاء اصطناعي أصلية. استكشف الكتل والمعاملات والمدققين والعناوين في الوقت الفعلي.",
+      "search_placeholder": "ابحث عن كتلة أو معاملة أو عنوان…",
+      "search_button": "استكشف",
+      "stat_height": "الارتفاع",
+      "stat_block": "الكتلة",
+      "stat_validators": "المدققون",
+      "stat_mempool": "الميمبول"
+    },
+    "hi": {
+      "coin_alt": "EAV7 सिक्का",
+      "title": "ऑन-चेन एक्सप्लोरर का नया युग",
+      "subtitle": "हर 1 सेकंड में ब्लॉक, पोस्ट-क्वांटम सुरक्षा और एक नेटिव AI परत। ब्लॉक, लेनदेन, वैलिडेटर और पते वास्तविक समय में जांचें।",
+      "search_placeholder": "ब्लॉक, लेनदेन या पता खोजें…",
+      "search_button": "एक्सप्लोर करें",
+      "stat_height": "ऊंचाई",
+      "stat_block": "ब्लॉक",
+      "stat_validators": "वैलिडेटर",
+      "stat_mempool": "मेमपूल"
+    },
+    "ko": {
+      "coin_alt": "EAV7 코인",
+      "title": "온체인 익스플로러의 새로운 시대",
+      "subtitle": "1초마다 생성되는 블록, 양자 내성 보안, 네이티브 AI 레이어. 블록, 트랜잭션, 검증인, 주소를 실시간으로 조사하세요.",
+      "search_placeholder": "블록, 트랜잭션 또는 주소 검색…",
+      "search_button": "탐색하기",
+      "stat_height": "높이",
+      "stat_block": "블록",
+      "stat_validators": "검증인",
+      "stat_mempool": "멤풀"
+    },
+    "it": {
+      "coin_alt": "Moneta EAV7",
+      "title": "La nuova era dell'esploratore on-chain",
+      "subtitle": "Blocchi ogni 1 secondo, sicurezza post-quantistica e un livello nativo di IA. Esplora blocchi, transazioni, validatori e indirizzi in tempo reale.",
+      "search_placeholder": "Cerca blocco, transazione o indirizzo…",
+      "search_button": "Esplora",
+      "stat_height": "Altezza",
+      "stat_block": "Blocco",
+      "stat_validators": "Validatori",
+      "stat_mempool": "Mempool"
+    }
+  }
+}

@@ -1,0 +1,323 @@
+{
+  "namespace": "page_block",
+  "translations": {
+    "pt": {
+      "metaTitle": "Bloco #{height} · EAV7 Scan",
+      "eyebrow": "bloco",
+      "title": "Bloco #{height}",
+      "sub": "{ago} atrás",
+      "kv": {
+        "height": "Altura",
+        "date": "Data",
+        "producer": "Produtor",
+        "previousHash": "Hash anterior",
+        "merkleRoot": "Merkle root (txs)",
+        "txCount": "Transações",
+        "protocol": "Protocolo",
+        "scheme": "esquema",
+        "finality": "Finalidade"
+      },
+      "txSectionTitle": "Transações do bloco",
+      "table": {
+        "hash": "Hash",
+        "type": "Tipo",
+        "from": "De",
+        "to": "Para",
+        "value": "Valor",
+        "fee": "Taxa"
+      },
+      "emptyBlock": "bloco vazio",
+      "finalized": "finalizado",
+      "pending": "pendente"
+    },
+    "en": {
+      "metaTitle": "Block #{height} · EAV7 Scan",
+      "eyebrow": "block",
+      "title": "Block #{height}",
+      "sub": "{ago} ago",
+      "kv": {
+        "height": "Height",
+        "date": "Date",
+        "producer": "Producer",
+        "previousHash": "Previous hash",
+        "merkleRoot": "Merkle root (txs)",
+        "txCount": "Transactions",
+        "protocol": "Protocol",
+        "scheme": "scheme",
+        "finality": "Finality"
+      },
+      "txSectionTitle": "Block transactions",
+      "table": {
+        "hash": "Hash",
+        "type": "Type",
+        "from": "From",
+        "to": "To",
+        "value": "Value",
+        "fee": "Fee"
+      },
+      "emptyBlock": "empty block",
+      "finalized": "finalized",
+      "pending": "pending"
+    },
+    "es": {
+      "metaTitle": "Bloque #{height} · EAV7 Scan",
+      "eyebrow": "bloque",
+      "title": "Bloque #{height}",
+      "sub": "hace {ago}",
+      "kv": {
+        "height": "Altura",
+        "date": "Fecha",
+        "producer": "Productor",
+        "previousHash": "Hash anterior",
+        "merkleRoot": "Merkle root (txs)",
+        "txCount": "Transacciones",
+        "protocol": "Protocolo",
+        "scheme": "esquema"
+      },
+      "txSectionTitle": "Transacciones del bloque",
+      "table": {
+        "hash": "Hash",
+        "type": "Tipo",
+        "from": "De",
+        "to": "Para",
+        "value": "Valor",
+        "fee": "Tarifa"
+      },
+      "emptyBlock": "bloque vacío"
+    },
+    "zh": {
+      "metaTitle": "区块 #{height} · EAV7 Scan",
+      "eyebrow": "区块",
+      "title": "区块 #{height}",
+      "sub": "{ago}前",
+      "kv": {
+        "height": "高度",
+        "date": "日期",
+        "producer": "生产者",
+        "previousHash": "上一个哈希",
+        "merkleRoot": "Merkle 根 (交易)",
+        "txCount": "交易数",
+        "protocol": "协议",
+        "scheme": "方案"
+      },
+      "txSectionTitle": "区块交易",
+      "table": {
+        "hash": "哈希",
+        "type": "类型",
+        "from": "发送方",
+        "to": "接收方",
+        "value": "金额",
+        "fee": "手续费"
+      },
+      "emptyBlock": "空区块"
+    },
+    "fr": {
+      "metaTitle": "Bloc #{height} · EAV7 Scan",
+      "eyebrow": "bloc",
+      "title": "Bloc #{height}",
+      "sub": "il y a {ago}",
+      "kv": {
+        "height": "Hauteur",
+        "date": "Date",
+        "producer": "Producteur",
+        "previousHash": "Hash précédent",
+        "merkleRoot": "Racine de Merkle (txs)",
+        "txCount": "Transactions",
+        "protocol": "Protocole",
+        "scheme": "schéma"
+      },
+      "txSectionTitle": "Transactions du bloc",
+      "table": {
+        "hash": "Hash",
+        "type": "Type",
+        "from": "De",
+        "to": "Vers",
+        "value": "Valeur",
+        "fee": "Frais"
+      },
+      "emptyBlock": "bloc vide"
+    },
+    "de": {
+      "metaTitle": "Block #{height} · EAV7 Scan",
+      "eyebrow": "block",
+      "title": "Block #{height}",
+      "sub": "vor {ago}",
+      "kv": {
+        "height": "Höhe",
+        "date": "Datum",
+        "producer": "Produzent",
+        "previousHash": "Vorheriger Hash",
+        "merkleRoot": "Merkle-Root (Txs)",
+        "txCount": "Transaktionen",
+        "protocol": "Protokoll",
+        "scheme": "Schema"
+      },
+      "txSectionTitle": "Transaktionen des Blocks",
+      "table": {
+        "hash": "Hash",
+        "type": "Typ",
+        "from": "Von",
+        "to": "An",
+        "value": "Wert",
+        "fee": "Gebühr"
+      },
+      "emptyBlock": "leerer Block"
+    },
+    "ja": {
+      "metaTitle": "ブロック #{height} · EAV7 Scan",
+      "eyebrow": "ブロック",
+      "title": "ブロック #{height}",
+      "sub": "{ago}前",
+      "kv": {
+        "height": "高さ",
+        "date": "日付",
+        "producer": "生成者",
+        "previousHash": "前のハッシュ",
+        "merkleRoot": "Merkleルート (トランザクション)",
+        "txCount": "トランザクション数",
+        "protocol": "プロトコル",
+        "scheme": "スキーム"
+      },
+      "txSectionTitle": "ブロックのトランザクション",
+      "table": {
+        "hash": "ハッシュ",
+        "type": "種別",
+        "from": "送信元",
+        "to": "宛先",
+        "value": "金額",
+        "fee": "手数料"
+      },
+      "emptyBlock": "空のブロック"
+    },
+    "ru": {
+      "metaTitle": "Блок #{height} · EAV7 Scan",
+      "eyebrow": "блок",
+      "title": "Блок #{height}",
+      "sub": "{ago} назад",
+      "kv": {
+        "height": "Высота",
+        "date": "Дата",
+        "producer": "Производитель",
+        "previousHash": "Предыдущий хеш",
+        "merkleRoot": "Merkle-корень (тр.)",
+        "txCount": "Транзакции",
+        "protocol": "Протокол",
+        "scheme": "схема"
+      },
+      "txSectionTitle": "Транзакции блока",
+      "table": {
+        "hash": "Хеш",
+        "type": "Тип",
+        "from": "От",
+        "to": "Кому",
+        "value": "Сумма",
+        "fee": "Комиссия"
+      },
+      "emptyBlock": "пустой блок"
+    },
+    "ar": {
+      "metaTitle": "الكتلة #{height} · EAV7 Scan",
+      "eyebrow": "كتلة",
+      "title": "الكتلة #{height}",
+      "sub": "منذ {ago}",
+      "kv": {
+        "height": "الارتفاع",
+        "date": "التاريخ",
+        "producer": "المنتِج",
+        "previousHash": "التجزئة السابقة",
+        "merkleRoot": "جذر ميركل (المعاملات)",
+        "txCount": "المعاملات",
+        "protocol": "البروتوكول",
+        "scheme": "المخطط"
+      },
+      "txSectionTitle": "معاملات الكتلة",
+      "table": {
+        "hash": "التجزئة",
+        "type": "النوع",
+        "from": "من",
+        "to": "إلى",
+        "value": "القيمة",
+        "fee": "الرسوم"
+      },
+      "emptyBlock": "كتلة فارغة"
+    },
+    "hi": {
+      "metaTitle": "ब्लॉक #{height} · EAV7 Scan",
+      "eyebrow": "ब्लॉक",
+      "title": "ब्लॉक #{height}",
+      "sub": "{ago} पहले",
+      "kv": {
+        "height": "ऊँचाई",
+        "date": "तारीख़",
+        "producer": "निर्माता",
+        "previousHash": "पिछला हैश",
+        "merkleRoot": "मर्कल रूट (लेनदेन)",
+        "txCount": "लेनदेन",
+        "protocol": "प्रोटोकॉल",
+        "scheme": "योजना"
+      },
+      "txSectionTitle": "ब्लॉक के लेनदेन",
+      "table": {
+        "hash": "हैश",
+        "type": "प्रकार",
+        "from": "से",
+        "to": "प्रति",
+        "value": "राशि",
+        "fee": "शुल्क"
+      },
+      "emptyBlock": "खाली ब्लॉक"
+    },
+    "ko": {
+      "metaTitle": "블록 #{height} · EAV7 Scan",
+      "eyebrow": "블록",
+      "title": "블록 #{height}",
+      "sub": "{ago} 전",
+      "kv": {
+        "height": "높이",
+        "date": "날짜",
+        "producer": "생성자",
+        "previousHash": "이전 해시",
+        "merkleRoot": "머클 루트 (거래)",
+        "txCount": "거래 수",
+        "protocol": "프로토콜",
+        "scheme": "스킴"
+      },
+      "txSectionTitle": "블록 거래 내역",
+      "table": {
+        "hash": "해시",
+        "type": "유형",
+        "from": "보낸 주소",
+        "to": "받는 주소",
+        "value": "금액",
+        "fee": "수수료"
+      },
+      "emptyBlock": "빈 블록"
+    },
+    "it": {
+      "metaTitle": "Blocco #{height} · EAV7 Scan",
+      "eyebrow": "blocco",
+      "title": "Blocco #{height}",
+      "sub": "{ago} fa",
+      "kv": {
+        "height": "Altezza",
+        "date": "Data",
+        "producer": "Produttore",
+        "previousHash": "Hash precedente",
+        "merkleRoot": "Merkle root (tx)",
+        "txCount": "Transazioni",
+        "protocol": "Protocollo",
+        "scheme": "schema"
+      },
+      "txSectionTitle": "Transazioni del blocco",
+      "table": {
+        "hash": "Hash",
+        "type": "Tipo",
+        "from": "Da",
+        "to": "A",
+        "value": "Valore",
+        "fee": "Commissione"
+      },
+      "emptyBlock": "blocco vuoto"
+    }
+  }
+}

@@ -1,0 +1,353 @@
+{
+  "namespace": "docs_api",
+  "translations": {
+    "pt": {
+      "badge": "API pública",
+      "title": "Consulte a rede direto do nó",
+      "baseUrl": "base URL",
+      "tags": {
+        "cors": "CORS habilitado",
+        "units": "valores em e7",
+        "noAuth": "sem autenticação"
+      },
+      "groups": {
+        "read": "leitura",
+        "write": "escrita"
+      },
+      "endpoints": {
+        "status": "estado da rede: altura, altura finalizada (BFT), tesouraria, validadores, recompensa/bloco",
+        "blocks": "últimos N blocos",
+        "blockByHeight": "um bloco por altura ou hash",
+        "txs": "transações recentes, paginadas",
+        "tx": "uma transação por id",
+        "address": "saldo, stake, nonce, papel, tokens e energia",
+        "tokens": "lista de tokens EAV20 (ou /tokens/:id para detalhe)",
+        "validators": "conjunto DPoS ativo (peso = stake + votos) + produtor do slot",
+        "sendTx": "envia uma transação nativa assinada (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "envia transação pela camada EAVM (JSON-RPC compatível)",
+        "addressTxs": "transações de um endereço, paginadas",
+        "proof": "prova de conta (Merkle) contra o stateRoot — light clients",
+        "name": "resolve um nome EAV-NS → endereço E7",
+        "logs": "eventos/logs do EAVM (filtro por address e topic)",
+        "contract": "metadados de verificação de um contrato EAVM",
+        "verifyContract": "verifica um contrato: o bytecode deve bater com o código on-chain",
+        "nfts": "coleções NFT EAV721 (ou /nfts/:id para detalhe)",
+        "names": "nomes EAV-NS registrados",
+        "validatorsPerf": "score de desempenho por validador (produtividade, slots perdidos, latência, status)",
+        "governance": "parâmetros governáveis e propostas em votação",
+        "governanceAdvisories": "propostas que a IA redige quando um parâmetro sai do saudável (propose-only)",
+        "treasury": "saldo e percentual da tesouraria on-chain",
+        "bridgeTransfers": "transferências da ponte cross-chain",
+        "aiTasks": "tarefas da camada de IA (ou /ai/oracles para os oráculos)",
+        "securityAlerts": "pareceres da sentinela de segurança 24h",
+        "gateway": "estado do balanceador/failover de leitura do gateway",
+        "guard": "bloqueios de IP abusivo ativos (auto-mitigação com TTL)",
+        "stats": "agregados 24h: volume, série de tx, holders"
+      }
+    },
+    "en": {
+      "badge": "Public API",
+      "title": "Query the network straight from the node",
+      "baseUrl": "base URL",
+      "tags": {
+        "cors": "CORS enabled",
+        "units": "values in e7",
+        "noAuth": "no authentication"
+      },
+      "groups": {
+        "read": "read",
+        "write": "write"
+      },
+      "endpoints": {
+        "status": "network state: height, finalized height (BFT), treasury, validators, block reward",
+        "blocks": "latest N blocks",
+        "blockByHeight": "a block by height or hash",
+        "txs": "recent transactions, paginated",
+        "tx": "a transaction by id",
+        "address": "balance, stake, nonce, role, tokens and energy",
+        "tokens": "list of EAV20 tokens (or /tokens/:id for detail)",
+        "validators": "active DPoS set (weight = stake + votes) + slot producer",
+        "sendTx": "sends a signed native transaction (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "sends a transaction via the EAVM layer (JSON-RPC compatible)",
+        "addressTxs": "transactions for an address, paginated",
+        "proof": "account proof (Merkle) against the stateRoot — light clients",
+        "name": "resolve an EAV-NS name → E7 address",
+        "logs": "EAVM events/logs (filter by address and topic)",
+        "contract": "verification metadata for an EAVM contract",
+        "verifyContract": "verify a contract: bytecode must match the on-chain code",
+        "nfts": "EAV721 NFT collections (or /nfts/:id for detail)",
+        "names": "registered EAV-NS names",
+        "validatorsPerf": "per-validator performance score (productivity, missed slots, latency, status)",
+        "governance": "governable params and open proposals",
+        "governanceAdvisories": "proposals the AI drafts when a param drifts out of a healthy range (propose-only)",
+        "treasury": "on-chain treasury balance and cut",
+        "bridgeTransfers": "cross-chain bridge transfers",
+        "aiTasks": "AI-layer tasks (or /ai/oracles for the oracles)",
+        "securityAlerts": "24/7 security sentinel alerts",
+        "gateway": "read gateway load-balancer/failover state",
+        "guard": "active abusive-IP blocks (auto-mitigation with TTL)",
+        "stats": "24h aggregates: volume, tx series, holders"
+      }
+    },
+    "es": {
+      "badge": "API pública",
+      "title": "Consulta la red directo desde el nodo",
+      "baseUrl": "URL base",
+      "tags": {
+        "cors": "CORS habilitado",
+        "units": "valores en e7",
+        "noAuth": "sin autenticación"
+      },
+      "groups": {
+        "read": "lectura",
+        "write": "escritura"
+      },
+      "endpoints": {
+        "status": "estado de la red: altura, validadores, mempool, recompensa/bloque",
+        "blocks": "últimos N bloques",
+        "blockByHeight": "un bloque por altura o hash",
+        "txs": "transacciones recientes, paginadas",
+        "tx": "una transacción por id",
+        "address": "saldo, stake, nonce, rol, tokens y energía",
+        "tokens": "lista de tokens EAV20 (o /tokens/:id para detalle)",
+        "validators": "conjunto DPoS activo + productor del slot",
+        "sendTx": "envía una transacción nativa firmada (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "envía una transacción por la capa EAVM (compatible con JSON-RPC)"
+      }
+    },
+    "zh": {
+      "badge": "公共 API",
+      "title": "直接从节点查询网络",
+      "baseUrl": "基础 URL",
+      "tags": {
+        "cors": "已启用 CORS",
+        "units": "数值以 e7 表示",
+        "noAuth": "无需身份验证"
+      },
+      "groups": {
+        "read": "读取",
+        "write": "写入"
+      },
+      "endpoints": {
+        "status": "网络状态：高度、验证者、内存池、区块奖励",
+        "blocks": "最近 N 个区块",
+        "blockByHeight": "按高度或哈希查询区块",
+        "txs": "最近的交易，分页",
+        "tx": "按 id 查询交易",
+        "address": "余额、质押、nonce、角色、代币和能量",
+        "tokens": "EAV20 代币列表（或 /tokens/:id 查看详情）",
+        "validators": "活跃的 DPoS 集合 + 出块者",
+        "sendTx": "发送已签名的原生交易（secp256k1 + ML-DSA-44）",
+        "sendEavmTx": "通过 EAVM 层发送交易（兼容 JSON-RPC）"
+      }
+    },
+    "fr": {
+      "badge": "API publique",
+      "title": "Consultez le réseau directement depuis le nœud",
+      "baseUrl": "URL de base",
+      "tags": {
+        "cors": "CORS activé",
+        "units": "valeurs en e7",
+        "noAuth": "sans authentification"
+      },
+      "groups": {
+        "read": "lecture",
+        "write": "écriture"
+      },
+      "endpoints": {
+        "status": "état du réseau : hauteur, validateurs, mempool, récompense/bloc",
+        "blocks": "N derniers blocs",
+        "blockByHeight": "un bloc par hauteur ou hash",
+        "txs": "transactions récentes, paginées",
+        "tx": "une transaction par id",
+        "address": "solde, stake, nonce, rôle, tokens et énergie",
+        "tokens": "liste des tokens EAV20 (ou /tokens/:id pour le détail)",
+        "validators": "ensemble DPoS actif + producteur du slot",
+        "sendTx": "envoie une transaction native signée (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "envoie une transaction via la couche EAVM (compatible JSON-RPC)"
+      }
+    },
+    "de": {
+      "badge": "Öffentliche API",
+      "title": "Fragen Sie das Netzwerk direkt vom Node ab",
+      "baseUrl": "Basis-URL",
+      "tags": {
+        "cors": "CORS aktiviert",
+        "units": "Werte in e7",
+        "noAuth": "keine Authentifizierung"
+      },
+      "groups": {
+        "read": "lesen",
+        "write": "schreiben"
+      },
+      "endpoints": {
+        "status": "Netzwerkstatus: Höhe, Validatoren, Mempool, Blockbelohnung",
+        "blocks": "letzte N Blöcke",
+        "blockByHeight": "ein Block nach Höhe oder Hash",
+        "txs": "aktuelle Transaktionen, paginiert",
+        "tx": "eine Transaktion nach id",
+        "address": "Guthaben, Stake, Nonce, Rolle, Tokens und Energie",
+        "tokens": "Liste der EAV20-Tokens (oder /tokens/:id für Details)",
+        "validators": "aktives DPoS-Set + Slot-Produzent",
+        "sendTx": "sendet eine signierte native Transaktion (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "sendet eine Transaktion über die EAVM-Schicht (JSON-RPC-kompatibel)"
+      }
+    },
+    "ja": {
+      "badge": "パブリック API",
+      "title": "ノードから直接ネットワークを照会",
+      "baseUrl": "ベース URL",
+      "tags": {
+        "cors": "CORS 有効",
+        "units": "値は e7 単位",
+        "noAuth": "認証なし"
+      },
+      "groups": {
+        "read": "読み取り",
+        "write": "書き込み"
+      },
+      "endpoints": {
+        "status": "ネットワーク状態：高さ、バリデータ、メンプール、ブロック報酬",
+        "blocks": "直近 N ブロック",
+        "blockByHeight": "高さまたはハッシュでブロックを取得",
+        "txs": "最近のトランザクション（ページネーション対応）",
+        "tx": "id によるトランザクション取得",
+        "address": "残高、ステーク、nonce、ロール、トークン、エネルギー",
+        "tokens": "EAV20 トークン一覧（詳細は /tokens/:id）",
+        "validators": "アクティブな DPoS セット + スロットプロデューサー",
+        "sendTx": "署名済みネイティブトランザクションを送信（secp256k1 + ML-DSA-44）",
+        "sendEavmTx": "EAVM レイヤー経由でトランザクションを送信（JSON-RPC 互換）"
+      }
+    },
+    "ru": {
+      "badge": "Публичный API",
+      "title": "Запрашивайте сеть напрямую с узла",
+      "baseUrl": "базовый URL",
+      "tags": {
+        "cors": "CORS включён",
+        "units": "значения в e7",
+        "noAuth": "без аутентификации"
+      },
+      "groups": {
+        "read": "чтение",
+        "write": "запись"
+      },
+      "endpoints": {
+        "status": "состояние сети: высота, валидаторы, мемпул, награда за блок",
+        "blocks": "последние N блоков",
+        "blockByHeight": "блок по высоте или хешу",
+        "txs": "последние транзакции с пагинацией",
+        "tx": "транзакция по id",
+        "address": "баланс, стейк, nonce, роль, токены и энергия",
+        "tokens": "список токенов EAV20 (или /tokens/:id для деталей)",
+        "validators": "активный набор DPoS + производитель слота",
+        "sendTx": "отправляет подписанную нативную транзакцию (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "отправляет транзакцию через слой EAVM (совместим с JSON-RPC)"
+      }
+    },
+    "ar": {
+      "badge": "واجهة برمجة عامة",
+      "title": "استعلم عن الشبكة مباشرة من العقدة",
+      "baseUrl": "الرابط الأساسي",
+      "tags": {
+        "cors": "CORS مفعّل",
+        "units": "القيم بوحدة e7",
+        "noAuth": "بدون مصادقة"
+      },
+      "groups": {
+        "read": "قراءة",
+        "write": "كتابة"
+      },
+      "endpoints": {
+        "status": "حالة الشبكة: الارتفاع، المدققون، تجمع المعاملات، مكافأة الكتلة",
+        "blocks": "آخر N كتلة",
+        "blockByHeight": "كتلة واحدة حسب الارتفاع أو التجزئة",
+        "txs": "المعاملات الأخيرة، مقسّمة على صفحات",
+        "tx": "معاملة واحدة حسب المعرف",
+        "address": "الرصيد، الحصة، nonce، الدور، الرموز والطاقة",
+        "tokens": "قائمة رموز EAV20 (أو /tokens/:id للتفاصيل)",
+        "validators": "مجموعة DPoS النشطة + منتج الفتحة",
+        "sendTx": "يرسل معاملة أصلية موقّعة (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "يرسل معاملة عبر طبقة EAVM (متوافقة مع JSON-RPC)"
+      }
+    },
+    "hi": {
+      "badge": "सार्वजनिक API",
+      "title": "नोड से सीधे नेटवर्क क्वेरी करें",
+      "baseUrl": "बेस URL",
+      "tags": {
+        "cors": "CORS सक्षम",
+        "units": "मान e7 में",
+        "noAuth": "बिना प्रमाणीकरण"
+      },
+      "groups": {
+        "read": "पढ़ना",
+        "write": "लिखना"
+      },
+      "endpoints": {
+        "status": "नेटवर्क स्थिति: ऊँचाई, वैलिडेटर, मेमपूल, ब्लॉक रिवॉर्ड",
+        "blocks": "अंतिम N ब्लॉक",
+        "blockByHeight": "ऊँचाई या हैश द्वारा एक ब्लॉक",
+        "txs": "हाल के लेनदेन, पेजिनेटेड",
+        "tx": "id द्वारा एक लेनदेन",
+        "address": "बैलेंस, स्टेक, nonce, भूमिका, टोकन और ऊर्जा",
+        "tokens": "EAV20 टोकन की सूची (विवरण के लिए /tokens/:id)",
+        "validators": "सक्रिय DPoS सेट + स्लॉट प्रोड्यूसर",
+        "sendTx": "एक हस्ताक्षरित नेटिव लेनदेन भेजता है (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "EAVM लेयर के माध्यम से लेनदेन भेजता है (JSON-RPC संगत)"
+      }
+    },
+    "ko": {
+      "badge": "공개 API",
+      "title": "노드에서 직접 네트워크 조회",
+      "baseUrl": "기본 URL",
+      "tags": {
+        "cors": "CORS 활성화됨",
+        "units": "e7 단위 값",
+        "noAuth": "인증 없음"
+      },
+      "groups": {
+        "read": "읽기",
+        "write": "쓰기"
+      },
+      "endpoints": {
+        "status": "네트워크 상태: 높이, 검증자, 멤풀, 블록 보상",
+        "blocks": "최근 N개 블록",
+        "blockByHeight": "높이 또는 해시로 블록 조회",
+        "txs": "최근 거래, 페이지네이션 적용",
+        "tx": "id로 거래 조회",
+        "address": "잔액, 스테이크, nonce, 역할, 토큰 및 에너지",
+        "tokens": "EAV20 토큰 목록 (상세는 /tokens/:id)",
+        "validators": "활성 DPoS 세트 + 슬롯 생산자",
+        "sendTx": "서명된 네이티브 거래 전송 (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "EAVM 계층을 통해 거래 전송 (JSON-RPC 호환)"
+      }
+    },
+    "it": {
+      "badge": "API pubblica",
+      "title": "Interroga la rete direttamente dal nodo",
+      "baseUrl": "URL base",
+      "tags": {
+        "cors": "CORS abilitato",
+        "units": "valori in e7",
+        "noAuth": "senza autenticazione"
+      },
+      "groups": {
+        "read": "lettura",
+        "write": "scrittura"
+      },
+      "endpoints": {
+        "status": "stato della rete: altezza, validatori, mempool, ricompensa/blocco",
+        "blocks": "ultimi N blocchi",
+        "blockByHeight": "un blocco per altezza o hash",
+        "txs": "transazioni recenti, paginate",
+        "tx": "una transazione per id",
+        "address": "saldo, stake, nonce, ruolo, token ed energia",
+        "tokens": "elenco dei token EAV20 (o /tokens/:id per il dettaglio)",
+        "validators": "set DPoS attivo + produttore dello slot",
+        "sendTx": "invia una transazione nativa firmata (secp256k1 + ML-DSA-44)",
+        "sendEavmTx": "invia una transazione tramite il layer EAVM (compatibile JSON-RPC)"
+      }
+    }
+  }
+}

@@ -1,0 +1,929 @@
+{
+  "namespace": "wallet_app",
+  "translations": {
+    "pt": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "só você controla",
+        "on_device_title": "no dispositivo",
+        "on_device_desc": "a chave nunca sai",
+        "quantum_title": "pós-quântica",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "Backup",
+        "password": "Senha",
+        "ready": "Pronto"
+      },
+      "unlock": {
+        "title": "Bem-vindo de volta",
+        "subtitle": "Há uma carteira cifrada neste navegador. Informe a senha para desbloquear.",
+        "password_placeholder": "senha",
+        "error_wrong_password": "senha incorreta",
+        "unlocking": "desbloqueando…",
+        "unlock_button": "Desbloquear carteira",
+        "wipe_confirm": "Apagar a carteira deste navegador? Tenha o backup da chave!",
+        "wipe_button": "apagar e começar de novo"
+      },
+      "choose": {
+        "title": "Sua carteira EAV7",
+        "subtitle": "Uma carteira self-custodial: você é o único dono das suas chaves. Comece em segundos.",
+        "create_title": "Criar nova carteira",
+        "create_desc": "Gera uma chave nova neste dispositivo.",
+        "import_title": "Importar chave",
+        "import_desc": "Já tem uma chave privada? Restaure aqui."
+      },
+      "import": {
+        "title": "Importar carteira",
+        "subtitle": "Cole a chave privada e escolha uma senha para cifrá-la neste navegador.",
+        "label": "Chave privada (0x + 64 hex)",
+        "importing": "importando…",
+        "button": "Importar",
+        "back": "Voltar",
+        "error_invalid_key": "chave privada inválida (esperado 0x + 64 hex)"
+      },
+      "create": {
+        "title": "Faça o backup da sua chave",
+        "subtitle": "Não há recuperação de senha. Quem tem a chave privada controla os fundos — guarde-a antes de continuar.",
+        "warning_prefix": "Esta chave ",
+        "warning_bold": "é a única forma",
+        "warning_suffix": " de acessar seus fundos. Salve-a offline — nunca compartilhe com ninguém.",
+        "address_label": "endereço E7",
+        "private_key_label": "chave privada",
+        "reveal": "revelar",
+        "hide": "ocultar",
+        "download_backup": "⭳ Baixar backup (.json)",
+        "confirm_saved": "Guardei minha chave em local seguro",
+        "creating": "criando…",
+        "create_button": "Criar carteira",
+        "confirm_hint": "confirme que guardou a chave",
+        "back": "Voltar"
+      },
+      "errors": {
+        "password_min": "a senha precisa de ao menos 6 caracteres",
+        "password_mismatch": "as senhas não conferem",
+        "save_error": "erro ao salvar"
+      },
+      "password": {
+        "label": "Senha para cifrar (mín. 6 caracteres)",
+        "placeholder": "senha",
+        "confirm_placeholder": "confirmar senha",
+        "mismatch": "as senhas não conferem",
+        "strength": {
+          "very_weak": "muito fraca",
+          "weak": "fraca",
+          "fair": "razoável",
+          "good": "boa",
+          "strong": "forte"
+        }
+      }
+    },
+    "en": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "only you are in control",
+        "on_device_title": "on-device",
+        "on_device_desc": "the key never leaves",
+        "quantum_title": "quantum-safe",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "Backup",
+        "password": "Password",
+        "ready": "Ready"
+      },
+      "unlock": {
+        "title": "Welcome back",
+        "subtitle": "There is an encrypted wallet in this browser. Enter your password to unlock it.",
+        "password_placeholder": "password",
+        "error_wrong_password": "incorrect password",
+        "unlocking": "unlocking…",
+        "unlock_button": "Unlock wallet",
+        "wipe_confirm": "Delete the wallet from this browser? Make sure you have the key backup!",
+        "wipe_button": "delete and start over"
+      },
+      "choose": {
+        "title": "Your EAV7 wallet",
+        "subtitle": "A self-custodial wallet: you are the sole owner of your keys. Get started in seconds.",
+        "create_title": "Create new wallet",
+        "create_desc": "Generates a new key on this device.",
+        "import_title": "Import key",
+        "import_desc": "Already have a private key? Restore it here."
+      },
+      "import": {
+        "title": "Import wallet",
+        "subtitle": "Paste the private key and choose a password to encrypt it in this browser.",
+        "label": "Private key (0x + 64 hex)",
+        "importing": "importing…",
+        "button": "Import",
+        "back": "Back",
+        "error_invalid_key": "invalid private key (expected 0x + 64 hex)"
+      },
+      "create": {
+        "title": "Back up your key",
+        "subtitle": "There is no password recovery. Whoever holds the private key controls the funds — save it before continuing.",
+        "warning_prefix": "This key ",
+        "warning_bold": "is the only way",
+        "warning_suffix": " to access your funds. Save it offline — never share it with anyone.",
+        "address_label": "E7 address",
+        "private_key_label": "private key",
+        "reveal": "reveal",
+        "hide": "hide",
+        "download_backup": "⭳ Download backup (.json)",
+        "confirm_saved": "I saved my key in a safe place",
+        "creating": "creating…",
+        "create_button": "Create wallet",
+        "confirm_hint": "confirm you saved the key",
+        "back": "Back"
+      },
+      "errors": {
+        "password_min": "password must be at least 6 characters",
+        "password_mismatch": "passwords do not match",
+        "save_error": "error saving"
+      },
+      "password": {
+        "label": "Password to encrypt (min. 6 characters)",
+        "placeholder": "password",
+        "confirm_placeholder": "confirm password",
+        "mismatch": "passwords do not match",
+        "strength": {
+          "very_weak": "very weak",
+          "weak": "weak",
+          "fair": "fair",
+          "good": "good",
+          "strong": "strong"
+        }
+      }
+    },
+    "es": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "solo tú tienes el control",
+        "on_device_title": "en el dispositivo",
+        "on_device_desc": "la clave nunca sale",
+        "quantum_title": "resistente a cuántica",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "Copia",
+        "password": "Contraseña",
+        "ready": "Listo"
+      },
+      "unlock": {
+        "title": "Bienvenido de nuevo",
+        "subtitle": "Hay una billetera cifrada en este navegador. Ingresa la contraseña para desbloquearla.",
+        "password_placeholder": "contraseña",
+        "error_wrong_password": "contraseña incorrecta",
+        "unlocking": "desbloqueando…",
+        "unlock_button": "Desbloquear billetera",
+        "wipe_confirm": "¿Eliminar la billetera de este navegador? ¡Asegúrate de tener la copia de la clave!",
+        "wipe_button": "eliminar y empezar de nuevo"
+      },
+      "choose": {
+        "title": "Tu billetera EAV7",
+        "subtitle": "Una billetera self-custodial: eres el único dueño de tus claves. Empieza en segundos.",
+        "create_title": "Crear nueva billetera",
+        "create_desc": "Genera una clave nueva en este dispositivo.",
+        "import_title": "Importar clave",
+        "import_desc": "¿Ya tienes una clave privada? Restáurala aquí."
+      },
+      "import": {
+        "title": "Importar billetera",
+        "subtitle": "Pega la clave privada y elige una contraseña para cifrarla en este navegador.",
+        "label": "Clave privada (0x + 64 hex)",
+        "importing": "importando…",
+        "button": "Importar",
+        "back": "Volver",
+        "error_invalid_key": "clave privada inválida (se esperaba 0x + 64 hex)"
+      },
+      "create": {
+        "title": "Haz la copia de seguridad de tu clave",
+        "subtitle": "No hay recuperación de contraseña. Quien tenga la clave privada controla los fondos — guárdala antes de continuar.",
+        "warning_prefix": "Esta clave ",
+        "warning_bold": "es la única forma",
+        "warning_suffix": " de acceder a tus fondos. Guárdala fuera de línea — nunca la compartas con nadie.",
+        "address_label": "dirección E7",
+        "private_key_label": "clave privada",
+        "reveal": "revelar",
+        "hide": "ocultar",
+        "download_backup": "⭳ Descargar copia (.json)",
+        "confirm_saved": "Guardé mi clave en un lugar seguro",
+        "creating": "creando…",
+        "create_button": "Crear billetera",
+        "confirm_hint": "confirma que guardaste la clave",
+        "back": "Volver"
+      },
+      "errors": {
+        "password_min": "la contraseña necesita al menos 6 caracteres",
+        "password_mismatch": "las contraseñas no coinciden",
+        "save_error": "error al guardar"
+      },
+      "password": {
+        "label": "Contraseña para cifrar (mín. 6 caracteres)",
+        "placeholder": "contraseña",
+        "confirm_placeholder": "confirmar contraseña",
+        "mismatch": "las contraseñas no coinciden",
+        "strength": {
+          "very_weak": "muy débil",
+          "weak": "débil",
+          "fair": "razonable",
+          "good": "buena",
+          "strong": "fuerte"
+        }
+      }
+    },
+    "zh": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "只有你能掌控",
+        "on_device_title": "本地保存",
+        "on_device_desc": "私钥永不外泄",
+        "quantum_title": "抗量子",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "备份",
+        "password": "密码",
+        "ready": "完成"
+      },
+      "unlock": {
+        "title": "欢迎回来",
+        "subtitle": "此浏览器中存有一个加密钱包。请输入密码以解锁。",
+        "password_placeholder": "密码",
+        "error_wrong_password": "密码错误",
+        "unlocking": "解锁中…",
+        "unlock_button": "解锁钱包",
+        "wipe_confirm": "确定要删除此浏览器中的钱包吗？请确保已备份私钥！",
+        "wipe_button": "删除并重新开始"
+      },
+      "choose": {
+        "title": "你的 EAV7 钱包",
+        "subtitle": "一个自托管钱包：只有你拥有自己的私钥。几秒钟即可开始。",
+        "create_title": "创建新钱包",
+        "create_desc": "在此设备上生成新的私钥。",
+        "import_title": "导入私钥",
+        "import_desc": "已有私钥？在此恢复。"
+      },
+      "import": {
+        "title": "导入钱包",
+        "subtitle": "粘贴私钥并设置密码，在此浏览器中对其加密。",
+        "label": "私钥（0x + 64位十六进制）",
+        "importing": "导入中…",
+        "button": "导入",
+        "back": "返回",
+        "error_invalid_key": "私钥无效（应为 0x + 64位十六进制）"
+      },
+      "create": {
+        "title": "备份你的私钥",
+        "subtitle": "密码无法找回。拥有私钥即可控制资金 — 请在继续之前妥善保存。",
+        "warning_prefix": "这个私钥",
+        "warning_bold": "是访问资金的唯一方式",
+        "warning_suffix": "。请离线保存 — 切勿与任何人分享。",
+        "address_label": "E7 地址",
+        "private_key_label": "私钥",
+        "reveal": "显示",
+        "hide": "隐藏",
+        "download_backup": "⭳ 下载备份 (.json)",
+        "confirm_saved": "我已将私钥保存在安全的地方",
+        "creating": "创建中…",
+        "create_button": "创建钱包",
+        "confirm_hint": "请先确认已保存私钥",
+        "back": "返回"
+      },
+      "errors": {
+        "password_min": "密码至少需要6个字符",
+        "password_mismatch": "两次密码不一致",
+        "save_error": "保存时出错"
+      },
+      "password": {
+        "label": "加密密码（最少6个字符）",
+        "placeholder": "密码",
+        "confirm_placeholder": "确认密码",
+        "mismatch": "两次密码不一致",
+        "strength": {
+          "very_weak": "非常弱",
+          "weak": "弱",
+          "fair": "一般",
+          "good": "良好",
+          "strong": "强"
+        }
+      }
+    },
+    "fr": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "vous seul avez le contrôle",
+        "on_device_title": "sur l'appareil",
+        "on_device_desc": "la clé ne sort jamais",
+        "quantum_title": "post-quantique",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "Sauvegarde",
+        "password": "Mot de passe",
+        "ready": "Prêt"
+      },
+      "unlock": {
+        "title": "Content de vous revoir",
+        "subtitle": "Un portefeuille chiffré existe dans ce navigateur. Saisissez le mot de passe pour le déverrouiller.",
+        "password_placeholder": "mot de passe",
+        "error_wrong_password": "mot de passe incorrect",
+        "unlocking": "déverrouillage…",
+        "unlock_button": "Déverrouiller le portefeuille",
+        "wipe_confirm": "Supprimer le portefeuille de ce navigateur ? Assurez-vous d'avoir la sauvegarde de la clé !",
+        "wipe_button": "supprimer et recommencer"
+      },
+      "choose": {
+        "title": "Votre portefeuille EAV7",
+        "subtitle": "Un portefeuille self-custodial : vous êtes le seul propriétaire de vos clés. Commencez en quelques secondes.",
+        "create_title": "Créer un nouveau portefeuille",
+        "create_desc": "Génère une nouvelle clé sur cet appareil.",
+        "import_title": "Importer une clé",
+        "import_desc": "Vous avez déjà une clé privée ? Restaurez-la ici."
+      },
+      "import": {
+        "title": "Importer un portefeuille",
+        "subtitle": "Collez la clé privée et choisissez un mot de passe pour la chiffrer dans ce navigateur.",
+        "label": "Clé privée (0x + 64 hex)",
+        "importing": "importation…",
+        "button": "Importer",
+        "back": "Retour",
+        "error_invalid_key": "clé privée invalide (0x + 64 hex attendu)"
+      },
+      "create": {
+        "title": "Sauvegardez votre clé",
+        "subtitle": "Il n'y a pas de récupération de mot de passe. Quiconque détient la clé privée contrôle les fonds — sauvegardez-la avant de continuer.",
+        "warning_prefix": "Cette clé ",
+        "warning_bold": "est le seul moyen",
+        "warning_suffix": " d'accéder à vos fonds. Sauvegardez-la hors ligne — ne la partagez jamais avec qui que ce soit.",
+        "address_label": "adresse E7",
+        "private_key_label": "clé privée",
+        "reveal": "révéler",
+        "hide": "masquer",
+        "download_backup": "⭳ Télécharger la sauvegarde (.json)",
+        "confirm_saved": "J'ai sauvegardé ma clé en lieu sûr",
+        "creating": "création…",
+        "create_button": "Créer le portefeuille",
+        "confirm_hint": "confirmez que vous avez sauvegardé la clé",
+        "back": "Retour"
+      },
+      "errors": {
+        "password_min": "le mot de passe doit contenir au moins 6 caractères",
+        "password_mismatch": "les mots de passe ne correspondent pas",
+        "save_error": "erreur lors de l'enregistrement"
+      },
+      "password": {
+        "label": "Mot de passe pour chiffrer (min. 6 caractères)",
+        "placeholder": "mot de passe",
+        "confirm_placeholder": "confirmer le mot de passe",
+        "mismatch": "les mots de passe ne correspondent pas",
+        "strength": {
+          "very_weak": "très faible",
+          "weak": "faible",
+          "fair": "correct",
+          "good": "bon",
+          "strong": "fort"
+        }
+      }
+    },
+    "de": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "nur du hast die Kontrolle",
+        "on_device_title": "auf dem Gerät",
+        "on_device_desc": "der Schlüssel verlässt es nie",
+        "quantum_title": "quantensicher",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "Backup",
+        "password": "Passwort",
+        "ready": "Fertig"
+      },
+      "unlock": {
+        "title": "Willkommen zurück",
+        "subtitle": "In diesem Browser ist eine verschlüsselte Wallet gespeichert. Gib das Passwort ein, um sie zu entsperren.",
+        "password_placeholder": "Passwort",
+        "error_wrong_password": "falsches Passwort",
+        "unlocking": "wird entsperrt…",
+        "unlock_button": "Wallet entsperren",
+        "wipe_confirm": "Wallet aus diesem Browser löschen? Stelle sicher, dass du das Schlüssel-Backup hast!",
+        "wipe_button": "löschen und neu starten"
+      },
+      "choose": {
+        "title": "Deine EAV7-Wallet",
+        "subtitle": "Eine self-custodial Wallet: Du bist der alleinige Besitzer deiner Schlüssel. Starte in Sekunden.",
+        "create_title": "Neue Wallet erstellen",
+        "create_desc": "Erzeugt einen neuen Schlüssel auf diesem Gerät.",
+        "import_title": "Schlüssel importieren",
+        "import_desc": "Hast du schon einen privaten Schlüssel? Hier wiederherstellen."
+      },
+      "import": {
+        "title": "Wallet importieren",
+        "subtitle": "Füge den privaten Schlüssel ein und wähle ein Passwort, um ihn in diesem Browser zu verschlüsseln.",
+        "label": "Privater Schlüssel (0x + 64 hex)",
+        "importing": "wird importiert…",
+        "button": "Importieren",
+        "back": "Zurück",
+        "error_invalid_key": "ungültiger privater Schlüssel (erwartet 0x + 64 hex)"
+      },
+      "create": {
+        "title": "Sichere deinen Schlüssel",
+        "subtitle": "Es gibt keine Passwortwiederherstellung. Wer den privaten Schlüssel besitzt, kontrolliert die Gelder — sichere ihn, bevor du fortfährst.",
+        "warning_prefix": "Dieser Schlüssel ",
+        "warning_bold": "ist der einzige Weg",
+        "warning_suffix": ", auf deine Gelder zuzugreifen. Speichere ihn offline — teile ihn niemals mit jemandem.",
+        "address_label": "E7-Adresse",
+        "private_key_label": "privater Schlüssel",
+        "reveal": "anzeigen",
+        "hide": "verbergen",
+        "download_backup": "⭳ Backup herunterladen (.json)",
+        "confirm_saved": "Ich habe meinen Schlüssel sicher aufbewahrt",
+        "creating": "wird erstellt…",
+        "create_button": "Wallet erstellen",
+        "confirm_hint": "bestätige, dass du den Schlüssel gesichert hast",
+        "back": "Zurück"
+      },
+      "errors": {
+        "password_min": "das Passwort muss mindestens 6 Zeichen haben",
+        "password_mismatch": "die Passwörter stimmen nicht überein",
+        "save_error": "Fehler beim Speichern"
+      },
+      "password": {
+        "label": "Passwort zum Verschlüsseln (mind. 6 Zeichen)",
+        "placeholder": "Passwort",
+        "confirm_placeholder": "Passwort bestätigen",
+        "mismatch": "die Passwörter stimmen nicht überein",
+        "strength": {
+          "very_weak": "sehr schwach",
+          "weak": "schwach",
+          "fair": "mäßig",
+          "good": "gut",
+          "strong": "stark"
+        }
+      }
+    },
+    "ja": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "管理するのはあなただけ",
+        "on_device_title": "端末内保管",
+        "on_device_desc": "秘密鍵は外部に出ません",
+        "quantum_title": "耐量子",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "バックアップ",
+        "password": "パスワード",
+        "ready": "完了"
+      },
+      "unlock": {
+        "title": "おかえりなさい",
+        "subtitle": "このブラウザに暗号化されたウォレットがあります。パスワードを入力してロックを解除してください。",
+        "password_placeholder": "パスワード",
+        "error_wrong_password": "パスワードが正しくありません",
+        "unlocking": "ロック解除中…",
+        "unlock_button": "ウォレットのロックを解除",
+        "wipe_confirm": "このブラウザのウォレットを削除しますか？秘密鍵のバックアップがあることを確認してください！",
+        "wipe_button": "削除してやり直す"
+      },
+      "choose": {
+        "title": "あなたのEAV7ウォレット",
+        "subtitle": "自己管理型ウォレット：鍵の所有者はあなただけです。数秒で始められます。",
+        "create_title": "新しいウォレットを作成",
+        "create_desc": "この端末で新しい鍵を生成します。",
+        "import_title": "鍵をインポート",
+        "import_desc": "すでに秘密鍵をお持ちですか？ここから復元してください。"
+      },
+      "import": {
+        "title": "ウォレットをインポート",
+        "subtitle": "秘密鍵を貼り付け、このブラウザで暗号化するパスワードを設定してください。",
+        "label": "秘密鍵（0x + 64桁の16進数）",
+        "importing": "インポート中…",
+        "button": "インポート",
+        "back": "戻る",
+        "error_invalid_key": "無効な秘密鍵です（0x + 64桁の16進数が必要）"
+      },
+      "create": {
+        "title": "鍵をバックアップしてください",
+        "subtitle": "パスワードの復旧はできません。秘密鍵を持つ者が資金を管理します — 続行する前に必ず保存してください。",
+        "warning_prefix": "この鍵は",
+        "warning_bold": "資金にアクセスする唯一の方法",
+        "warning_suffix": "です。オフラインで保存し、誰とも共有しないでください。",
+        "address_label": "E7アドレス",
+        "private_key_label": "秘密鍵",
+        "reveal": "表示",
+        "hide": "非表示",
+        "download_backup": "⭳ バックアップをダウンロード (.json)",
+        "confirm_saved": "鍵を安全な場所に保存しました",
+        "creating": "作成中…",
+        "create_button": "ウォレットを作成",
+        "confirm_hint": "鍵を保存したことを確認してください",
+        "back": "戻る"
+      },
+      "errors": {
+        "password_min": "パスワードは6文字以上必要です",
+        "password_mismatch": "パスワードが一致しません",
+        "save_error": "保存中にエラーが発生しました"
+      },
+      "password": {
+        "label": "暗号化用パスワード（最低6文字）",
+        "placeholder": "パスワード",
+        "confirm_placeholder": "パスワードを確認",
+        "mismatch": "パスワードが一致しません",
+        "strength": {
+          "very_weak": "非常に弱い",
+          "weak": "弱い",
+          "fair": "普通",
+          "good": "良い",
+          "strong": "強い"
+        }
+      }
+    },
+    "ru": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "контроль только у вас",
+        "on_device_title": "на устройстве",
+        "on_device_desc": "ключ никогда не покидает его",
+        "quantum_title": "постквантовая защита",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "Резервная копия",
+        "password": "Пароль",
+        "ready": "Готово"
+      },
+      "unlock": {
+        "title": "С возвращением",
+        "subtitle": "В этом браузере есть зашифрованный кошелёк. Введите пароль, чтобы разблокировать его.",
+        "password_placeholder": "пароль",
+        "error_wrong_password": "неверный пароль",
+        "unlocking": "разблокировка…",
+        "unlock_button": "Разблокировать кошелёк",
+        "wipe_confirm": "Удалить кошелёк из этого браузера? Убедитесь, что у вас есть резервная копия ключа!",
+        "wipe_button": "удалить и начать заново"
+      },
+      "choose": {
+        "title": "Ваш кошелёк EAV7",
+        "subtitle": "Self-custodial кошелёк: только вы владеете своими ключами. Начните за секунды.",
+        "create_title": "Создать новый кошелёк",
+        "create_desc": "Генерирует новый ключ на этом устройстве.",
+        "import_title": "Импортировать ключ",
+        "import_desc": "Уже есть приватный ключ? Восстановите его здесь."
+      },
+      "import": {
+        "title": "Импорт кошелька",
+        "subtitle": "Вставьте приватный ключ и выберите пароль, чтобы зашифровать его в этом браузере.",
+        "label": "Приватный ключ (0x + 64 hex)",
+        "importing": "импорт…",
+        "button": "Импортировать",
+        "back": "Назад",
+        "error_invalid_key": "неверный приватный ключ (ожидается 0x + 64 hex)"
+      },
+      "create": {
+        "title": "Сделайте резервную копию ключа",
+        "subtitle": "Восстановление пароля невозможно. Тот, кто владеет приватным ключом, контролирует средства — сохраните его перед продолжением.",
+        "warning_prefix": "Этот ключ ",
+        "warning_bold": "является единственным способом",
+        "warning_suffix": " доступа к вашим средствам. Сохраните его в офлайне — никогда никому не передавайте.",
+        "address_label": "адрес E7",
+        "private_key_label": "приватный ключ",
+        "reveal": "показать",
+        "hide": "скрыть",
+        "download_backup": "⭳ Скачать резервную копию (.json)",
+        "confirm_saved": "Я сохранил свой ключ в надёжном месте",
+        "creating": "создание…",
+        "create_button": "Создать кошелёк",
+        "confirm_hint": "подтвердите, что сохранили ключ",
+        "back": "Назад"
+      },
+      "errors": {
+        "password_min": "пароль должен содержать минимум 6 символов",
+        "password_mismatch": "пароли не совпадают",
+        "save_error": "ошибка при сохранении"
+      },
+      "password": {
+        "label": "Пароль для шифрования (мин. 6 символов)",
+        "placeholder": "пароль",
+        "confirm_placeholder": "подтвердите пароль",
+        "mismatch": "пароли не совпадают",
+        "strength": {
+          "very_weak": "очень слабый",
+          "weak": "слабый",
+          "fair": "средний",
+          "good": "хороший",
+          "strong": "надёжный"
+        }
+      }
+    },
+    "ar": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "أنت وحدك من يتحكم",
+        "on_device_title": "على الجهاز",
+        "on_device_desc": "المفتاح لا يغادر أبدًا",
+        "quantum_title": "مقاوم للحوسبة الكمية",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "نسخة احتياطية",
+        "password": "كلمة المرور",
+        "ready": "جاهز"
+      },
+      "unlock": {
+        "title": "مرحبًا بعودتك",
+        "subtitle": "توجد محفظة مشفّرة في هذا المتصفح. أدخل كلمة المرور لإلغاء القفل.",
+        "password_placeholder": "كلمة المرور",
+        "error_wrong_password": "كلمة المرور غير صحيحة",
+        "unlocking": "جارٍ إلغاء القفل…",
+        "unlock_button": "إلغاء قفل المحفظة",
+        "wipe_confirm": "هل تريد حذف المحفظة من هذا المتصفح؟ تأكد من أن لديك نسخة احتياطية من المفتاح!",
+        "wipe_button": "حذف والبدء من جديد"
+      },
+      "choose": {
+        "title": "محفظتك في EAV7",
+        "subtitle": "محفظة ذاتية الحفظ: أنت المالك الوحيد لمفاتيحك. ابدأ خلال ثوانٍ.",
+        "create_title": "إنشاء محفظة جديدة",
+        "create_desc": "يُنشئ مفتاحًا جديدًا على هذا الجهاز.",
+        "import_title": "استيراد مفتاح",
+        "import_desc": "لديك بالفعل مفتاح خاص؟ استعده هنا."
+      },
+      "import": {
+        "title": "استيراد المحفظة",
+        "subtitle": "الصق المفتاح الخاص واختر كلمة مرور لتشفيره في هذا المتصفح.",
+        "label": "المفتاح الخاص (0x + 64 hex)",
+        "importing": "جارٍ الاستيراد…",
+        "button": "استيراد",
+        "back": "رجوع",
+        "error_invalid_key": "مفتاح خاص غير صالح (المتوقع 0x + 64 hex)"
+      },
+      "create": {
+        "title": "قم بعمل نسخة احتياطية من مفتاحك",
+        "subtitle": "لا يوجد استرجاع لكلمة المرور. من يملك المفتاح الخاص يتحكم بالأموال — احفظه قبل المتابعة.",
+        "warning_prefix": "هذا المفتاح ",
+        "warning_bold": "هو الطريقة الوحيدة",
+        "warning_suffix": " للوصول إلى أموالك. احفظه دون اتصال بالإنترنت — لا تشاركه مع أي شخص أبدًا.",
+        "address_label": "عنوان E7",
+        "private_key_label": "المفتاح الخاص",
+        "reveal": "إظهار",
+        "hide": "إخفاء",
+        "download_backup": "⭳ تنزيل النسخة الاحتياطية (.json)",
+        "confirm_saved": "لقد حفظت مفتاحي في مكان آمن",
+        "creating": "جارٍ الإنشاء…",
+        "create_button": "إنشاء محفظة",
+        "confirm_hint": "أكّد أنك حفظت المفتاح",
+        "back": "رجوع"
+      },
+      "errors": {
+        "password_min": "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل",
+        "password_mismatch": "كلمتا المرور غير متطابقتين",
+        "save_error": "حدث خطأ أثناء الحفظ"
+      },
+      "password": {
+        "label": "كلمة المرور للتشفير (6 أحرف على الأقل)",
+        "placeholder": "كلمة المرور",
+        "confirm_placeholder": "تأكيد كلمة المرور",
+        "mismatch": "كلمتا المرور غير متطابقتين",
+        "strength": {
+          "very_weak": "ضعيفة جدًا",
+          "weak": "ضعيفة",
+          "fair": "معقولة",
+          "good": "جيدة",
+          "strong": "قوية"
+        }
+      }
+    },
+    "hi": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "केवल आपका नियंत्रण",
+        "on_device_title": "डिवाइस पर",
+        "on_device_desc": "कुंजी कभी बाहर नहीं जाती",
+        "quantum_title": "क्वांटम-सुरक्षित",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "बैकअप",
+        "password": "पासवर्ड",
+        "ready": "तैयार"
+      },
+      "unlock": {
+        "title": "वापसी पर स्वागत है",
+        "subtitle": "इस ब्राउज़र में एक एन्क्रिप्टेड वॉलेट मौजूद है। अनलॉक करने के लिए पासवर्ड डालें।",
+        "password_placeholder": "पासवर्ड",
+        "error_wrong_password": "गलत पासवर्ड",
+        "unlocking": "अनलॉक हो रहा है…",
+        "unlock_button": "वॉलेट अनलॉक करें",
+        "wipe_confirm": "इस ब्राउज़र से वॉलेट मिटाएं? सुनिश्चित करें कि आपके पास कुंजी का बैकअप है!",
+        "wipe_button": "मिटाएं और फिर से शुरू करें"
+      },
+      "choose": {
+        "title": "आपका EAV7 वॉलेट",
+        "subtitle": "एक self-custodial वॉलेट: आप अपनी कुंजियों के एकमात्र मालिक हैं। सेकंडों में शुरू करें।",
+        "create_title": "नया वॉलेट बनाएं",
+        "create_desc": "इस डिवाइस पर एक नई कुंजी बनाता है।",
+        "import_title": "कुंजी आयात करें",
+        "import_desc": "पहले से निजी कुंजी है? यहां पुनर्स्थापित करें।"
+      },
+      "import": {
+        "title": "वॉलेट आयात करें",
+        "subtitle": "निजी कुंजी पेस्ट करें और इसे इस ब्राउज़र में एन्क्रिप्ट करने के लिए एक पासवर्ड चुनें।",
+        "label": "निजी कुंजी (0x + 64 hex)",
+        "importing": "आयात हो रहा है…",
+        "button": "आयात करें",
+        "back": "वापस",
+        "error_invalid_key": "अमान्य निजी कुंजी (अपेक्षित 0x + 64 hex)"
+      },
+      "create": {
+        "title": "अपनी कुंजी का बैकअप लें",
+        "subtitle": "पासवर्ड रिकवरी संभव नहीं है। जिसके पास निजी कुंजी है वही धन को नियंत्रित करता है — जारी रखने से पहले इसे सहेजें।",
+        "warning_prefix": "यह कुंजी ",
+        "warning_bold": "ही आपके धन तक पहुंचने का एकमात्र तरीका है",
+        "warning_suffix": "। इसे ऑफ़लाइन सहेजें — इसे कभी किसी के साथ साझा न करें।",
+        "address_label": "E7 पता",
+        "private_key_label": "निजी कुंजी",
+        "reveal": "दिखाएं",
+        "hide": "छिपाएं",
+        "download_backup": "⭳ बैकअप डाउनलोड करें (.json)",
+        "confirm_saved": "मैंने अपनी कुंजी सुरक्षित स्थान पर सहेज ली है",
+        "creating": "बनाया जा रहा है…",
+        "create_button": "वॉलेट बनाएं",
+        "confirm_hint": "पुष्टि करें कि आपने कुंजी सहेज ली है",
+        "back": "वापस"
+      },
+      "errors": {
+        "password_min": "पासवर्ड में कम से कम 6 अक्षर होने चाहिए",
+        "password_mismatch": "पासवर्ड मेल नहीं खाते",
+        "save_error": "सहेजने में त्रुटि"
+      },
+      "password": {
+        "label": "एन्क्रिप्ट करने के लिए पासवर्ड (न्यूनतम 6 अक्षर)",
+        "placeholder": "पासवर्ड",
+        "confirm_placeholder": "पासवर्ड की पुष्टि करें",
+        "mismatch": "पासवर्ड मेल नहीं खाते",
+        "strength": {
+          "very_weak": "बहुत कमज़ोर",
+          "weak": "कमज़ोर",
+          "fair": "ठीक-ठाक",
+          "good": "अच्छा",
+          "strong": "मज़बूत"
+        }
+      }
+    },
+    "ko": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "오직 당신만 통제합니다",
+        "on_device_title": "기기 내 보관",
+        "on_device_desc": "키가 외부로 유출되지 않습니다",
+        "quantum_title": "양자 내성",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "백업",
+        "password": "비밀번호",
+        "ready": "완료"
+      },
+      "unlock": {
+        "title": "다시 오신 것을 환영합니다",
+        "subtitle": "이 브라우저에 암호화된 지갑이 있습니다. 잠금을 해제하려면 비밀번호를 입력하세요.",
+        "password_placeholder": "비밀번호",
+        "error_wrong_password": "비밀번호가 올바르지 않습니다",
+        "unlocking": "잠금 해제 중…",
+        "unlock_button": "지갑 잠금 해제",
+        "wipe_confirm": "이 브라우저의 지갑을 삭제하시겠습니까? 키 백업을 반드시 확인하세요!",
+        "wipe_button": "삭제하고 처음부터 시작"
+      },
+      "choose": {
+        "title": "당신의 EAV7 지갑",
+        "subtitle": "self-custodial 지갑: 당신만이 자신의 키를 소유합니다. 몇 초 만에 시작하세요.",
+        "create_title": "새 지갑 생성",
+        "create_desc": "이 기기에서 새 키를 생성합니다.",
+        "import_title": "키 가져오기",
+        "import_desc": "이미 개인 키가 있으신가요? 여기서 복원하세요."
+      },
+      "import": {
+        "title": "지갑 가져오기",
+        "subtitle": "개인 키를 붙여넣고 이 브라우저에서 암호화할 비밀번호를 선택하세요.",
+        "label": "개인 키 (0x + 64 hex)",
+        "importing": "가져오는 중…",
+        "button": "가져오기",
+        "back": "뒤로",
+        "error_invalid_key": "유효하지 않은 개인 키입니다 (0x + 64 hex 필요)"
+      },
+      "create": {
+        "title": "키를 백업하세요",
+        "subtitle": "비밀번호는 복구할 수 없습니다. 개인 키를 가진 사람이 자금을 관리합니다 — 계속하기 전에 저장하세요.",
+        "warning_prefix": "이 키는 ",
+        "warning_bold": "자금에 접근할 수 있는 유일한 방법",
+        "warning_suffix": "입니다. 오프라인에 저장하고 절대 누구와도 공유하지 마세요.",
+        "address_label": "E7 주소",
+        "private_key_label": "개인 키",
+        "reveal": "표시",
+        "hide": "숨기기",
+        "download_backup": "⭳ 백업 다운로드 (.json)",
+        "confirm_saved": "키를 안전한 곳에 저장했습니다",
+        "creating": "생성 중…",
+        "create_button": "지갑 생성",
+        "confirm_hint": "키를 저장했는지 확인하세요",
+        "back": "뒤로"
+      },
+      "errors": {
+        "password_min": "비밀번호는 최소 6자 이상이어야 합니다",
+        "password_mismatch": "비밀번호가 일치하지 않습니다",
+        "save_error": "저장 중 오류가 발생했습니다"
+      },
+      "password": {
+        "label": "암호화용 비밀번호 (최소 6자)",
+        "placeholder": "비밀번호",
+        "confirm_placeholder": "비밀번호 확인",
+        "mismatch": "비밀번호가 일치하지 않습니다",
+        "strength": {
+          "very_weak": "매우 약함",
+          "weak": "약함",
+          "fair": "보통",
+          "good": "좋음",
+          "strong": "강함"
+        }
+      }
+    },
+    "it": {
+      "trust": {
+        "self_custody_title": "self-custody",
+        "self_custody_desc": "solo tu hai il controllo",
+        "on_device_title": "sul dispositivo",
+        "on_device_desc": "la chiave non esce mai",
+        "quantum_title": "post-quantistica",
+        "quantum_desc": "secp256k1 + ML-DSA-44"
+      },
+      "stepper": {
+        "backup": "Backup",
+        "password": "Password",
+        "ready": "Pronto"
+      },
+      "unlock": {
+        "title": "Bentornato",
+        "subtitle": "C'è un portafoglio cifrato in questo browser. Inserisci la password per sbloccarlo.",
+        "password_placeholder": "password",
+        "error_wrong_password": "password errata",
+        "unlocking": "sblocco in corso…",
+        "unlock_button": "Sblocca portafoglio",
+        "wipe_confirm": "Eliminare il portafoglio da questo browser? Assicurati di avere il backup della chiave!",
+        "wipe_button": "elimina e ricomincia"
+      },
+      "choose": {
+        "title": "Il tuo portafoglio EAV7",
+        "subtitle": "Un portafoglio self-custodial: sei l'unico proprietario delle tue chiavi. Inizia in pochi secondi.",
+        "create_title": "Crea nuovo portafoglio",
+        "create_desc": "Genera una nuova chiave su questo dispositivo.",
+        "import_title": "Importa chiave",
+        "import_desc": "Hai già una chiave privata? Ripristinala qui."
+      },
+      "import": {
+        "title": "Importa portafoglio",
+        "subtitle": "Incolla la chiave privata e scegli una password per cifrarla in questo browser.",
+        "label": "Chiave privata (0x + 64 hex)",
+        "importing": "importazione…",
+        "button": "Importa",
+        "back": "Indietro",
+        "error_invalid_key": "chiave privata non valida (atteso 0x + 64 hex)"
+      },
+      "create": {
+        "title": "Esegui il backup della tua chiave",
+        "subtitle": "Non esiste il recupero della password. Chi possiede la chiave privata controlla i fondi — salvala prima di continuare.",
+        "warning_prefix": "Questa chiave ",
+        "warning_bold": "è l'unico modo",
+        "warning_suffix": " per accedere ai tuoi fondi. Salvala offline — non condividerla mai con nessuno.",
+        "address_label": "indirizzo E7",
+        "private_key_label": "chiave privata",
+        "reveal": "rivela",
+        "hide": "nascondi",
+        "download_backup": "⭳ Scarica backup (.json)",
+        "confirm_saved": "Ho salvato la mia chiave in un luogo sicuro",
+        "creating": "creazione…",
+        "create_button": "Crea portafoglio",
+        "confirm_hint": "conferma di aver salvato la chiave",
+        "back": "Indietro"
+      },
+      "errors": {
+        "password_min": "la password deve avere almeno 6 caratteri",
+        "password_mismatch": "le password non coincidono",
+        "save_error": "errore durante il salvataggio"
+      },
+      "password": {
+        "label": "Password per cifrare (min. 6 caratteri)",
+        "placeholder": "password",
+        "confirm_placeholder": "conferma password",
+        "mismatch": "le password non coincidono",
+        "strength": {
+          "very_weak": "molto debole",
+          "weak": "debole",
+          "fair": "discreta",
+          "good": "buona",
+          "strong": "forte"
+        }
+      }
+    }
+  }
+}

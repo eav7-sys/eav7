@@ -1,0 +1,389 @@
+{
+  "namespace": "wallet_send",
+  "translations": {
+    "pt": {
+      "title": "Enviar EAV7",
+      "steps": { "destination": "Destino", "value": "Valor", "review": "Revisar" },
+      "recipient": {
+        "label": "Destino (0x… EAVM/MetaMask)",
+        "paste": "colar",
+        "valid": "✓ endereço válido",
+        "invalid": "endereço 0x inválido"
+      },
+      "errors": {
+        "needEvmAddress": "informe o 0x do destino (a carteira web assina no modelo EAVM)",
+        "invalidAddress": "destino deve ser um endereço 0x (EAVM/MetaMask)",
+        "needPositiveAmount": "informe um valor positivo",
+        "insufficientBalance": "saldo insuficiente (considere a taxa)",
+        "invalidAmount": "valor inválido",
+        "sendFailed": "falha ao enviar"
+      },
+      "continue": "Continuar",
+      "cancel": "Cancelar",
+      "available": "disponível: {amount} EAV7",
+      "percent": { "max": "MÁX" },
+      "back": "Voltar",
+      "sendingLabel": "enviando",
+      "sendingTo": "para {addr}",
+      "networkFee": "Taxa de rede",
+      "balanceAfter": "Saldo depois",
+      "quantumNote": "assinado neste dispositivo · proteção pós-quântica da rede",
+      "confirmAndSign": "Confirmar e assinar",
+      "signing": "assinando…",
+      "transactionSent": { "title": "Transação enviada", "subtitle": "Confirma no próximo bloco (~1s)." },
+      "close": "fechar"
+    },
+    "en": {
+      "title": "Send EAV7",
+      "steps": { "destination": "Destination", "value": "Amount", "review": "Review" },
+      "recipient": {
+        "label": "Destination (0x… EAVM/MetaMask)",
+        "paste": "paste",
+        "valid": "✓ valid address",
+        "invalid": "invalid 0x address"
+      },
+      "errors": {
+        "needEvmAddress": "enter the destination's 0x address (the web wallet signs in the EAVM model)",
+        "invalidAddress": "destination must be a 0x address (EAVM/MetaMask)",
+        "needPositiveAmount": "enter a positive amount",
+        "insufficientBalance": "insufficient balance (consider the fee)",
+        "invalidAmount": "invalid amount",
+        "sendFailed": "failed to send"
+      },
+      "continue": "Continue",
+      "cancel": "Cancel",
+      "available": "available: {amount} EAV7",
+      "percent": { "max": "MAX" },
+      "back": "Back",
+      "sendingLabel": "sending",
+      "sendingTo": "to {addr}",
+      "networkFee": "Network fee",
+      "balanceAfter": "Balance after",
+      "quantumNote": "signed on this device · post-quantum network protection",
+      "confirmAndSign": "Confirm and sign",
+      "signing": "signing…",
+      "transactionSent": { "title": "Transaction sent", "subtitle": "Confirms in the next block (~1s)." },
+      "close": "close"
+    },
+    "es": {
+      "title": "Enviar EAV7",
+      "steps": { "destination": "Destino", "value": "Monto", "review": "Revisar" },
+      "recipient": {
+        "label": "Destino (0x… EAVM/MetaMask)",
+        "paste": "pegar",
+        "valid": "✓ dirección válida",
+        "invalid": "dirección 0x inválida"
+      },
+      "errors": {
+        "needEvmAddress": "indique el 0x del destino (la billetera web firma en el modelo EAVM)",
+        "invalidAddress": "el destino debe ser una dirección 0x (EAVM/MetaMask)",
+        "needPositiveAmount": "indique un monto positivo",
+        "insufficientBalance": "saldo insuficiente (considere la tarifa)",
+        "invalidAmount": "monto inválido",
+        "sendFailed": "error al enviar"
+      },
+      "continue": "Continuar",
+      "cancel": "Cancelar",
+      "available": "disponible: {amount} EAV7",
+      "percent": { "max": "MÁX" },
+      "back": "Volver",
+      "sendingLabel": "enviando",
+      "sendingTo": "a {addr}",
+      "networkFee": "Tarifa de red",
+      "balanceAfter": "Saldo después",
+      "quantumNote": "firmado en este dispositivo · protección postcuántica de la red",
+      "confirmAndSign": "Confirmar y firmar",
+      "signing": "firmando…",
+      "transactionSent": { "title": "Transacción enviada", "subtitle": "Se confirma en el próximo bloque (~1s)." },
+      "close": "cerrar"
+    },
+    "zh": {
+      "title": "发送 EAV7",
+      "steps": { "destination": "目标地址", "value": "金额", "review": "确认" },
+      "recipient": {
+        "label": "目标地址（0x… EAVM/MetaMask）",
+        "paste": "粘贴",
+        "valid": "✓ 地址有效",
+        "invalid": "0x 地址无效"
+      },
+      "errors": {
+        "needEvmAddress": "请输入目标的 0x 地址（网页钱包按 EAVM 模型签名）",
+        "invalidAddress": "目标必须是 0x 地址（EAVM/MetaMask）",
+        "needPositiveAmount": "请输入一个正数金额",
+        "insufficientBalance": "余额不足（请考虑手续费）",
+        "invalidAmount": "金额无效",
+        "sendFailed": "发送失败"
+      },
+      "continue": "继续",
+      "cancel": "取消",
+      "available": "可用余额：{amount} EAV7",
+      "percent": { "max": "最大" },
+      "back": "返回",
+      "sendingLabel": "发送中",
+      "sendingTo": "发送至 {addr}",
+      "networkFee": "网络手续费",
+      "balanceAfter": "之后余额",
+      "quantumNote": "已在本设备签名 · 网络具备后量子保护",
+      "confirmAndSign": "确认并签名",
+      "signing": "签名中…",
+      "transactionSent": { "title": "交易已发送", "subtitle": "将在下一个区块确认（约 1 秒）。" },
+      "close": "关闭"
+    },
+    "fr": {
+      "title": "Envoyer des EAV7",
+      "steps": { "destination": "Destination", "value": "Montant", "review": "Vérifier" },
+      "recipient": {
+        "label": "Destination (0x… EAVM/MetaMask)",
+        "paste": "coller",
+        "valid": "✓ adresse valide",
+        "invalid": "adresse 0x invalide"
+      },
+      "errors": {
+        "needEvmAddress": "indiquez le 0x de la destination (le portefeuille web signe selon le modèle EAVM)",
+        "invalidAddress": "la destination doit être une adresse 0x (EAVM/MetaMask)",
+        "needPositiveAmount": "indiquez un montant positif",
+        "insufficientBalance": "solde insuffisant (tenez compte des frais)",
+        "invalidAmount": "montant invalide",
+        "sendFailed": "échec de l'envoi"
+      },
+      "continue": "Continuer",
+      "cancel": "Annuler",
+      "available": "disponible : {amount} EAV7",
+      "percent": { "max": "MAX" },
+      "back": "Retour",
+      "sendingLabel": "envoi en cours",
+      "sendingTo": "à {addr}",
+      "networkFee": "Frais de réseau",
+      "balanceAfter": "Solde après",
+      "quantumNote": "signé sur cet appareil · protection post-quantique du réseau",
+      "confirmAndSign": "Confirmer et signer",
+      "signing": "signature…",
+      "transactionSent": { "title": "Transaction envoyée", "subtitle": "Confirmation au prochain bloc (~1 s)." },
+      "close": "fermer"
+    },
+    "de": {
+      "title": "EAV7 senden",
+      "steps": { "destination": "Ziel", "value": "Betrag", "review": "Prüfen" },
+      "recipient": {
+        "label": "Ziel (0x… EAVM/MetaMask)",
+        "paste": "einfügen",
+        "valid": "✓ gültige Adresse",
+        "invalid": "ungültige 0x-Adresse"
+      },
+      "errors": {
+        "needEvmAddress": "geben Sie die 0x-Adresse des Ziels an (die Web-Wallet signiert im EAVM-Modell)",
+        "invalidAddress": "das Ziel muss eine 0x-Adresse sein (EAVM/MetaMask)",
+        "needPositiveAmount": "geben Sie einen positiven Betrag an",
+        "insufficientBalance": "unzureichendes Guthaben (Gebühr berücksichtigen)",
+        "invalidAmount": "ungültiger Betrag",
+        "sendFailed": "Senden fehlgeschlagen"
+      },
+      "continue": "Weiter",
+      "cancel": "Abbrechen",
+      "available": "verfügbar: {amount} EAV7",
+      "percent": { "max": "MAX" },
+      "back": "Zurück",
+      "sendingLabel": "wird gesendet",
+      "sendingTo": "an {addr}",
+      "networkFee": "Netzwerkgebühr",
+      "balanceAfter": "Guthaben danach",
+      "quantumNote": "auf diesem Gerät signiert · postquantenschutz des Netzwerks",
+      "confirmAndSign": "Bestätigen und signieren",
+      "signing": "wird signiert…",
+      "transactionSent": { "title": "Transaktion gesendet", "subtitle": "Bestätigung im nächsten Block (~1 s)." },
+      "close": "schließen"
+    },
+    "ja": {
+      "title": "EAV7を送る",
+      "steps": { "destination": "送付先", "value": "金額", "review": "確認" },
+      "recipient": {
+        "label": "送付先（0x… EAVM/MetaMask）",
+        "paste": "貼り付け",
+        "valid": "✓ 有効なアドレス",
+        "invalid": "無効な0xアドレス"
+      },
+      "errors": {
+        "needEvmAddress": "送付先の0xアドレスを入力してください（ウェブウォレットはEAVMモデルで署名します）",
+        "invalidAddress": "送付先は0xアドレスである必要があります（EAVM/MetaMask）",
+        "needPositiveAmount": "正の金額を入力してください",
+        "insufficientBalance": "残高不足です（手数料をご考慮ください）",
+        "invalidAmount": "金額が無効です",
+        "sendFailed": "送信に失敗しました"
+      },
+      "continue": "続ける",
+      "cancel": "キャンセル",
+      "available": "利用可能: {amount} EAV7",
+      "percent": { "max": "最大" },
+      "back": "戻る",
+      "sendingLabel": "送信中",
+      "sendingTo": "{addr} へ",
+      "networkFee": "ネットワーク手数料",
+      "balanceAfter": "送信後の残高",
+      "quantumNote": "この端末で署名済み · ネットワークはポスト量子保護対応",
+      "confirmAndSign": "確認して署名",
+      "signing": "署名中…",
+      "transactionSent": { "title": "取引を送信しました", "subtitle": "次のブロックで確認されます（約1秒）。" },
+      "close": "閉じる"
+    },
+    "ru": {
+      "title": "Отправить EAV7",
+      "steps": { "destination": "Получатель", "value": "Сумма", "review": "Проверка" },
+      "recipient": {
+        "label": "Получатель (0x… EAVM/MetaMask)",
+        "paste": "вставить",
+        "valid": "✓ адрес действителен",
+        "invalid": "недействительный адрес 0x"
+      },
+      "errors": {
+        "needEvmAddress": "укажите 0x-адрес получателя (веб-кошелёк подписывает по модели EAVM)",
+        "invalidAddress": "получатель должен быть адресом 0x (EAVM/MetaMask)",
+        "needPositiveAmount": "укажите положительную сумму",
+        "insufficientBalance": "недостаточно средств (учтите комиссию)",
+        "invalidAmount": "неверная сумма",
+        "sendFailed": "не удалось отправить"
+      },
+      "continue": "Продолжить",
+      "cancel": "Отмена",
+      "available": "доступно: {amount} EAV7",
+      "percent": { "max": "МАКС" },
+      "back": "Назад",
+      "sendingLabel": "отправка",
+      "sendingTo": "получателю {addr}",
+      "networkFee": "Комиссия сети",
+      "balanceAfter": "Баланс после",
+      "quantumNote": "подписано на этом устройстве · постквантовая защита сети",
+      "confirmAndSign": "Подтвердить и подписать",
+      "signing": "подписание…",
+      "transactionSent": { "title": "Транзакция отправлена", "subtitle": "Подтвердится в следующем блоке (~1с)." },
+      "close": "закрыть"
+    },
+    "ar": {
+      "title": "إرسال EAV7",
+      "steps": { "destination": "الوجهة", "value": "المبلغ", "review": "مراجعة" },
+      "recipient": {
+        "label": "الوجهة (0x… EAVM/MetaMask)",
+        "paste": "لصق",
+        "valid": "✓ عنوان صالح",
+        "invalid": "عنوان 0x غير صالح"
+      },
+      "errors": {
+        "needEvmAddress": "أدخل عنوان 0x للوجهة (المحفظة على الويب توقّع وفق نموذج EAVM)",
+        "invalidAddress": "يجب أن تكون الوجهة عنوان 0x (EAVM/MetaMask)",
+        "needPositiveAmount": "أدخل مبلغًا موجبًا",
+        "insufficientBalance": "الرصيد غير كافٍ (ضع الرسوم في الاعتبار)",
+        "invalidAmount": "مبلغ غير صالح",
+        "sendFailed": "فشل الإرسال"
+      },
+      "continue": "متابعة",
+      "cancel": "إلغاء",
+      "available": "المتاح: {amount} EAV7",
+      "percent": { "max": "الحد الأقصى" },
+      "back": "رجوع",
+      "sendingLabel": "جارٍ الإرسال",
+      "sendingTo": "إلى {addr}",
+      "networkFee": "رسوم الشبكة",
+      "balanceAfter": "الرصيد بعد العملية",
+      "quantumNote": "تم التوقيع على هذا الجهاز · حماية ما بعد الكم لهذه الشبكة",
+      "confirmAndSign": "تأكيد وتوقيع",
+      "signing": "جارٍ التوقيع…",
+      "transactionSent": { "title": "تم إرسال المعاملة", "subtitle": "سيتم التأكيد في الكتلة التالية (~1 ثانية)." },
+      "close": "إغلاق"
+    },
+    "hi": {
+      "title": "EAV7 भेजें",
+      "steps": { "destination": "गंतव्य", "value": "राशि", "review": "समीक्षा" },
+      "recipient": {
+        "label": "गंतव्य (0x… EAVM/MetaMask)",
+        "paste": "पेस्ट करें",
+        "valid": "✓ पता मान्य है",
+        "invalid": "अमान्य 0x पता"
+      },
+      "errors": {
+        "needEvmAddress": "गंतव्य का 0x पता दर्ज करें (वेब वॉलेट EAVM मॉडल में हस्ताक्षर करता है)",
+        "invalidAddress": "गंतव्य एक 0x पता होना चाहिए (EAVM/MetaMask)",
+        "needPositiveAmount": "एक धनात्मक राशि दर्ज करें",
+        "insufficientBalance": "अपर्याप्त शेष (शुल्क का ध्यान रखें)",
+        "invalidAmount": "अमान्य राशि",
+        "sendFailed": "भेजने में विफल"
+      },
+      "continue": "जारी रखें",
+      "cancel": "रद्द करें",
+      "available": "उपलब्ध: {amount} EAV7",
+      "percent": { "max": "अधिकतम" },
+      "back": "वापस",
+      "sendingLabel": "भेजा जा रहा है",
+      "sendingTo": "{addr} को",
+      "networkFee": "नेटवर्क शुल्क",
+      "balanceAfter": "बाद का शेष",
+      "quantumNote": "इस डिवाइस पर हस्ताक्षरित · नेटवर्क की पोस्ट-क्वांटम सुरक्षा",
+      "confirmAndSign": "पुष्टि करें और हस्ताक्षर करें",
+      "signing": "हस्ताक्षर हो रहा है…",
+      "transactionSent": { "title": "लेनदेन भेजा गया", "subtitle": "अगले ब्लॉक में पुष्टि होगी (~1 सेकंड)।" },
+      "close": "बंद करें"
+    },
+    "ko": {
+      "title": "EAV7 보내기",
+      "steps": { "destination": "받는 주소", "value": "금액", "review": "검토" },
+      "recipient": {
+        "label": "받는 주소 (0x… EAVM/MetaMask)",
+        "paste": "붙여넣기",
+        "valid": "✓ 유효한 주소입니다",
+        "invalid": "잘못된 0x 주소입니다"
+      },
+      "errors": {
+        "needEvmAddress": "받는 주소의 0x 주소를 입력하세요 (웹 지갑은 EAVM 모델로 서명합니다)",
+        "invalidAddress": "받는 주소는 0x 주소여야 합니다 (EAVM/MetaMask)",
+        "needPositiveAmount": "양수 금액을 입력하세요",
+        "insufficientBalance": "잔액이 부족합니다 (수수료를 고려하세요)",
+        "invalidAmount": "잘못된 금액입니다",
+        "sendFailed": "전송에 실패했습니다"
+      },
+      "continue": "계속",
+      "cancel": "취소",
+      "available": "사용 가능: {amount} EAV7",
+      "percent": { "max": "최대" },
+      "back": "뒤로",
+      "sendingLabel": "전송 중",
+      "sendingTo": "{addr} 로",
+      "networkFee": "네트워크 수수료",
+      "balanceAfter": "전송 후 잔액",
+      "quantumNote": "이 기기에서 서명됨 · 네트워크의 양자 내성 보호",
+      "confirmAndSign": "확인 및 서명",
+      "signing": "서명 중…",
+      "transactionSent": { "title": "거래가 전송되었습니다", "subtitle": "다음 블록에서 확정됩니다 (~1초)." },
+      "close": "닫기"
+    },
+    "it": {
+      "title": "Invia EAV7",
+      "steps": { "destination": "Destinazione", "value": "Importo", "review": "Rivedi" },
+      "recipient": {
+        "label": "Destinazione (0x… EAVM/MetaMask)",
+        "paste": "incolla",
+        "valid": "✓ indirizzo valido",
+        "invalid": "indirizzo 0x non valido"
+      },
+      "errors": {
+        "needEvmAddress": "inserisci lo 0x della destinazione (il wallet web firma nel modello EAVM)",
+        "invalidAddress": "la destinazione deve essere un indirizzo 0x (EAVM/MetaMask)",
+        "needPositiveAmount": "inserisci un importo positivo",
+        "insufficientBalance": "saldo insufficiente (considera la commissione)",
+        "invalidAmount": "importo non valido",
+        "sendFailed": "invio non riuscito"
+      },
+      "continue": "Continua",
+      "cancel": "Annulla",
+      "available": "disponibile: {amount} EAV7",
+      "percent": { "max": "MAX" },
+      "back": "Indietro",
+      "sendingLabel": "invio in corso",
+      "sendingTo": "a {addr}",
+      "networkFee": "Commissione di rete",
+      "balanceAfter": "Saldo dopo",
+      "quantumNote": "firmato su questo dispositivo · protezione post-quantistica della rete",
+      "confirmAndSign": "Conferma e firma",
+      "signing": "firma in corso…",
+      "transactionSent": { "title": "Transazione inviata", "subtitle": "Confermata nel prossimo blocco (~1s)." },
+      "close": "chiudi"
+    }
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "namespace": "home_heartbeat",
+  "translations": {
+    "pt": {
+      "label": "batimento",
+      "blockAgoPrefix": "bloco há",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} txs",
+      "viewAll": "ver todos"
+    },
+    "en": {
+      "label": "heartbeat",
+      "blockAgoPrefix": "block",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} txs",
+      "viewAll": "view all"
+    },
+    "es": {
+      "label": "latido",
+      "blockAgoPrefix": "bloque hace",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} txs",
+      "viewAll": "ver todos"
+    },
+    "zh": {
+      "label": "心跳",
+      "blockAgoPrefix": "区块于",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} 笔交易",
+      "viewAll": "查看全部"
+    },
+    "fr": {
+      "label": "pouls",
+      "blockAgoPrefix": "bloc il y a",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} tx",
+      "viewAll": "voir tout"
+    },
+    "de": {
+      "label": "herzschlag",
+      "blockAgoPrefix": "Block vor",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} Tx",
+      "viewAll": "alle anzeigen"
+    },
+    "ja": {
+      "label": "ハートビート",
+      "blockAgoPrefix": "ブロック",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} 件のトランザクション",
+      "viewAll": "すべて表示"
+    },
+    "ru": {
+      "label": "пульс",
+      "blockAgoPrefix": "блок",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} тр.",
+      "viewAll": "смотреть все"
+    },
+    "ar": {
+      "label": "النبض",
+      "blockAgoPrefix": "الكتلة منذ",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} معاملة",
+      "viewAll": "عرض الكل"
+    },
+    "hi": {
+      "label": "हार्टबीट",
+      "blockAgoPrefix": "ब्लॉक",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} लेनदेन",
+      "viewAll": "सभी देखें"
+    },
+    "ko": {
+      "label": "하트비트",
+      "blockAgoPrefix": "블록",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount}건 거래",
+      "viewAll": "전체 보기"
+    },
+    "it": {
+      "label": "battito",
+      "blockAgoPrefix": "blocco",
+      "noData": "—",
+      "blockTitle": "#{height} · {txCount} tx",
+      "viewAll": "vedi tutti"
+    }
+  }
+}

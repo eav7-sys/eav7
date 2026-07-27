@@ -1,0 +1,53 @@
+{
+  "namespace": "comingSoon",
+  "translations": {
+    "pt": {
+      "badge": "em construção · sprint 4",
+      "backToExplorer": "← voltar ao explorer"
+    },
+    "en": {
+      "badge": "under construction · sprint 4",
+      "backToExplorer": "← back to explorer"
+    },
+    "es": {
+      "badge": "en construcción · sprint 4",
+      "backToExplorer": "← volver al explorer"
+    },
+    "zh": {
+      "badge": "建设中 · 第 4 个冲刺",
+      "backToExplorer": "← 返回浏览器"
+    },
+    "fr": {
+      "badge": "en construction · sprint 4",
+      "backToExplorer": "← retour à l'explorateur"
+    },
+    "de": {
+      "badge": "im Aufbau · Sprint 4",
+      "backToExplorer": "← zurück zum Explorer"
+    },
+    "ja": {
+      "badge": "工事中 · スプリント4",
+      "backToExplorer": "← エクスプローラーに戻る"
+    },
+    "ru": {
+      "badge": "в разработке · спринт 4",
+      "backToExplorer": "← вернуться в обозреватель"
+    },
+    "ar": {
+      "badge": "قيد الإنشاء · السبرنت 4",
+      "backToExplorer": "← العودة إلى المتصفح"
+    },
+    "hi": {
+      "badge": "निर्माणाधीन · स्प्रिंट 4",
+      "backToExplorer": "← एक्सप्लोरर पर वापस जाएं"
+    },
+    "ko": {
+      "badge": "공사 중 · 스프린트 4",
+      "backToExplorer": "← 익스플로러로 돌아가기"
+    },
+    "it": {
+      "badge": "in costruzione · sprint 4",
+      "backToExplorer": "← torna all'explorer"
+    }
+  }
+}

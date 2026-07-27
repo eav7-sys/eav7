@@ -1,0 +1,89 @@
+{
+  "namespace": "home_explorerPreview",
+  "translations": {
+    "pt": {
+      "eyebrow": "explorar",
+      "title": "Tudo on-chain, em tempo real",
+      "description": "Blocos e transações fluindo agora mesmo. Clique em qualquer item para investigar.",
+      "viewBlocks": "Ver blocos",
+      "viewTxs": "Ver transações"
+    },
+    "en": {
+      "eyebrow": "explore",
+      "title": "Everything on-chain, in real time",
+      "description": "Blocks and transactions flowing right now. Click any item to investigate.",
+      "viewBlocks": "View blocks",
+      "viewTxs": "View transactions"
+    },
+    "es": {
+      "eyebrow": "explorar",
+      "title": "Todo on-chain, en tiempo real",
+      "description": "Bloques y transacciones fluyendo ahora mismo. Haz clic en cualquier elemento para investigar.",
+      "viewBlocks": "Ver bloques",
+      "viewTxs": "Ver transacciones"
+    },
+    "zh": {
+      "eyebrow": "浏览",
+      "title": "链上一切,实时呈现",
+      "description": "区块和交易正在实时流动。点击任意项目即可查看详情。",
+      "viewBlocks": "查看区块",
+      "viewTxs": "查看交易"
+    },
+    "fr": {
+      "eyebrow": "explorer",
+      "title": "Tout on-chain, en temps réel",
+      "description": "Blocs et transactions qui défilent en ce moment même. Cliquez sur un élément pour l'examiner.",
+      "viewBlocks": "Voir les blocs",
+      "viewTxs": "Voir les transactions"
+    },
+    "de": {
+      "eyebrow": "erkunden",
+      "title": "Alles On-Chain, in Echtzeit",
+      "description": "Blöcke und Transaktionen fließen gerade jetzt. Klicke auf ein Element, um es zu untersuchen.",
+      "viewBlocks": "Blöcke ansehen",
+      "viewTxs": "Transaktionen ansehen"
+    },
+    "ja": {
+      "eyebrow": "エクスプローラー",
+      "title": "オンチェーンのすべてをリアルタイムで",
+      "description": "ブロックとトランザクションが今まさに流れています。項目をクリックして詳細を確認しましょう。",
+      "viewBlocks": "ブロックを見る",
+      "viewTxs": "トランザクションを見る"
+    },
+    "ru": {
+      "eyebrow": "исследовать",
+      "title": "Всё on-chain, в реальном времени",
+      "description": "Блоки и транзакции проходят прямо сейчас. Нажмите на любой элемент, чтобы изучить его.",
+      "viewBlocks": "Смотреть блоки",
+      "viewTxs": "Смотреть транзакции"
+    },
+    "ar": {
+      "eyebrow": "استكشف",
+      "title": "كل شيء على السلسلة، في الوقت الفعلي",
+      "description": "الكتل والمعاملات تتدفق الآن. انقر على أي عنصر للتحقيق فيه.",
+      "viewBlocks": "عرض الكتل",
+      "viewTxs": "عرض المعاملات"
+    },
+    "hi": {
+      "eyebrow": "एक्सप्लोर करें",
+      "title": "सब कुछ ऑन-चेन, वास्तविक समय में",
+      "description": "ब्लॉक्स और लेनदेन अभी प्रवाहित हो रहे हैं। जांच के लिए किसी भी आइटम पर क्लिक करें।",
+      "viewBlocks": "ब्लॉक्स देखें",
+      "viewTxs": "लेनदेन देखें"
+    },
+    "ko": {
+      "eyebrow": "탐색",
+      "title": "온체인의 모든 것, 실시간으로",
+      "description": "블록과 트랜잭션이 지금 이 순간에도 흐르고 있습니다. 항목을 클릭해 자세히 살펴보세요.",
+      "viewBlocks": "블록 보기",
+      "viewTxs": "트랜잭션 보기"
+    },
+    "it": {
+      "eyebrow": "esplora",
+      "title": "Tutto on-chain, in tempo reale",
+      "description": "Blocchi e transazioni che scorrono proprio ora. Clicca su un elemento per approfondire.",
+      "viewBlocks": "Vedi blocchi",
+      "viewTxs": "Vedi transazioni"
+    }
+  }
+}
