@@ -777,6 +777,113 @@ pub fn verify_transaction(tx: &Tx) -> Result<(), String> {
     Ok(())
 }
 
+// ---------------------------------------------------------------------------
+// Construção de transação assinada — `buildTransaction` (transaction.js:29-65)
+// ---------------------------------------------------------------------------
+//
+// Vive AQUI, na biblioteca, e não em quem monta transação. Estava duplicado em
+// dois binários — `eav7-cli` e o construtor de transações da IA — com corpos
+// idênticos, e um terceiro chamador (o SDK) teria feito uma terceira cópia.
+//
+// Duas versões da regra que decide o `id` de uma transação e o que é assinado é
+// o pior lugar possível para uma divergência: uma delas mudaria primeiro, e as
+// transações de um caminho deixariam de ser aceitas sem ninguém entender por quê.
+
+/// Teto de queima padrão para o tipo — `transaction.js:39-42`.
+///
+/// É o custo de energia da operação vezes o preço de queima. Se a conta tiver
+/// energia, nada é queimado; sem energia, este é o máximo que a transação
+/// autoriza gastar. Quem quiser autorizar mais passa `fee` explicitamente.
+pub fn default_fee_limit(tx_type: &str) -> u128 {
+    crate::config::energy_cost(tx_type) as u128 * crate::config::energy::BURN_PER_ENERGY
+}
+
+/// O que define uma transação antes de ser assinada — o objeto de opções de
+/// `buildTransaction` (transaction.js:30-38).
+///
+/// `nonce` e `timestamp` vêm de fora de propósito: no JS o `timestamp` tem
+/// default `Date.now()`, e aceitar um relógio implícito aqui tornaria a
+/// construção não-determinística e os testes dependentes de horário.
+pub struct TxSpec {
+    pub tx_type: String,
+    pub to: Option<String>,
+    pub amount: u128,
+    /// `None` usa [`default_fee_limit`] para o tipo.
+    pub fee: Option<u128>,
+    pub nonce: i64,
+    pub timestamp: i64,
+    /// O `{}` default do JS é um mapa vazio, não ausência.
+    pub data: JsonValue,
+}
+
+impl TxSpec {
+    /// Espec mínima: tipo, valor e nonce. O resto assume os defaults do JS.
+    pub fn nova(tx_type: impl Into<String>, amount: u128, nonce: i64, timestamp: i64) -> Self {
+        TxSpec {
+            tx_type: tx_type.into(),
+            to: None,
+            amount,
+            fee: None,
+            nonce,
+            timestamp,
+            data: JsonValue::map([]),
+        }
+    }
+
+    pub fn para(mut self, to: impl Into<String>) -> Self {
+        self.to = Some(to.into());
+        self
+    }
+
+    pub fn com_dados(mut self, data: JsonValue) -> Self {
+        self.data = data;
+        self
+    }
+
+    pub fn com_fee(mut self, fee: u128) -> Self {
+        self.fee = Some(fee);
+        self
+    }
+}
+
+/// Monta e ASSINA uma transação com o esquema híbrido `eav7-hybrid-1`
+/// (secp256k1 + ML-DSA-44) — `transaction.js:29-65`.
+///
+/// Três detalhes que a referência trata e que errar aqui custa caro:
+///
+/// * `from` é DERIVADO das chaves públicas do assinante, não informado. Uma
+///   transação cujo `from` não derive das chaves que a assinaram é recusada pela
+///   verificação — derivar aqui torna esse erro impossível de cometer.
+/// * a assinatura cobre o PAYLOAD canônico, que exclui as próprias assinaturas e
+///   o `id`.
+/// * o `id` é `eavHash(payload)` — derivado só do payload, NUNCA dos bytes da
+///   assinatura. É o que impede maleabilidade de txid: reassinar a mesma
+///   transação não produz um id novo (achado M1).
+pub fn build_transaction(signer: &dyn crate::block::BlockSigner, spec: TxSpec) -> Result<Tx, String> {
+    let from = crate::signature::address_from_public_keys(
+        signer.public_key_pem(),
+        signer.pq_public_key_pem(),
+    )
+    .map_err(|e| format!("chaves públicas do assinante inválidas: {e}"))?;
+
+    let mut tx = Tx::new(&spec.tx_type, from, spec.nonce, spec.timestamp);
+    tx.to = spec.to;
+    tx.amount = spec.amount.to_string();
+    tx.fee = spec.fee.unwrap_or_else(|| default_fee_limit(&spec.tx_type)).to_string();
+    tx.data = Some(spec.data);
+    tx.public_key = Some(signer.public_key_pem().to_string());
+    tx.pq_public_key = Some(signer.pq_public_key_pem().to_string());
+
+    let payload = tx_signing_payload(&tx);
+    let (assinatura, assinatura_pq) = signer
+        .sign(payload.as_bytes())
+        .map_err(|e| format!("falha ao assinar transação: {e}"))?;
+    tx.signature = Some(assinatura);
+    tx.pq_signature = Some(assinatura_pq);
+    tx.id = Some(crate::hash::eav_hash_one(&payload));
+    Ok(tx)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

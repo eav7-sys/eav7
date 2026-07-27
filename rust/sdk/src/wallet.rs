@@ -1,4 +1,4 @@
-//! Carteira de PRODUÇÃO do nó — o lado que ASSINA do `eav7-hybrid-1`.
+//! Carteira — o lado que ASSINA do `eav7-hybrid-1`.
 //!
 //! Porte do PAPEL da carteira de `src/crypto/keys.js`: o arquivo JSON que
 //! `generateKeyPair` (keys.js:24-33) produz e que `saveWallet`/`loadWallet` de
@@ -14,11 +14,14 @@
 //! endereço derivado — divergência significa arquivo remendado à mão, e produzir
 //! blocos como um endereço que o operador não espera é pior que recusar o boot.
 //!
-//! # Por que a lib `eav7` não faz isso
+//! # Por que a lib `eav7` não faz isso, e por que isto vive no SDK
 //!
 //! A lib de consenso só VERIFICA (ver o cabeçalho de `rust/src/signature.rs`):
-//! um validador nunca precisa de chave privada de usuário. ASSINAR pertence ao
-//! nó, e por isso este módulo vive no crate de nó. O padrão-ouro de COMO assinar
+//! um validador nunca precisa de chave privada de usuário. ASSINAR é trabalho de
+//! CLIENTE — e o nó é só mais um cliente quando assina um bloco. Por isso este
+//! módulo mora no SDK, e o crate de nó depende dele em vez de manter uma cópia:
+//! duas versões da regra que decide o que é assinado é o pior lugar possível para
+//! uma divergência. O padrão-ouro de COMO assinar
 //! é o `impl BlockSigner for Carteira` de `rust/src/block.rs` (teste_util,
 //! ~linha 796): ECDSA em DER + ML-DSA-44 crua, ambas em base64 — exatamente o
 //! par que `hybridSign` (keys.js:66-72) produz. Esta struct reproduz aquele
@@ -40,7 +43,7 @@
 use eav7::block::{BlockError, BlockSigner};
 use eav7::signature::HybridPublicKey;
 use k256::pkcs8::DecodePrivateKey;
-use ml_dsa::MlDsa44;
+use ml_dsa::{Generate, MlDsa44};
 
 /// Carteira de produção carregada do arquivo do operador (`--wallet`).
 ///
@@ -67,6 +70,61 @@ impl std::fmt::Debug for ProductionWallet {
 }
 
 impl ProductionWallet {
+    /// Gera um par de chaves NOVO — `generateKeyPair` (keys.js:24-33).
+    ///
+    /// Vivia dentro do binário da CLI, privada. Criar carteira é a primeira coisa
+    /// que qualquer programa contra a rede precisa fazer, e mantê-la lá obrigaria
+    /// quem escrevesse um programa em Rust a reimplementar a derivação de endereço
+    /// — que é exatamente a regra que não pode ter duas versões.
+    ///
+    /// Devolve `(endereço, JSON da carteira)`. O JSON tem os mesmos campos que o
+    /// `saveWallet` da referência grava, para que os dois clientes leiam o arquivo
+    /// um do outro.
+    pub fn gerar() -> Result<(String, String), String> {
+        use k256::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
+
+        // ECDSA secp256k1 — RNG do sistema.
+        let ec = k256::ecdsa::SigningKey::generate();
+        let ec_priv_pem = ec
+            .to_pkcs8_pem(LineEnding::LF)
+            .map_err(|e| format!("exportar PKCS#8 ECDSA: {e}"))?
+            .to_string();
+        let ec_pub_pem = ec
+            .verifying_key()
+            .to_public_key_pem(LineEnding::LF)
+            .map_err(|e| format!("exportar SPKI ECDSA: {e}"))?;
+
+        // ML-DSA-44: `to_pkcs8_pem` exporta a SEMENTE (forma "seed" da RFC 9881),
+        // que é o que o Node emite e o que `from_file` sabe ler.
+        let pq = ml_dsa::SigningKey::<MlDsa44>::generate();
+        let pq_priv_pem = pq
+            .to_pkcs8_pem(LineEnding::LF)
+            .map_err(|e| format!("exportar PKCS#8 ML-DSA-44: {e}"))?
+            .to_string();
+        let pq_pub_pem = ml_dsa::Keypair::verifying_key(&pq)
+            .to_public_key_pem(LineEnding::LF)
+            .map_err(|e| format!("exportar SPKI ML-DSA-44: {e}"))?;
+
+        // Endereço pelo MESMO caminho canônico do carregamento, de modo que o
+        // `address` gravado bate com o que a releitura deriva.
+        let address = HybridPublicKey::from_pem(&ec_pub_pem, &pq_pub_pem)
+            .map_err(|e| format!("derivar endereço das chaves geradas: {e}"))?
+            .address();
+
+        let mut obj = serde_json::Map::new();
+        obj.insert("chain".into(), eav7::config::NAME.into());
+        obj.insert("protocol".into(), eav7::transaction::PROTOCOL.into());
+        obj.insert("address".into(), address.clone().into());
+        obj.insert("scheme".into(), eav7::signature::SIGNATURE_SCHEME.into());
+        obj.insert("privateKeyPem".into(), ec_priv_pem.into());
+        obj.insert("publicKeyPem".into(), ec_pub_pem.into());
+        obj.insert("pqPrivateKeyPem".into(), pq_priv_pem.into());
+        obj.insert("pqPublicKeyPem".into(), pq_pub_pem.into());
+        let json = serde_json::to_string_pretty(&serde_json::Value::Object(obj))
+            .map_err(|e| format!("serializar carteira: {e}"))?;
+        Ok((address, json))
+    }
+
     /// Carrega a carteira do JSON gravado por `saveWallet` (bin/eav7.js:122).
     ///
     /// Além de parsear, PROVA que o material confere: assina uma carga-sonda com
@@ -248,8 +306,13 @@ fn pem_privada_para_der(pem: &str) -> Option<Vec<u8>> {
 ///   .then(async (k)=>{const w=k.generateKeyPair();w.address=k.walletAddress(w);
 ///   console.log(JSON.stringify(w))})' > tests/fixtures/carteira-node.json
 /// ```
-#[cfg(test)]
-pub(crate) const FIXTURE_CARTEIRA: &str =
+/// AVISO: este arquivo contém uma chave privada REAL. Ela é descartável e existe
+/// só para o teste de compatibilidade entre os dois clientes — nunca teve saldo e
+/// nunca deve receber nenhum. Não use como modelo de carteira de verdade.
+///
+/// É `pub` (e não `cfg(test)`) porque os testes do crate do NÓ também a usam, e
+/// item de teste não atravessa a fronteira de crate.
+pub const FIXTURE_CARTEIRA: &str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/carteira-node.json");
 
 #[cfg(test)]

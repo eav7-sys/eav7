@@ -39,11 +39,9 @@ use hyper::body::Bytes;
 use hyper::Method;
 
 use eav7::block::BlockSigner;
-use eav7::config::energy::BURN_PER_ENERGY;
-use eav7::hash::eav_hash_one;
-use eav7::signature::{address_from_public_keys, HybridPublicKey, SIGNATURE_SCHEME};
+use eav7::signature::{HybridPublicKey, SIGNATURE_SCHEME};
 use eav7::state::contracts::eavm_to_e7;
-use eav7::transaction::{tx_signing_payload, verify_transaction, JsonValue, Tx};
+use eav7::transaction::{build_transaction, verify_transaction, JsonValue, Tx, TxSpec};
 use eav7::{config, is_valid_address};
 
 use eav7_node::ai::bridge::tx_to_json;
@@ -334,23 +332,12 @@ fn imprime_json(v: &serde_json::Value) {
 // derivado APENAS do payload (anti-maleabilidade de txid). Os builders de
 // TRANSFER/STAKE/UNSTAKE/TOKEN_*/BRIDGE_OUT NÃO existiam na lib nem em bridge.rs,
 // então são montados aqui campo a campo, assinados pela MESMA `ProductionWallet`.
-
-/// Limite de taxa padrão = custo de energia × `BURN_PER_ENERGY` (transaction.js:39-42).
+/// Monta e assina pela LIB (`eav7::transaction::build_transaction`).
 ///
-/// O custo vem de `eav7::config::energy_cost` — a tabela `CHAIN.ENERGY.COST`
-/// INTEIRA (src/config.js:328-346), com o fallback `?? 1` de transaction.js:42.
-/// Havia aqui uma segunda cópia parcial da tabela, justificada por um comentário
-/// que dizia que a de `ai/bridge.rs` "só cobre os tipos de IA": as duas cópias
-/// existiam porque ninguém tinha notado que o config da lib já expunha tudo.
-fn default_fee_limit(tx_type: &str) -> u128 {
-    eav7::config::energy_cost(tx_type) as u128 * BURN_PER_ENERGY
-}
-
-/// Monta e assina uma Tx eav20 (esquema `eav7-hybrid-1`). `fee = None` usa a tabela
-/// do protocolo; `fee = Some(0)` é a isenção por stake (bin/eav7.js:171).
-//
-// Oito parâmetros porque são exatamente os campos do payload assinado. Agrupá-los
-// numa struct só criaria um segundo `Tx` — a struct que esta função já devolve.
+/// Havia aqui uma cópia do construtor, idêntica à do módulo de IA. Duas versões
+/// da regra que decide o que é assinado e qual é o `id` da transação é o pior
+/// lugar possível para divergirem: uma mudaria primeiro, e as transações de um
+/// caminho deixariam de ser aceitas sem motivo aparente.
 #[allow(clippy::too_many_arguments)]
 fn build_and_sign(
     signer: &dyn BlockSigner,
@@ -362,23 +349,10 @@ fn build_and_sign(
     timestamp: i64,
     data: JsonValue,
 ) -> Result<Tx, String> {
-    let from = address_from_public_keys(signer.public_key_pem(), signer.pq_public_key_pem())
-        .map_err(|e| format!("chaves públicas da carteira inválidas: {e}"))?;
-    let mut tx = Tx::new(tx_type, from, nonce, timestamp);
-    tx.to = to;
-    tx.amount = amount.to_string();
-    tx.fee = fee.unwrap_or_else(|| default_fee_limit(tx_type)).to_string();
-    tx.data = Some(data);
-    tx.public_key = Some(signer.public_key_pem().to_string());
-    tx.pq_public_key = Some(signer.pq_public_key_pem().to_string());
-
-    let payload = tx_signing_payload(&tx);
-    let (assinatura, assinatura_pq) =
-        signer.sign(payload.as_bytes()).map_err(|e| format!("falha ao assinar transação: {e}"))?;
-    tx.signature = Some(assinatura);
-    tx.pq_signature = Some(assinatura_pq);
-    tx.id = Some(eav_hash_one(&payload));
-    Ok(tx)
+    let mut spec = TxSpec::nova(tx_type, amount, nonce, timestamp).com_dados(data);
+    spec.to = to;
+    spec.fee = fee;
+    build_transaction(signer, spec)
 }
 
 /// `nextNonce` (bin/eav7.js:155-160): próximo nonce considerando também as
@@ -943,11 +917,11 @@ mod tests {
     #[test]
     fn fee_default_por_tipo_bate_com_a_tabela() {
         // custo de energia × BURN_PER_ENERGY (20000).
-        assert_eq!(default_fee_limit("TRANSFER"), 20_000);
-        assert_eq!(default_fee_limit("TOKEN_TRANSFER"), 40_000);
-        assert_eq!(default_fee_limit("TOKEN_CREATE"), 200_000);
-        assert_eq!(default_fee_limit("BRIDGE_OUT"), 40_000);
-        assert_eq!(default_fee_limit("AI_TASK"), 100_000);
-        assert_eq!(default_fee_limit("DESCONHECIDO"), 20_000); // fallback `?? 1`
+        assert_eq!(eav7::transaction::default_fee_limit("TRANSFER"), 20_000);
+        assert_eq!(eav7::transaction::default_fee_limit("TOKEN_TRANSFER"), 40_000);
+        assert_eq!(eav7::transaction::default_fee_limit("TOKEN_CREATE"), 200_000);
+        assert_eq!(eav7::transaction::default_fee_limit("BRIDGE_OUT"), 40_000);
+        assert_eq!(eav7::transaction::default_fee_limit("AI_TASK"), 100_000);
+        assert_eq!(eav7::transaction::default_fee_limit("DESCONHECIDO"), 20_000); // fallback `?? 1`
     }
 }

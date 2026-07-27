@@ -18,7 +18,10 @@ pub mod producer;
 pub mod ratelimit;
 pub mod validator_score;
 pub mod verify_contract;
-pub mod wallet;
+// A carteira mudou para o crate `eav7-sdk` — geração, carregamento e assinatura
+// são trabalho de cliente, e o nó é só mais um cliente quando assina. O reexport
+// mantém `eav7_node::wallet::…` funcionando para quem já dependia dele.
+pub use eav7_sdk::wallet;
 
 /// Linha canônica de um bloco para difusão P2P — `None` se não serializar.
 ///

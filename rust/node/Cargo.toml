@@ -25,6 +25,12 @@ license = "MIT"
 [dependencies]
 eav7 = { path = ".." }
 
+# A carteira (geração, carregamento e assinatura) vive no SDK: é trabalho de
+# CLIENTE, e o nó é só mais um cliente quando assina bloco ou transação. Uma
+# cópia aqui seria a segunda versão da mesma coisa — e é justamente a regra que
+# decide o que é assinado.
+eav7-sdk = { path = "../sdk" }
+
 # Runtime assíncrono + servidor HTTP. Decisão de projeto registrada (2026-07-20):
 # tokio+axum, o padrão do ecossistema. O async NÃO ameaça o determinismo do
 # consenso — consenso vive na lib síncrona; aqui é só I/O em volta.

@@ -143,6 +143,67 @@ pub fn verify_state_proof(raiz: &str, folha: &str, caminho: &[PathStep]) -> bool
     h == raiz
 }
 
+// ---------------------------------------------------------------------------
+// Prova de conta — o que um LIGHT CLIENT precisa
+// ---------------------------------------------------------------------------
+//
+// A composição vivia inline no handler de `GET /proof` do nó, e a verificação não
+// existia em lugar nenhum: quem consumisse a prova teria de reimplementar a
+// montagem da folha para conferi-la — ou seja, cada cliente escreveria a própria
+// versão da regra que decide se um saldo é verdadeiro.
+
+/// Prova de inclusão de UMA conta contra a raiz do estado.
+///
+/// `folha` é o que a raiz cobre; `caminho` são os nós irmãos até ela. Quem
+/// verifica não precisa do estado inteiro — só disto e da raiz que veio do header
+/// do bloco, que por sua vez veio assinada pelo produtor.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProvaDeConta {
+    pub endereco: String,
+    pub folha: String,
+    pub caminho: Vec<PathStep>,
+}
+
+/// Monta a prova de inclusão de uma conta a partir do conjunto COMPLETO de folhas.
+///
+/// `None` quando a conta não está no estado — ausência não se prova por este
+/// mecanismo (provar não-inclusão exigiria árvore de outro tipo), e devolver uma
+/// prova vazia seria pior que devolver nada.
+pub fn account_proof(
+    endereco: &str,
+    conta: &Value,
+    todas_as_folhas: &[String],
+) -> Result<Option<ProvaDeConta>, canonical::Error> {
+    let alvo = account_leaf(endereco, conta)?;
+    let mut folhas = todas_as_folhas.to_vec();
+    sort_leaves(&mut folhas);
+    let Ok(indice) = folhas.binary_search(&alvo) else {
+        return Ok(None);
+    };
+    Ok(Some(ProvaDeConta {
+        endereco: endereco.to_string(),
+        folha: alvo,
+        caminho: merkle_path(&folhas, indice),
+    }))
+}
+
+/// Confere uma prova de conta contra a raiz — o lado do LIGHT CLIENT.
+///
+/// Recebe a conta na forma canônica e RECALCULA a folha em vez de confiar na que
+/// veio junto: aceitar a folha do servidor tornaria a prova circular, já que ela
+/// é justamente o que amarra o endereço e o saldo àquele valor.
+pub fn verify_account_proof(
+    raiz: &str,
+    endereco: &str,
+    conta: &Value,
+    caminho: &[PathStep],
+) -> bool {
+    match account_leaf(endereco, conta) {
+        Ok(folha) => verify_state_proof(raiz, &folha, caminho),
+        Err(_) => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -336,5 +397,55 @@ mod tests {
         let ms = t.elapsed().as_secs_f64() * 1000.0;
         println!("{n} contas — canônico: {:.1} MB em {ms:.0} ms", bytes.len() as f64 / 1e6);
         println!("  por conta: {} bytes", bytes.len() / n);
+    }
+
+    /// A prova de conta fecha contra a raiz — e recusa conta adulterada.
+    ///
+    /// O segundo caso é o que dá sentido ao primeiro: se um saldo trocado ainda
+    /// passasse, a prova não estaria provando nada.
+    #[test]
+    fn prova_de_conta_fecha_e_recusa_adulteracao() {
+        use crate::state::{Account, State};
+
+        let mut s = State::new();
+        let alvo = crate::address::derive_address_from("prova:alvo");
+        for i in 0..8u8 {
+            s.accounts.insert(
+                crate::address::derive_address_from(format!("prova:{i}")),
+                Account { balance: 100 + u128::from(i), ..Default::default() },
+            );
+        }
+        s.accounts.insert(alvo.clone(), Account { balance: 4_242, nonce: 7, ..Default::default() });
+
+        let folhas = s.state_leaves().expect("folhas");
+        let raiz = compute_state_root(&folhas);
+        let conta = s.accounts[&alvo].to_value();
+
+        let prova = account_proof(&alvo, &conta, &folhas)
+            .expect("codificável")
+            .expect("a conta existe");
+        assert!(
+            verify_account_proof(&raiz, &alvo, &conta, &prova.caminho),
+            "a prova da conta real tem de fechar contra a raiz"
+        );
+
+        // Saldo trocado: a folha muda, e o mesmo caminho já não leva à raiz.
+        let mut mentira = s.accounts[&alvo].clone();
+        mentira.balance = 999_999;
+        assert!(
+            !verify_account_proof(&raiz, &alvo, &mentira.to_value(), &prova.caminho),
+            "saldo adulterado NÃO pode passar com o caminho da conta verdadeira"
+        );
+
+        // Endereço trocado, mesma conta: idem.
+        let outro = crate::address::derive_address_from("prova:0");
+        assert!(!verify_account_proof(&raiz, &outro, &conta, &prova.caminho));
+
+        // Conta ausente não produz prova.
+        let inexistente = crate::address::derive_address_from("prova:ninguem");
+        assert_eq!(
+            account_proof(&inexistente, &conta, &folhas).expect("codificável"),
+            None
+        );
     }
 }

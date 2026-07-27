@@ -25,68 +25,20 @@
 //! ver [[eav7-ai-roadmap]] e o cabeçalho de `ai/mod.rs`).
 
 use eav7::block::BlockSigner;
-use eav7::config::energy::BURN_PER_ENERGY;
 use eav7::hash::eav_hash_one;
-use eav7::signature::address_from_public_keys;
-use eav7::transaction::{canonical_json, tx_signing_payload, JsonValue, Tx};
+use eav7::transaction::{canonical_json, JsonValue, Tx};
+#[cfg(test)]
+use eav7::transaction::tx_signing_payload;
 
 // ---------------------------------------------------------------------------
 // buildTransaction — o núcleo (src/core/transaction.js:30-65)
 // ---------------------------------------------------------------------------
 
-/// Limite de taxa padrão = queima máxima possível para o tipo (custo de energia
-/// × `BURN_PER_ENERGY`) — transaction.js:39-42. Se a conta tiver energia, nada
-/// é queimado; senão, no máximo este valor.
-///
-/// O custo de energia sai de `eav7::config::energy_cost`, o porte COMPLETO da
-/// tabela `CHAIN.ENERGY.COST` (src/config.js:328-346), com o mesmo fallback
-/// `?? 1` de transaction.js:42. Havia aqui um recorte manual da tabela só com os
-/// tipos de IA; era duplicação de um número de consenso, mantida por um
-/// comentário que descrevia a lib como se ela não tivesse a tabela.
-pub fn default_fee_limit(tx_type: &str) -> u128 {
-    eav7::config::energy_cost(tx_type) as u128 * BURN_PER_ENERGY
-}
-
-/// Parâmetros do núcleo — o objeto de opções de `buildTransaction`
-/// (transaction.js:30-38). `fee: None` usa a tabela do protocolo
-/// ([`default_fee_limit`]); `data` é sempre um mapa (o default `{}` do JS).
-struct TxSpec {
-    tx_type: &'static str,
-    to: Option<String>,
-    amount: u128,
-    fee: Option<u128>,
-    nonce: i64,
-    timestamp: i64,
-    data: JsonValue,
-}
-
-/// Monta e assina uma transação eav20 com o esquema híbrido pós-quântico
-/// `eav7-hybrid-1` (secp256k1 + ML-DSA-44) — transaction.js:30-65:
-///
-///   • `from` derivado das chaves públicas do assinante (`addressFromPublicKeys`,
-///     transaction.js:43 → `eav7::signature::address_from_public_keys`);
-///   • payload canônico assinado pelo par híbrido (`hybridSign`, transaction.js:58);
-///   • `id` = `eavHash(payload)` — derivado APENAS do payload, nunca dos bytes
-///     da assinatura (anti-maleabilidade de txid, transaction.js:59-64).
-fn build_transaction(signer: &dyn BlockSigner, spec: TxSpec) -> Result<Tx, String> {
-    let from = address_from_public_keys(signer.public_key_pem(), signer.pq_public_key_pem())
-        .map_err(|e| format!("chaves públicas do assinante inválidas: {e}"))?;
-    let mut tx = Tx::new(spec.tx_type, from, spec.nonce, spec.timestamp);
-    tx.to = spec.to;
-    tx.amount = spec.amount.to_string();
-    tx.fee = spec.fee.unwrap_or_else(|| default_fee_limit(spec.tx_type)).to_string();
-    tx.data = Some(spec.data);
-    tx.public_key = Some(signer.public_key_pem().to_string());
-    tx.pq_public_key = Some(signer.pq_public_key_pem().to_string());
-
-    let payload = tx_signing_payload(&tx);
-    let (assinatura, assinatura_pq) =
-        signer.sign(payload.as_bytes()).map_err(|e| format!("falha ao assinar transação: {e}"))?;
-    tx.signature = Some(assinatura);
-    tx.pq_signature = Some(assinatura_pq);
-    tx.id = Some(eav_hash_one(&payload));
-    Ok(tx)
-}
+// `default_fee_limit`, `TxSpec` e `build_transaction` vivem na LIB
+// (`eav7::transaction`). Estavam copiados aqui e no `eav7-cli`, com corpos
+// idênticos — duas versões da regra que decide o que é assinado e qual é o `id`
+// da transação. É o pior lugar possível para uma divergência.
+pub use eav7::transaction::{build_transaction, default_fee_limit, TxSpec};
 
 /// Serializa a transação COMPLETA (payload + assinaturas + id) para o POST /tx.
 ///
@@ -201,7 +153,7 @@ pub fn build_ai_task_tx(signer: &dyn BlockSigner, p: AiTaskParams) -> Result<Tx,
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_TASK",
+            tx_type: "AI_TASK".into(),
             to: None,
             amount: p.reward,
             fee: None,
@@ -234,7 +186,7 @@ pub fn build_ai_bid_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_BID",
+            tx_type: "AI_BID".into(),
             to: None,
             amount: 0,
             fee: None,
@@ -259,7 +211,7 @@ pub fn build_ai_award_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_AWARD",
+            tx_type: "AI_AWARD".into(),
             to: None,
             amount: 0,
             fee: None,
@@ -295,7 +247,7 @@ pub fn build_ai_commit_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_COMMIT",
+            tx_type: "AI_COMMIT".into(),
             to: None,
             amount: 0,
             fee: None,
@@ -321,7 +273,7 @@ pub fn build_ai_reveal_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_REVEAL",
+            tx_type: "AI_REVEAL".into(),
             to: None,
             amount: 0,
             fee: None,
@@ -351,7 +303,7 @@ pub fn build_ai_claim_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_CLAIM",
+            tx_type: "AI_CLAIM".into(),
             to: None,
             amount: 0,
             fee: None,
@@ -373,7 +325,7 @@ pub fn build_ai_challenge_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_CHALLENGE",
+            tx_type: "AI_CHALLENGE".into(),
             to: None,
             amount: 0,
             fee: None,
@@ -396,7 +348,7 @@ pub fn build_ai_verdict_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_VERDICT",
+            tx_type: "AI_VERDICT".into(),
             to: None,
             amount: 0,
             fee: None,
@@ -421,7 +373,7 @@ pub fn build_ai_refund_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_REFUND",
+            tx_type: "AI_REFUND".into(),
             to: None,
             amount: 0,
             fee: None,
@@ -445,7 +397,7 @@ pub fn build_bridge_settle_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "BRIDGE_SETTLE",
+            tx_type: "BRIDGE_SETTLE".into(),
             to: None,
             amount: 0,
             fee: None,
@@ -475,7 +427,7 @@ pub fn build_oracle_register_tx(
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "ORACLE_REGISTER",
+            tx_type: "ORACLE_REGISTER".into(),
             to: None,
             amount: stake,
             fee: None,
@@ -530,7 +482,7 @@ pub fn build_ai_result_tx(signer: &dyn BlockSigner, p: AiResultParams) -> Result
     build_transaction(
         signer,
         TxSpec {
-            tx_type: "AI_RESULT",
+            tx_type: "AI_RESULT".into(),
             to: None,
             amount: 0,
             fee: None,
