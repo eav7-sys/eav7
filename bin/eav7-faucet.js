@@ -33,6 +33,19 @@ const send = (res, code, body) => {
 };
 
 createServer(async (req, res) => {
+  // Preflight CORS: o navegador manda OPTIONS antes do POST cross-origin (o wallet
+  // em testnet.eavscan.com chama faucet-testnet.eavscan.com). Sem allow-methods/headers,
+  // o POST real é bloqueado.
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
+      'access-control-allow-headers': 'content-type',
+      'access-control-max-age': '86400',
+    });
+    res.end();
+    return;
+  }
   if (req.method === 'GET' && req.url === '/') {
     return send(res, 200, { faucet: 'EAV7 testnet', node: url, amount: amount.toString(), from: client.address });
   }
