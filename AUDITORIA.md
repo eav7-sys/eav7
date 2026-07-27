@@ -36,8 +36,9 @@ confirmado no código.
 - **Rodada 2** (produção, cobrindo EAVM/operações nativas, carteira web, novos
   endpoints, remoção do faucet): **18 confirmados** — corrigidos abaixo.
 
-Suíte atual: **33 testes** (`npm test`), verdes, incluindo regressões específicas das
-correções, + smoke test end-to-end (produção de blocos, EAVM, stake, DoS, auth).
+Suíte na data desta auditoria: **33 testes** (`npm test`), verdes, incluindo regressões
+específicas das correções, + smoke test end-to-end (produção de blocos, EAVM, stake, DoS,
+auth). A suíte cresceu bastante desde então — ver o número atual no README.
 
 ---
 

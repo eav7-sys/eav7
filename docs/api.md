@@ -3,7 +3,8 @@
 O nó EAV7 expõe três superfícies: **API HTTP** (:6070), **JSON-RPC EAVM** (:7070, compat.
 MetaMask/Trust Wallet) e **P2P**. Esta referência cobre a API HTTP pública. Todas as respostas
 são JSON; envie `Accept: application/json`. Valores monetários são strings de inteiros em `e7`
-(1 EAV7 = 10¹² e7 — ver `CHAIN.UNIT`).
+(1 EAV7 = 10⁶ e7 — ver `CHAIN.UNIT`). Não confundir com `CHAIN.EAVM_WEI_PER_E7` = 10¹², o fator
+de conversão usado só na superfície EAVM, onde as carteiras assumem 18 decimais.
 
 ## SDK
 
@@ -27,7 +28,8 @@ sem tocar a rede — úteis para assinar offline, testar e enfileirar.
 
 | Rota | Descrição |
 |------|-----------|
-| `/status` | Estado da cadeia: `height`, `finalizedHeight` (#2), `headHash`, `supply`, `minted`, `burned`, `validators`, `blockReward`, energia. |
+| `/status` | Estado da cadeia: `height`, `finalizedHeight` (#2), `headHash`, `supply`, `minted`, `burned`, `treasury`, `validators`, `blockReward`, energia. |
+| `/proof/:end` | **Prova de conta** (Merkle) contra o `stateRoot` (#1) — light client confere saldo/nonce sem baixar o estado. |
 | `/address/:end` | Conta (E7… ou 0x… EAVM): `balance`, `staked`, `nonce`, `nextNonce` (ciente do mempool), `energy`, `feeExempt`, `isValidator`, `tokens`. |
 | `/address/:end/txs?limit&before` | Transações da carteira, mais novas primeiro (via índice por endereço). |
 | `/chain?from&limit` | Faixa de blocos (limite `MAX_CHAIN_PAGE`). |
@@ -39,6 +41,8 @@ sem tocar a rede — úteis para assinar offline, testar e enfileirar.
 | `/search?q=` | Busca por endereço/token/bloco/tx (índice por prefixo, #M2). |
 | `/stats` | Agregados do explorer (cacheados por altura). |
 | `/contract/:addr` | Metadados de verificação de um contrato EAVM (#8), ou 404. |
+| `/logs` | Eventos EAVM recentes (índice node-local, ring buffer). |
+| `/name/:nome` | Resolução do serviço de nomes EAV-NS → endereço E7, ou 404. |
 | `/bridge/transfers` | Transferências de ponte. |
 
 ## Endpoints de escrita (POST)
@@ -55,11 +59,29 @@ Endpoints administrativos (`/peers`, `/security/alerts`) exigem o header `x-admi
 
 ## Tipos de transação
 
-`TRANSFER`, `STAKE`, `UNSTAKE`, `VOTE` (#4), `DELEGATE_RESOURCE`/`UNDELEGATE_RESOURCE` (#6),
-`PERMISSION_UPDATE`/`MULTISIG_PROPOSE`/`MULTISIG_APPROVE` (#5), `TOKEN_CREATE`/`TOKEN_TRANSFER`/
-`TOKEN_APPROVE`/`TOKEN_TRANSFER_FROM`, `AI_TASK`/`AI_RESULT`, `BRIDGE_OUT`/`BRIDGE_IN`/`BRIDGE_SETTLE`,
-`EAVM_DEPLOY`/`EAVM_CALL`. Cada tx tem um `fee` (LIMITE de queima autorizado); a queima real vem
-do modelo de recursos (energia + bandwidth), não vai ao produtor.
+Os 55 tipos do protocolo (`TX_TYPES = Object.keys(CHAIN.FEES)`):
+
+| Grupo | Tipos |
+|-------|-------|
+| Nativo | `TRANSFER`, `STAKE`, `UNSTAKE` (unbonding), `EAVM_TRANSFER` |
+| Consenso / votação (#4) | `VOTE`, `SET_COMMISSION`, `CLAIM_VOTER_REWARD`, `SLASH_DOUBLE_SIGN` |
+| Recursos (#6) | `DELEGATE_RESOURCE`, `UNDELEGATE_RESOURCE` |
+| Permissões / multisig (#5) | `PERMISSION_UPDATE`, `MULTISIG_PROPOSE`, `MULTISIG_APPROVE` |
+| Governança (#9) | `GOV_PROPOSE`, `GOV_VOTE` |
+| Vesting / meta-tx | `VESTING_CREATE`, `VESTING_CLAIM`, `META_TX` |
+| Token EAV20 | `TOKEN_CREATE`, `TOKEN_TRANSFER`, `TOKEN_APPROVE`, `TOKEN_TRANSFER_FROM`, `TOKEN_MINT`, `TOKEN_BURN`, `TOKEN_PAUSE`, `TOKEN_UNPAUSE`, `TOKEN_BLACKLIST`, `TOKEN_FREEZE`, `TOKEN_UNFREEZE` |
+| NFT EAV721 | `NFT_CREATE`, `NFT_MINT`, `NFT_TRANSFER`, `NFT_APPROVE`, `NFT_BURN` |
+| Nomes (EAV-NS) | `NAME_REGISTER`, `NAME_UPDATE`, `NAME_TRANSFER`, `NAME_RELEASE` |
+| IA — base | `ORACLE_REGISTER`, `AI_TASK`, `AI_RESULT`, `AI_REFUND` |
+| IA — quórum commit-reveal | `AI_COMMIT`, `AI_REVEAL` |
+| IA — janela de desafio | `AI_CLAIM`, `AI_CHALLENGE`, `AI_VERDICT` |
+| IA — leilão de oráculos | `AI_BID`, `AI_AWARD` |
+| Ponte (#3) | `BRIDGE_OUT`, `BRIDGE_IN`, `BRIDGE_SETTLE`, `BRIDGE_COMMITTEE_UPDATE` |
+| EAVM (contratos) | `EAVM_DEPLOY`, `EAVM_CALL` — **pagáveis** a partir de `EAVM_VALUE_HEIGHT` |
+
+Cada tx tem um `fee` (LIMITE de queima autorizado); a queima real vem do modelo de recursos
+(energia + bandwidth), não vai ao produtor. Mudanças de consenso são **gated por altura de fork**
+(ver `CHAIN.FORK_HEIGHTS`); com `EAV7_GENESIS_ACTIVE=1` todas nascem ativas no bloco 0.
 
 ## Faucet (testnet)
 
@@ -68,3 +90,31 @@ Serviço separado (`bin/eav7-faucet.js`), habilitado só com `EAV7_FAUCET_ENABLE
 ```
 POST /faucet  { "address": "E7…" }   →  { ok, amount, id }   (cooldown por endereço)
 ```
+
+## Transferências internas (Fase 2.3)
+
+A partir de `CHAIN.EAVM_VALUE_HEIGHT` os contratos EAVM são **pagáveis** sobre um
+**ledger unificado**: o saldo do mundo `0x` É o da conta nativa correspondente
+(`decodeE7Dest ?? eavmToE7`), então o valor entra, circula e sai sem ficar preso — a
+correção estrutural do achado A-3, em que a ponte de valor era unidirecional.
+
+Valor movido *pela execução* de um contrato não é uma transação assinada e não tem hash
+próprio. É indexado como **transferência interna**, num índice node-local derivável, fora
+do consenso e do stateRoot — mesma natureza de `/logs`.
+
+```http
+GET /internal?address=E7…|0x…&from=<altura>&limit=100
+→ { internal: [ { txId, kind, from, to, fromE7, toE7, amount, blockHeight } ] }
+```
+
+`from`/`to` são endereços do mundo `0x`; `fromE7`/`toE7` são as contas nativas
+correspondentes. Só execuções bem-sucedidas emitem — uma chamada revertida não deixa
+registro, e o valor volta ao remetente.
+
+```http
+GET /address/:endereco/analysis
+→ { txCount, truncated, firstSeen, lastSeen, sent, received, feesPaid,
+    byType, topCounterparties, daily }
+```
+
+Agregados da conta para gráficos (varredura limitada às transações mais recentes).
