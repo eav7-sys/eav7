@@ -1,7 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(curl -s -m 10 -o /dev/null -w \"eavscan.com/status → HTTP %{http_code} em %{time_total}s\\\\n\" -H \"accept: application/json\" https://eavscan.com/status)",
+      "Bash(curl -s -m 10 -H \"accept: application/json\" https://eavscan.com/status)",
+      "Bash(ssh *)",
+      "Bash(git -C /Users/jonathancardinalle/Blockchain diff --stat)",
+      "Bash(git -C /Users/jonathancardinalle/Blockchain status --short)",
+      "Bash(ssh -i eav7_ec2_key*)",
+      "Bash(scp -i eav7_ec2_key*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(bash \"/private/tmp/claude-501/-Users-jonathancardinalle-Blockchain/bf86f950-895a-4c95-b486-ecc653437200/scratchpad/mainnet-phase6-register.sh\" 2>&1 | grep -vE 'post-quantum|store now|openssh|WARNING|vulnerable|Debugger|command not found')",
+      "Bash(bash \"/private/tmp/claude-501/-Users-jonathancardinalle-Blockchain/bf86f950-895a-4c95-b486-ecc653437200/scratchpad/fix-mainnet-timelock.sh\" 2>&1 | grep -vE 'post-quantum|store now|openssh|WARNING|vulnerable|Debugger|command not found')",
+      "Bash(ssh-keygen -t ed25519 -C \"contato@eav7.com\" -f ~/.ssh/id_ed25519 -N \"\" -q)",
+      "Bash(chmod 600 ~/.ssh/id_ed25519)",
+      "Bash(chmod 644 ~/.ssh/id_ed25519.pub)"
     ]
   }
 }
