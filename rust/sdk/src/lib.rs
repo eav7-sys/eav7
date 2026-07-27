@@ -26,10 +26,12 @@
 //! já tem tokio chama de dentro de `spawn_blocking`; quem só quer um script não
 //! precisa aprender async para consultar um saldo.
 
+pub mod bridge;
 pub mod cliente;
 pub mod faucet;
 pub mod wallet;
 
+pub use bridge::{AdaptadorDeCadeia, AdaptadorDeLaco, Deposito, Relayer, Transferencia};
 pub use cliente::{Eav7Client, ErroCliente};
 pub use faucet::Faucet;
 pub use wallet::ProductionWallet;

@@ -119,7 +119,10 @@ impl Eav7Client {
 
     // ------------------------------------------------------------- leitura
 
-    fn get(&self, caminho: &str) -> R<serde_json::Value> {
+    /// GET cru numa rota da API. Público porque o conjunto de rotas é maior que o
+    /// que este cliente tipa, e obrigar quem precisa de uma rota nova a escrever o
+    /// próprio HTTP o levaria a escrever também a própria assinatura.
+    pub fn get(&self, caminho: &str) -> R<serde_json::Value> {
         let resposta = self
             .agente
             .get(&format!("{}{caminho}", self.url))
