@@ -67,8 +67,11 @@ test('#8 Verificação de contrato: bytecode idêntico verifica, divergente falh
   const ok = node.verifyContract(addr, { source: 'contract C {}', bytecode: '0x6001600155' });
   assert.equal(ok.verified, true);
   assert.equal(node.getVerifiedContract(addr).source, 'contract C {}');
-  // bytecode errado → rejeita
-  assert.throws(() => node.verifyContract(addr, { source: 'x', bytecode: '0xdead' }), /não confere/);
+  // bytecode errado → rejeita. Tamanho divergente é barrado ANTES de qualquer
+  // máscara de `immutable` — mensagem própria, mais específica.
+  assert.throws(() => node.verifyContract(addr, { source: 'x', bytecode: '0xdead' }), /tamanho do bytecode difere/);
+  // mesmo tamanho, conteúdo divergente → a comparação propriamente dita reprova
+  assert.throws(() => node.verifyContract(addr, { source: 'x', bytecode: '0xdeadbeef00' }), /não confere/);
   // contrato inexistente → rejeita
   assert.throws(() => node.verifyContract('0x' + '00'.repeat(20), { source: 'x', bytecode: '0x00' }), /não encontrado/);
 });

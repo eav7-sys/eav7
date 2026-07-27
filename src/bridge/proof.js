@@ -30,6 +30,21 @@ export function committeeUpdateDigest({ sourceChain, epoch, members, quorum }) {
   return keccak256(Buffer.from(msg, 'utf8'));
 }
 
+// Fase 6 — digest determinístico que um ATESTADOR de IA (enclave TEE / verificador zk)
+// assina para provar que o resultado foi computado corretamente. Amarra a tarefa, o hash
+// do resultado, o id do atestador e a MEDIDA do enclave/modelo (o código atestado) — mudar
+// qualquer campo muda o digest. Verificado on-chain por verifyCommitteeProof (abaixo).
+export function aiAttestDigest({ taskId, resultHash, attesterId, measurement }) {
+  const msg = [
+    'EAV7-AI-ATTEST',
+    String(taskId),
+    String(resultHash).toLowerCase(),
+    String(attesterId),
+    String(measurement ?? ''),
+  ].join('\x1f');
+  return keccak256(Buffer.from(msg, 'utf8'));
+}
+
 // Conta assinaturas VÁLIDAS e DISTINTAS de membros do comitê sobre o digest.
 // sigs: [{ r, s, recId }] com r/s em string decimal e recId 0..3. Um membro só conta
 // uma vez (dedup por endereço recuperado) — maleabilidade de assinatura não infla a

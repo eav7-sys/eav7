@@ -1,4 +1,5 @@
 import { eavHash, merkleRoot } from '../crypto/hash.js';
+import { encodeCanonical } from './canonical.js';
 
 // stateRoot: compromisso criptográfico determinístico do ESTADO INTEIRO, commitado
 // no header do bloco (a partir de CHAIN.STATEROOT_HEIGHT). Destrava prova de estado,
@@ -9,8 +10,14 @@ import { eavHash, merkleRoot } from '../crypto/hash.js';
 // uma raiz de Merkle. Duas réplicas com o mesmo estado produzem a MESMA raiz; qualquer
 // divergência de saldo/stake/ponte/contrato muda a raiz e é detectada no addBlock.
 //
-// Serialização estável: BigInt vira "B<decimal>" (sem colisão com strings normais) e
-// as chaves de objeto são ordenadas — determinístico entre nós e versões de Node.
+// Serialização canônica: ver `canonical.js`. NÃO usa JSON.stringify — ele não é
+// especificação, e reproduzi-lo em outra linguagem exigiria replicar o V8 (inteiro
+// acima de 2^53 perdendo precisão, 1e21 virando "1e+21", -0 virando 0). A folha do
+// stateRoot precisa ser reproduzível por qualquer cliente, em qualquer linguagem.
+
+// Forma JSON-safe de um valor, ainda usada pelas PROVAS (o light client transporta
+// a conta em JSON e recompõe a folha). BigInt vira "B<decimal>" para sobreviver ao
+// transporte; `accountLeafFromEncoded` desfaz antes de codificar canonicamente.
 function stable(v) {
   if (typeof v === 'bigint') return 'B' + v.toString();
   if (Array.isArray(v)) return v.map(stable);
@@ -21,17 +28,42 @@ function stable(v) {
   }
   return v;
 }
-const canonicalState = (v) => JSON.stringify(stable(v));
+// Desfaz `stable`: "B<decimal>" volta a BigInt. Necessário porque a folha canônica
+// codifica INTEIRO, não a string que o transporte usou.
+function unstable(v) {
+  if (typeof v === 'string') return v[0] === 'B' && /^B-?\d+$/.test(v) ? BigInt(v.slice(1)) : v;
+  if (Array.isArray(v)) return v.map(unstable);
+  if (v && typeof v === 'object') {
+    const o = {};
+    for (const k of Object.keys(v)) o[k] = unstable(v[k]);
+    return o;
+  }
+  return v;
+}
 
 // Folha com separação de domínio: o prefixo impede que uma conta e um token de mesma
 // chave colidam, e que reordenar seções mude a raiz.
-const leaf = (domain, key, value) => eavHash(domain + '\x1f' + key + '\x1f' + canonicalState(value));
+//
+// Hasheia BYTES, nunca uma string intermediária. A primeira versão fazia
+// `encodeCanonical(v).toString('latin1')` e concatenava como texto — e o
+// `hasher.update(string)` do Node RE-CODIFICA em UTF-8, então todo byte >= 0x80 da
+// forma canônica entrava no SHA3 como DOIS bytes. `café` tem 10 bytes canônicos e
+// chegava ao hash com 12.
+//
+// O efeito era invisível em tudo que é ASCII — endereço, hash, decimal, ou seja a
+// esmagadora maioria do estado — e divergiria na primeira folha com acentuação
+// (nome de token, registro EAV-NS) ou com texto de comprimento >= 128, cujo byte
+// de comprimento passa de 0x80. Falha silenciosa, em produção, muito depois.
+const leaf = (domain, key, value) => eavHash(Buffer.concat([
+  Buffer.from(domain + '\x1f' + key + '\x1f', 'utf8'),
+  encodeCanonical(value),
+]));
 
 // Enumera TODAS as folhas do estado de consenso. Ordem de inserção é irrelevante:
 // computeStateRoot ordena antes de reduzir. Toda seção que participa do consenso
 // entra aqui — se ficasse de fora, dois estados divergindo só nela teriam a mesma
 // raiz e os nós poderiam divergir sem detecção.
-function stateLeaves(state) {
+export function stateLeaves(state) {
   const leaves = [];
   leaves.push(leaf('meta', 'totalMinted', state.totalMinted));
   leaves.push(leaf('meta', 'totalBurned', state.totalBurned));
@@ -45,6 +77,8 @@ function stateLeaves(state) {
   for (const [addr, t] of Object.entries(state.candidateVotes ?? {})) leaves.push(leaf('cvotes', addr, t));
   for (const [addr, p] of Object.entries(state.permissions ?? {})) leaves.push(leaf('perm', addr, p));
   for (const [id, o] of Object.entries(state.pendingOps ?? {})) leaves.push(leaf('pop', id, o));
+  for (const [addr, c] of Object.entries(state.pendingPerm ?? {})) leaves.push(leaf('pperm', addr, c));
+  for (const [addr, c] of Object.entries(state.pendingCommission ?? {})) leaves.push(leaf('pcomm', addr, c));
   for (const [addr, d] of Object.entries(state.delegations ?? {})) leaves.push(leaf('deleg', addr, d));
   leaves.push(leaf('gov', 'params', state.params ?? {}));
   leaves.push(leaf('treasury', 'balance', state.treasury ?? 0n));
@@ -56,6 +90,9 @@ function stateLeaves(state) {
   for (const [a, r] of Object.entries(state.rewardAccPerVote ?? {})) leaves.push(leaf('racc', a, r));
   for (const [a, d] of Object.entries(state.voterRewardDebt ?? {})) leaves.push(leaf('rdebt', a, d));
   for (const [id, t] of Object.entries(state.aiTasks)) leaves.push(leaf('ai', id, t));
+  // Fase 6: atestadores de IA. Só entra quando NÃO-vazio → antes do fork (registro vazio)
+  // a serialização é idêntica, preservando o stateRoot histórico (rollout coordenado).
+  for (const [id, a] of Object.entries(state.aiAttesters ?? {})) leaves.push(leaf('attest', id, a));
   leaves.push(leaf('brg', 'state', state.bridge));
   leaves.push(leaf('brg', 'relayers', state.bridgeRelayers));
   leaves.push(leaf('brg', 'committees', state.bridgeSourceCommittees ?? {}));
@@ -101,7 +138,7 @@ export const decodeProofBig = (s) => (typeof s === 'string' && s[0] === 'B' ? Bi
 // Folha de conta a partir da forma ENCODED (o que a prova transporta) — idêntica a
 // accountLeaf(address, account), mas sem exigir os tipos BigInt no cliente.
 export function accountLeafFromEncoded(address, encoded) {
-  return eavHash('acct' + '\x1f' + address + '\x1f' + JSON.stringify(encoded));
+  return leaf('acct', address, unstable(encoded));
 }
 
 // Prova de inclusão de UMA conta no stateRoot: { leaf, encodedAccount, path }. Um light

@@ -26,7 +26,9 @@ test('#33 logs: uma EAVM_CALL que emite LOG entrega o evento ao sink', () => {
 
   const call = buildTransaction(w, { type: 'EAVM_CALL', amount: 0, nonce: 2, data: { to: contract, input: '0x' } });
   const logs = [];
-  state.applyTransaction(call, 1, 0, (lg) => logs.push(lg));
+  // O sink é multiplexado: carrega eventos (LOG), transferências internas e recibos de
+  // execução. Aqui só interessam os eventos — os demais têm marcador próprio.
+  state.applyTransaction(call, 1, 0, (e) => { if (!e.internal && !e.receipt) logs.push(e); });
   assert.equal(logs.length, 1, 'um evento emitido');
   assert.equal(logs[0].address, contract);
   assert.equal(logs[0].txId, call.id);

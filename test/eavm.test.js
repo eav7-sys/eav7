@@ -77,7 +77,7 @@ test('envelope EAVM: válido passa, adulterado e chainId errado falham', () => {
   assert.equal(verifyEavmEnvelope(envelope), null);
   assert.equal(verifyTransaction(envelope), null); // roteia pela validação EAVM
   assert.ok(isValidAddress(envelope.from));
-  assert.ok(envelope.id.startsWith('E7'));
+  assert.ok(/^[0-9a-f]{64}$/.test(envelope.id)); // txid sem prefixo, padrão de mercado
 
   // adulterar o destinatário ou o valor é detectado
   assert.match(verifyEavmEnvelope({ ...envelope, to: eavmToE7('0x' + 'a'.repeat(40)) }), /to não corresponde/);

@@ -1,3 +1,6 @@
+import { CHAIN } from '../config.js';
+import { ecAdd, ecMul, ecPairing } from './bn254.js';
+import { blake2f } from './blake2f.js';
 // Host de estado mundial da EAVM: dá à VM (vm.js) acesso a storage/código/saldo
 // de outras contas e implementa CALL/CREATE (recursivos) e os precompiles, com
 // ISOLAMENTO por snapshot — uma sub-chamada que reverte desfaz suas mudanças.
@@ -38,47 +41,105 @@ function pEcrecover(input) {
     } catch { return Buffer.alloc(0); }
   } };
 }
-const MODEXP_MAX_LEN = 1024; // teto de operando (bytes) — impede OOM/DoS por length gigante
+// EIP-7823: teto de 1024 bytes para CADA operando (base/expoente/módulo). Antes era
+// só uma defesa nossa contra OOM; agora é regra de consenso — estourar o teto é erro
+// que consome TODO o gás (o catch do host devolve gasUsed: p.gas, como manda o EIP).
+const MODEXP_MAX_LEN = 1024;
+const bitLen = (x) => (x === 0n ? 0 : x.toString(2).length);
+
+// EIP-7883 (Osaka), que revisa o EIP-2565: complexidade × iterações, piso 500.
+// Diferenças herdadas do 2565 que o 7883 mudou: (a) some o /3, (b) o multiplicador
+// do expoente > 32 bytes vai de 8 para 16, (c) a complexidade tem piso 16 e dobra
+// (2·words²) quando base/módulo passam de 32 bytes.
+function modexpGas(bl, el, ml, expHead) {
+  const maxLen = Math.max(bl, ml);
+  const words = Math.ceil(maxLen / 8);
+  const complexity = maxLen > 32 ? 2 * words * words : 16;
+  // `expHead` são os PRIMEIROS 32 bytes do expoente, não o expoente inteiro: o
+  // custo cresce com o COMPRIMENTO (16 por byte além de 32), não com o valor da
+  // cauda. Cotar pelo valor inteiro subprecificava um expoente de 1024 bytes com
+  // bits altos zerados — era o furo da versão anterior desta função.
+  let iters;
+  if (el <= 32) iters = expHead === 0n ? 0 : bitLen(expHead) - 1;
+  else iters = 16 * (el - 32) + Math.max(0, bitLen(expHead) - 1);
+  return BigInt(Math.max(500, complexity * Math.max(iters, 1)));
+}
+
 function pModexp(input) {
   const d = rightPad(input, 96);
   const bl = Number(bufBig(d.subarray(0, 32))), el = Number(bufBig(d.subarray(32, 64))), ml = Number(bufBig(d.subarray(64, 96)));
   if (bl > MODEXP_MAX_LEN || el > MODEXP_MAX_LEN || ml > MODEXP_MAX_LEN) throw new EavmError('MODEXP: operando excede o limite');
   const body = input.subarray(96);
-  const base = bufBig(rightPad(body.subarray(0, bl), bl));
-  const exp = bufBig(rightPad(body.subarray(bl, bl + el), el));
-  const mod = bufBig(rightPad(body.subarray(bl + el, bl + el + ml), ml));
-  // gás calculado dos comprimentos/expoente (barato) ANTES do laço pesado (A-5)
-  const words = Math.ceil(Math.max(bl, ml) / 8);
-  const expBits = exp === 0n ? 0 : exp.toString(2).length;
-  const gas = BigInt(Math.max(200, words * words * Math.max(1, expBits)));
+  // gás calculado dos comprimentos + cabeça do expoente (32 bytes) ANTES de
+  // materializar os operandos e rodar o laço pesado (A-5).
+  const headLen = Math.min(32, el);
+  const gas = modexpGas(bl, el, ml, bufBig(rightPad(body.subarray(bl, bl + headLen), headLen)));
   return { gas, run: () => {
+    if (bl === 0 && ml === 0) return Buffer.alloc(0);
+    const base = bufBig(rightPad(body.subarray(0, bl), bl));
+    const exp = bufBig(rightPad(body.subarray(bl, bl + el), el));
+    const mod = bufBig(rightPad(body.subarray(bl + el, bl + el + ml), ml));
     let out = 0n;
     if (mod !== 0n) { let b = base % mod, e = exp, r = 1n; while (e > 0n) { if (e & 1n) r = (r * b) % mod; b = (b * b) % mod; e >>= 1n; } out = r; }
     return rightPad(Buffer.from(out.toString(16).padStart(ml * 2, '0'), 'hex'), ml);
   } };
 }
+// Precompiles disponíveis desde sempre.
 const PRECOMPILES = {
   [addrHex(1)]: pEcrecover, [addrHex(2)]: pSha256, [addrHex(3)]: pRipemd160,
   [addrHex(4)]: pIdentity, [addrHex(5)]: pModexp,
 };
 
+// Precompiles que entram em EAVM_OSAKA_HEIGHT. Antes do fork, 0x06-0x09 não são
+// precompiles: chamá-los cai no caminho de conta comum e devolve sucesso vazio,
+// que é EXATAMENTE o que um nó antigo faz — sem isso, nó novo e nó velho
+// divergiriam no mesmo bloco.
+//
+// Sem ecPairing não existe zero-knowledge na EAVM: Groth16, zk-rollup e prova de
+// identidade dependem dele. É a lacuna mais consequente que este fork fecha.
+const PRECOMPILES_OSAKA = {
+  [addrHex(6)]: ecAdd, [addrHex(7)]: ecMul, [addrHex(8)]: ecPairing,
+  [addrHex(9)]: blake2f,
+};
+
 export function createHost(world) {
+  // Armazenamento TRANSIENTE (EIP-1153). Vive só nesta execução: some quando a
+  // transação termina e NUNCA entra no stateRoot — é o ponto do EIP. Por isso é
+  // um Map aqui, e não uma escrita no mundo.
+  //
+  // Nota de semântica: no EVM, TSTORE feito num frame que REVERTE é desfeito.
+  // Aqui o mapa não participa do journal, então não é revertido. É divergência
+  // conhecida e está marcada em teste — ver test/eavm-osaka.test.js.
+  const transient = new Map();
+  const tkey = (a, k) => a.toLowerCase() + ':' + k;
+
   const host = {
     sload: (a, k) => world.getStorage(a.toLowerCase(), k),
     sstore: (a, k, v) => world.setStorage(a.toLowerCase(), k, v),
+    tload: (a, k) => transient.get(tkey(a, k)) ?? 0n,
+    tstore: (a, k, v) => { if (v === 0n) transient.delete(tkey(a, k)); else transient.set(tkey(a, k), v); },
+    // BLOCKHASH: lê o anel de histórico que o State mantém (EIP-2935). Fora da
+    // janela de 256 blocos — ou para bloco futuro/atual — devolve 0, como no EVM.
+    blockHash: (n, atual) => {
+      if (typeof world.blockHash !== 'function') return 0n;
+      if (n >= atual || n < 0n || atual - n > BigInt(CHAIN.BLOCKHASH_WINDOW)) return 0n;
+      return world.blockHash(n);
+    },
     getCode: (a) => world.getCode(a.toLowerCase()),
     getBalance: (a) => world.getBalance(a.toLowerCase()),
 
     call(p) {
       if (p.depth >= MAX_CALL_DEPTH) return fail();
       const to = p.to.toLowerCase();
-      const pre = PRECOMPILES[to];
+      // A altura vem do bloco em execução, nunca de config do nó — é o que mantém
+      // o conjunto de precompiles idêntico em toda a rede para um dado bloco.
+      const osaka = (p.block?.number ?? 0) >= CHAIN.EAVM_OSAKA_HEIGHT;
+      const pre = PRECOMPILES[to] ?? (osaka ? PRECOMPILES_OSAKA[to] : undefined);
       if (pre) {
         const snap = world.snapshot();
         if (p.value > 0n && !p.delegate) {
-          if (world.getBalance(p.caller.toLowerCase()) < p.value) { world.revert(snap); return fail(); }
           // L-2: credita p.execAddress (não `to`) — em CALLCODE ao precompile é self→self (soma zero)
-          world.addBalance(p.caller.toLowerCase(), -p.value); world.addBalance(p.execAddress.toLowerCase(), p.value);
+          if (!world.moveValue(p.caller.toLowerCase(), p.execAddress.toLowerCase(), p.value, 'call')) { world.revert(snap); return fail(); }
         }
         try {
           const { gas, run } = pre(p.input); // gás calculado ANTES do trabalho pesado
@@ -89,9 +150,7 @@ export function createHost(world) {
       const snap = world.snapshot();
       try {
         if (p.value > 0n && !p.delegate) {
-          if (world.getBalance(p.caller.toLowerCase()) < p.value) { world.revert(snap); return fail(); }
-          world.addBalance(p.caller.toLowerCase(), -p.value);
-          world.addBalance(p.execAddress.toLowerCase(), p.value);
+          if (!world.moveValue(p.caller.toLowerCase(), p.execAddress.toLowerCase(), p.value, 'call')) { world.revert(snap); return fail(); }
         }
         const code = world.getCode(p.codeAddr.toLowerCase());
         if (code.length === 0) return { success: true, returnData: Buffer.alloc(0), gasUsed: 0n };
@@ -119,8 +178,7 @@ export function createHost(world) {
       const snap = world.snapshot();
       try {
         if (p.value > 0n) {
-          if (world.getBalance(p.caller.toLowerCase()) < p.value) { world.revert(snap); return { success: false, address, returnData: Buffer.alloc(0), gasUsed: 0n }; }
-          world.addBalance(p.caller.toLowerCase(), -p.value); world.addBalance(address, p.value);
+          if (!world.moveValue(p.caller.toLowerCase(), address, p.value, 'create')) { world.revert(snap); return { success: false, address, returnData: Buffer.alloc(0), gasUsed: 0n }; }
         }
         const res = runEavm({
           host, code: p.initCode, calldata: Buffer.alloc(0), gas: p.gas,

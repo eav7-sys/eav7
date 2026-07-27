@@ -25,7 +25,7 @@ test('EAV20: ciclo completo create / transfer / approve / transferFrom', () => {
   }));
   const tokenId = Object.keys(state.tokens)[0];
   const token = state.tokens[tokenId];
-  assert.ok(tokenId.startsWith('E7'));
+  assert.ok(/^[0-9a-f]{64}$/.test(tokenId));
   assert.equal(tokenId.length, CHAIN.HASH_LENGTH);
   assert.equal(token.standard, 'eav20');
   assert.equal(token.balances[criadorAddr], 1_000_000n);

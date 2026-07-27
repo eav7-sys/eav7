@@ -3,12 +3,13 @@ import { eavHash, canonical, merkleRoot, isValidHash } from '../crypto/hash.js';
 import {
   SIGNATURE_SCHEME,
   addressFromPublicKeys,
+  isValidAddress,
   hybridSign,
   hybridVerify,
 } from '../crypto/keys.js';
 
-export const GENESIS_PREVIOUS_HASH =
-  CHAIN.HASH_PREFIX + '0'.repeat(CHAIN.HASH_LENGTH - CHAIN.HASH_PREFIX.length);
+// Pai do gênese: 64 zeros, mesmo formato de qualquer outra hash da rede.
+export const GENESIS_PREVIOUS_HASH = '0'.repeat(CHAIN.HASH_LENGTH);
 const GENESIS_SIGNATURE = 'GENESIS';
 
 export function blockCore(block) {
@@ -25,7 +26,14 @@ function blockHash(payload, signature, pqSignature, height) {
   return height >= CHAIN.CANONICAL_HASH_HEIGHT ? eavHash(payload) : eavHash(payload + signature + pqSignature);
 }
 
-export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(), transactions = [], stateRoot = null }) {
+// Validador EFETIVO de um bloco. Com a permissão `witness`, quem ASSINA é a chave de
+// produção e quem PRODUZ é a conta — `producerAccount` carrega essa conta. Sem witness,
+// os dois coincidem e o campo nem existe (serialização histórica intacta).
+export function blockValidator(block) {
+  return block?.producerAccount ?? block?.producer;
+}
+
+export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(), transactions = [], stateRoot = null, producerAccount = null }) {
   const core = {
     protocol: CHAIN.PROTOCOL,
     version: CHAIN.PROTOCOL_VERSION,
@@ -42,6 +50,9 @@ export function buildBlock(wallet, { height, previousHash, timestamp = Date.now(
     // blocos anteriores não têm o campo (grandfather). O valor é o root do estado
     // APÓS aplicar este bloco; a Blockchain o calcula e o confere no addBlock (#1).
     ...(height >= CHAIN.STATEROOT_HEIGHT ? { stateRoot } : {}),
+    // Só entra no core quando a conta DELEGA a produção a uma chave witness. Ausente,
+    // o bloco serializa exatamente como antes — o fork não muda blocos existentes.
+    ...(height >= CHAIN.PERMISSIONS_V2_HEIGHT && producerAccount ? { producerAccount } : {}),
   };
   const payload = canonical(core);
   const { signature, pqSignature } = hybridSign(wallet, payload);
@@ -106,6 +117,14 @@ export function verifyBlockIntegrity(block) {
     if (!isValidHash(block.stateRoot)) return 'stateRoot ausente ou malformado';
   } else if (block.stateRoot !== undefined) {
     return 'stateRoot presente antes do fork (STATEROOT_HEIGHT)';
+  }
+
+  // Forma do producerAccount. A ligação witness→conta depende do ESTADO e por isso é
+  // conferida na Blockchain, não aqui — verifyBlockIntegrity permanece sem estado.
+  if (block.producerAccount !== undefined) {
+    if (block.height < CHAIN.PERMISSIONS_V2_HEIGHT) return 'producerAccount antes do fork';
+    if (!isValidAddress(block.producerAccount)) return 'producerAccount inválido';
+    if (block.producerAccount === block.producer) return 'producerAccount igual ao produtor (redundante)';
   }
 
   let derived;

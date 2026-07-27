@@ -19,6 +19,30 @@ const ZERO_BLOOM = '0x' + '0'.repeat(512);
 
 const toHex = (value) => '0x' + BigInt(value).toString(16);
 
+// Tipos que viajam pelo esquema EAVM e portanto têm hash EVM própria.
+const EAVM_TYPES = new Set(['EAVM_TRANSFER', 'EAVM_DEPLOY', 'EAVM_CALL']);
+const isEavmTx = (tx) => EAVM_TYPES.has(tx?.type) && typeof tx?.data?.eavmHash === 'string';
+
+// Normaliza um topic/endereço vindo do filtro: comparação é sempre em minúscula.
+const lc = (v) => (typeof v === 'string' ? v.toLowerCase() : v);
+
+// Casamento de tópicos no padrão do Ethereum: posicional, `null` casa qualquer
+// coisa, e um ARRAY na posição é OU entre as alternativas. Filtro mais curto que
+// os tópicos do log ainda casa — só as posições informadas são exigidas.
+function topicsMatch(logTopics, filter) {
+  if (!Array.isArray(filter) || filter.length === 0) return true;
+  if (filter.length > logTopics.length) return false;
+  for (let i = 0; i < filter.length; i++) {
+    const want = filter[i];
+    if (want == null) continue;
+    const have = lc(logTopics[i]);
+    if (Array.isArray(want)) {
+      if (!want.some((w) => lc(w) === have)) return false;
+    } else if (lc(want) !== have) return false;
+  }
+  return true;
+}
+
 export function createEavmRpcServer(node) {
   const eavmIndex = new Map(); // hash EAVM -> id da transação eav20
   let indexedHeight = -1;
@@ -32,7 +56,10 @@ export function createEavmRpcServer(node) {
       if (h <= indexedHeight) continue;
       const block = bc.getBlock(h);
       for (const tx of block?.transactions ?? []) {
-        if (tx.type === 'EAVM_TRANSFER') eavmIndex.set(tx.data.eavmHash, tx.id);
+        // Toda tx do esquema EAVM tem hash EVM, não só a transferência: deploy e
+        // chamada de contrato também precisam ser encontráveis por hash, senão a
+        // ferramenta que acabou de enviar a tx nunca acha o recibo dela.
+        if (isEavmTx(tx)) eavmIndex.set(tx.data.eavmHash, tx.id);
       }
     }
     indexedHeight = bc.height;
@@ -51,12 +78,13 @@ export function createEavmRpcServer(node) {
     return {
       hash: tx.data.eavmHash,
       from: tx.data.eavmFrom,
-      to: tx.data.eavmTo,
+      to: tx.data.eavmTo ?? null, // deploy não tem destino
       value: toHex(BigInt(tx.amount) * CHAIN.EAVM_WEI_PER_E7),
       nonce: toHex(BigInt(tx.data.eavmNonce)),
       gas: '0x5208',
       gasPrice: toHex(GAS_PRICE),
-      input: '0x',
+      // Calldata real: bytecode no deploy, input na chamada, vazio na transferência.
+      input: tx.data.code ?? tx.data.input ?? '0x',
       blockHash: block ? '0x' + block.hash.toLowerCase() : null,
       blockNumber: block ? toHex(BigInt(block.height)) : null,
       transactionIndex: block ? '0x0' : null,
@@ -68,7 +96,7 @@ export function createEavmRpcServer(node) {
 
   function eavmBlock(block, includeTxs) {
     if (!block) return null;
-    const eavmTxs = block.transactions.filter((tx) => tx.type === 'EAVM_TRANSFER');
+    const eavmTxs = block.transactions.filter(isEavmTx);
     return {
       number: toHex(BigInt(block.height)),
       hash: '0x' + block.hash.toLowerCase(),
@@ -93,14 +121,41 @@ export function createEavmRpcServer(node) {
     };
   }
 
+  // Logs de um bloco no formato do Ethereum. `logIndex` é POSICIONAL dentro do
+  // bloco (não global), como manda o padrão — por isso é numerado aqui, sobre a
+  // ordem em que o índice recebeu os eventos daquele bloco.
+  function blockLogObjects(height) {
+    const bc = node.blockchain;
+    const block = bc.getBlock(height);
+    const out = [];
+    let i = 0;
+    for (const lg of bc.logIndex) {
+      if (lg.blockHeight !== height) continue;
+      const found = bc.getTransaction(lg.txId);
+      const tx = found?.tx;
+      out.push({
+        address: String(lg.address).toLowerCase(),
+        topics: (lg.topics ?? []).map((t) => String(t).toLowerCase()),
+        data: lg.data ?? '0x',
+        blockNumber: toHex(BigInt(height)),
+        blockHash: block ? '0x' + block.hash.toLowerCase() : null,
+        transactionHash: tx?.data?.eavmHash ?? null,
+        transactionIndex: '0x0',
+        logIndex: toHex(BigInt(i++)),
+        removed: false, // sem logs de cadeia reorganizada: o índice é reconstruído no reorg
+      });
+    }
+    return out;
+  }
+
   function findEavmTx(eavmHash) {
     ensureIndexed();
     const txId = eavmIndex.get(eavmHash);
     if (txId) {
       const found = node.blockchain.getTransaction(txId);
-      if (found) return { tx: found.tx, block: node.blockchain.blocks[found.blockHeight] };
+      if (found) return { tx: found.tx, block: node.blockchain.getBlock(found.blockHeight) };
     }
-    const pending = node.mempool.all().find((tx) => tx.type === 'EAVM_TRANSFER' && tx.data.eavmHash === eavmHash);
+    const pending = node.mempool.all().find((tx) => isEavmTx(tx) && tx.data.eavmHash === eavmHash);
     return pending ? { tx: pending, block: null } : null;
   }
 
@@ -116,9 +171,40 @@ export function createEavmRpcServer(node) {
       case 'eth_blockNumber': return toHex(BigInt(Math.max(blockchain.height, 0)));
       case 'eth_gasPrice': return toHex(GAS_PRICE);
       case 'eth_maxPriorityFeePerGas': return '0x0';
-      case 'eth_estimateGas': return '0x5208';
-      case 'eth_call': return '0x';
-      case 'eth_getCode': return '0x';
+      // Executa de verdade contra o estado atual e desfaz tudo (State.callEavm).
+      // Antes devolvia '0x' constante — nenhuma biblioteca conseguia ler contrato.
+      case 'eth_call': {
+        const [call] = params;
+        const out = blockchain.state.callEavm({
+          from: call?.from, to: call?.to, data: call?.data ?? call?.input ?? '0x',
+          value: call?.value ? BigInt(call.value) : 0n,
+          height: blockchain.height, blockTs: blockchain.head?.timestamp ?? 0,
+        });
+        // Revert devolve o motivo no returnData; propagar como erro é o que faz
+        // ethers.js conseguir decodificar a razão em vez de ver sucesso vazio.
+        if (!out.success) throw rpcError('execução revertida', -32000, out.returnData);
+        return out.returnData;
+      }
+
+      case 'eth_estimateGas': {
+        const [call] = params;
+        if (!call?.to) return toHex(BigInt(CHAIN.ENERGY.COST.EAVM_DEPLOY * CHAIN.GAS_PER_ENERGY));
+        const out = blockchain.state.callEavm({
+          from: call?.from, to: call.to, data: call?.data ?? call?.input ?? '0x',
+          value: call?.value ? BigInt(call.value) : 0n,
+          height: blockchain.height, blockTs: blockchain.head?.timestamp ?? 0,
+        });
+        if (!out.success) throw rpcError('execução revertida', -32000, out.returnData);
+        // Margem de 25%: o custo real depende do estado no momento da inclusão
+        // (slot que vira não-zero, ramo diferente) e subestimar reverte a tx.
+        return toHex(BigInt(Math.ceil(out.gasUsed * 1.25) + 21000));
+      }
+
+      case 'eth_getCode': {
+        const [address] = params;
+        if (!isEavmAddress(address)) throw rpcError('endereço inválido');
+        return blockchain.state.codeOf(address);
+      }
 
       case 'eth_getBalance': {
         const [address] = params;
@@ -161,22 +247,66 @@ export function createEavmRpcServer(node) {
       case 'eth_getTransactionReceipt': {
         const found = findEavmTx(params[0]);
         if (!found || !found.block) return null;
+        // Recibo REAL. Antes devolvia gasUsed fixo e status sempre 1 — uma chamada
+        // revertida aparecia como sucesso, que é o pior tipo de mentira num recibo.
+        // Tx sem recibo registrado é transferência simples: sucesso, custo de 21000.
+        const rc = blockchain.receipts.get(found.tx.id) ?? null;
+        const gas = rc?.gasUsed != null ? BigInt(rc.gasUsed) : 21000n;
+        const ok = rc ? rc.success !== false : true;
+        const logs = ok ? blockLogObjects(found.block.height).filter((l) => l.transactionHash === found.tx.data.eavmHash) : [];
         return {
           transactionHash: found.tx.data.eavmHash,
           transactionIndex: '0x0',
           blockHash: '0x' + found.block.hash.toLowerCase(),
           blockNumber: toHex(BigInt(found.block.height)),
           from: found.tx.data.eavmFrom,
-          to: found.tx.data.eavmTo,
-          gasUsed: '0x5208',
-          cumulativeGasUsed: '0x5208',
+          to: found.tx.data.eavmTo ?? null,
+          gasUsed: toHex(gas),
+          cumulativeGasUsed: toHex(gas),
           effectiveGasPrice: toHex(GAS_PRICE),
-          contractAddress: null,
-          logs: [],
+          contractAddress: rc?.contract ?? null,
+          logs,
           logsBloom: ZERO_BLOOM,
-          status: '0x1',
+          status: ok ? '0x1' : '0x0',
           type: '0x0',
         };
+      }
+
+      // Consulta de eventos — o método que faltava para existir indexador, subgraph
+      // ou histórico de transferência de token. Serve do índice node-local de logs.
+      case 'eth_getLogs': {
+        const f = params[0] ?? {};
+        const head = blockchain.height;
+        const tag = (v, fallback) => {
+          if (v == null || v === 'latest' || v === 'pending' || v === 'safe' || v === 'finalized') return fallback;
+          if (v === 'earliest') return 0;
+          try { return Number(BigInt(v)); } catch { return fallback; }
+        };
+        let from = tag(f.fromBlock, head);
+        let to = tag(f.toBlock, head);
+        if (f.blockHash) {
+          const b = blockchain.getBlock(String(f.blockHash).replace(/^0x/, ''));
+          if (!b) throw rpcError('bloco não encontrado');
+          from = to = b.height;
+        }
+        if (from > to) throw rpcError('fromBlock maior que toBlock');
+        // Teto de faixa: sem ele, uma consulta de 0 até o topo varre a cadeia inteira
+        // a cada chamada — o vetor de DoS clássico de eth_getLogs.
+        if (to - from > CHAIN.MAX_LOG_RANGE) {
+          throw rpcError(`faixa de blocos acima do máximo (${CHAIN.MAX_LOG_RANGE})`);
+        }
+        const wantAddr = f.address == null ? null
+          : new Set((Array.isArray(f.address) ? f.address : [f.address]).map((a) => lc(String(a))));
+        const out = [];
+        for (let h = from; h <= to; h++) {
+          for (const lg of blockLogObjects(h)) {
+            if (wantAddr && !wantAddr.has(lg.address)) continue;
+            if (!topicsMatch(lg.topics, f.topics)) continue;
+            out.push(lg);
+            if (out.length >= CHAIN.MAX_LOG_RESULTS) return out;
+          }
+        }
+        return out;
       }
 
       case 'eth_getTransactionByHash': {
@@ -196,9 +326,12 @@ export function createEavmRpcServer(node) {
     }
   }
 
-  function rpcError(message, code = -32000) {
+  function rpcError(message, code = -32000, data = undefined) {
     const err = new Error(message);
     err.rpcCode = code;
+    // `data` carrega o returnData de um revert — é dele que ethers.js decodifica
+    // a razão do erro (Error(string) / erro customizado do contrato).
+    if (data !== undefined) err.rpcData = data;
     return err;
   }
 
@@ -209,7 +342,7 @@ export function createEavmRpcServer(node) {
       const result = await call(request.method, request.params);
       return { jsonrpc: '2.0', id, result };
     } catch (err) {
-      return { jsonrpc: '2.0', id, error: { code: err.rpcCode ?? -32000, message: err.message } };
+      return { jsonrpc: '2.0', id, error: { code: err.rpcCode ?? -32000, message: err.message, ...(err.rpcData !== undefined ? { data: err.rpcData } : {}) } };
     }
   }
 

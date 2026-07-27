@@ -59,7 +59,7 @@ function setup() {
 test('gênese: tokenomics padrão Tron e validador inicial', () => {
   const { chain, address } = setup();
   assert.equal(chain.height, 0);
-  assert.ok(chain.head.hash.startsWith('E7'));
+  assert.ok(/^[0-9a-f]{64}$/.test(chain.head.hash));
   assert.equal(chain.state.balanceOf(address), CHAIN.GENESIS_SUPPLY - CHAIN.GENESIS_STAKE);
   assert.equal(chain.state.accounts[address].staked, CHAIN.GENESIS_STAKE);
   assert.equal(CHAIN.GENESIS_SUPPLY, 100_000_000_000n * CHAIN.UNIT); // 100 bi como a Tron

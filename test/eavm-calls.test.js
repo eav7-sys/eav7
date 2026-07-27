@@ -27,6 +27,13 @@ function makeWorld() {
     setStorage: (a, k, v) => { const s = get(a).storage; if (v === 0n) delete s[k]; else s[k] = '0x' + v.toString(16); },
     getBalance: (a) => W.balances[a] ?? 0n,
     addBalance: (a, d) => { W.balances[a] = (W.balances[a] ?? 0n) + d; },
+    // Ponto único de movimentação de valor (mesma semântica do mundo real do state.js).
+    moveValue: (from, to, v) => {
+      if ((W.balances[from] ?? 0n) < v) return false;
+      W.balances[from] = (W.balances[from] ?? 0n) - v;
+      W.balances[to] = (W.balances[to] ?? 0n) + v;
+      return true;
+    },
     bumpNonce: (a) => { const n = W.nonces[a] ?? 0; W.nonces[a] = n + 1; return n; },
     createAddress: (s, n) => '0x' + keccak256(Buffer.from(s + ':' + n)).subarray(12).toString('hex'),
     create2Address: (s, salt, init) => '0x' + keccak256(Buffer.concat([Buffer.from(s.slice(2), 'hex'), Buffer.from(salt.toString(16).padStart(64, '0'), 'hex'), keccak256(init)])).subarray(12).toString('hex'),

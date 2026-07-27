@@ -27,11 +27,15 @@ export class Mempool {
     for (const id of ids) this.txs.delete(id);
   }
 
-  // Remove transações cujo nonce já foi consumido no estado (incluídas ou obsoletas).
-  prune(state) {
+  // Remove transações cujo nonce já foi consumido no estado (incluídas ou obsoletas)
+  // e as VENCIDAS. A poda por idade fecha o caso que o nonce não cobre: uma tx de
+  // nonce-futuro nunca executa, nunca é podada, e fica residente indefinidamente —
+  // enchendo o mempool e podendo ser reintroduzida muito depois de assinada.
+  prune(state, now = Date.now()) {
+    const limite = now - CHAIN.MEMPOOL_TTL_MS;
     for (const [id, tx] of this.txs) {
       const nonce = state.accounts[tx.from]?.nonce ?? 0;
-      if (tx.nonce <= nonce) this.txs.delete(id);
+      if (tx.nonce <= nonce || tx.timestamp < limite) this.txs.delete(id);
     }
   }
 

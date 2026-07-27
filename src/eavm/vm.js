@@ -8,6 +8,7 @@
 // O acesso ao "mundo" (storage de outras contas, código, saldo, chamadas e criação)
 // é feito por um objeto `host` — o State fornece um host com journaling para reverter
 // mudanças de sub-chamadas que falham. Sem host, opera em modo contrato-único.
+import { CHAIN } from '../config.js';
 import { keccak256 } from './keccak.js';
 
 const TWO256 = 1n << 256n;
@@ -20,6 +21,7 @@ export const GAS = {
   ZERO: 0, BASE: 2, VERYLOW: 3, LOW: 5, MID: 8, HIGH: 10,
   KECCAK: 30, KECCAK_WORD: 6, SLOAD: 100, SSTORE_SET: 2000, SSTORE_RESET: 800,
   MEM_WORD: 3, COPY_WORD: 3, LOG: 375, LOG_TOPIC: 375, LOG_DATA: 8, JUMPDEST: 1,
+  SLOAD_TRANSIENT: 100, SSTORE_TRANSIENT: 100, // EIP-1153: warm, sem custo de estado permanente
   CALL: 100, CALL_VALUE: 9000, CREATE: 3200, CODE_DEPOSIT_BYTE: 20, EXTCODE: 100, // CALL_VALUE financia o stipend de 2300 (como no EVM)
 };
 // Profundidade máxima de chamadas. MUITO abaixo do limite de pilha do JS (~780
@@ -48,6 +50,11 @@ export function runEavm(opts) {
     caller = ZERO_ADDR, address = ZERO_ADDR, origin = null, value = 0n,
     block = {}, gasPrice = 0n, depth = 0, static: isStatic = false,
   } = opts;
+  // Nível de EVM habilitado. Vem da ALTURA do bloco (fork-gated) e não de config
+  // do nó: um nó com flag diferente executaria bytecode diferente sobre o mesmo
+  // bloco, que é uma cisão de consenso silenciosa. Abaixo do fork, os opcodes de
+  // Cancun/Osaka são inválidos — exatamente como eram antes de existirem.
+  const osaka = (block.number ?? 0) >= CHAIN.EAVM_OSAKA_HEIGHT;
   // host: acesso ao mundo. Em modo contrato-único (testes simples), um host padrão
   // sobre um objeto `storage` é criado; CALL/CREATE ficam indisponíveis.
   const host = opts.host ?? simpleHost(opts.storage ?? {});
@@ -147,6 +154,15 @@ export function runEavm(opts) {
       case 0x3d: spend(GAS.BASE); push(BigInt(lastReturn.length)); break; // RETURNDATASIZE
       case 0x3e: { spend(GAS.VERYLOW); const d = pop(), o = Number(pop()), s = Number(pop()); if (o + s > lastReturn.length) throw new EavmError('RETURNDATACOPY fora dos limites'); spend(GAS.COPY_WORD * Math.ceil(s / 32)); memWrite(d, lastReturn.subarray(o, o + s)); break; } // RETURNDATACOPY
       case 0x3f: { spend(GAS.EXTCODE); const ec = host.getCode(addrHexFromWord(pop())); spend(GAS.KECCAK_WORD * Math.ceil(ec.length / 32)); push(ec.length ? bufToBig(keccak256(ec)) : 0n); break; } // EXTCODEHASH — gás por palavra (H-1: keccak não pode ser 100 fixo)
+      // BLOCKHASH — lê o anel de histórico mantido no estado (EIP-2935). Faltava
+      // desde sempre, e é opcode de 2015: sem ele commit-reveal, loteria e VRF
+      // caseiro travam. Fora da janela de 256 blocos devolve 0, como toda EVM.
+      case 0x40: {
+        spend(GAS.EXTCODE);
+        const n = pop();
+        push(osaka && host.blockHash ? host.blockHash(n, BigInt(block.number ?? 0)) : 0n);
+        break;
+      }
       case 0x41: spend(GAS.BASE); push(0n); break;
       case 0x42: spend(GAS.BASE); push(BigInt(block.timestamp ?? 0)); break;
       case 0x43: spend(GAS.BASE); push(BigInt(block.number ?? 0)); break;
@@ -155,6 +171,21 @@ export function runEavm(opts) {
       case 0x46: spend(GAS.BASE); push(BigInt(block.chainId ?? 0)); break;
       case 0x47: spend(GAS.LOW); push(host.getBalance(self)); break; // SELFBALANCE
       case 0x48: spend(GAS.BASE); push(0n); break;
+      // Cancun. A EAV7 não tem blobs: BLOBHASH devolve 0 (índice sempre fora da
+      // lista vazia) e BLOBBASEFEE devolve o mínimo de 1, que é o que uma cadeia
+      // sem mercado de blob deve reportar. Existem para o bytecode compilado com
+      // alvo Cancun não abortar em opcode desconhecido.
+      case 0x49: { spend(GAS.VERYLOW); if (!osaka) throw new EavmError('opcode 0x49 inválido nesta altura'); pop(); push(0n); break; }
+      case 0x4a: { spend(GAS.BASE); if (!osaka) throw new EavmError('opcode 0x4a inválido nesta altura'); push(1n); break; }
+      // CLZ (Osaka, EIP-7939): zeros à esquerda numa palavra de 256 bits.
+      // Valor zero devolve 256 — é o que a especificação define.
+      case 0x1e: {
+        spend(GAS.LOW);
+        if (!osaka) throw new EavmError('opcode 0x1e inválido nesta altura');
+        const v = u256(pop());
+        push(v === 0n ? 256n : BigInt(256 - v.toString(2).length));
+        break;
+      }
       case 0x50: spend(GAS.BASE); pop(); break;
       case 0x51: { spend(GAS.VERYLOW); const o = pop(); push(bufToBig(memRead(o, 32))); break; }
       case 0x52: { spend(GAS.VERYLOW); const o = pop(), v = pop(); memWrite(o, big32(v)); break; }
@@ -173,6 +204,33 @@ export function runEavm(opts) {
       case 0x59: spend(GAS.BASE); push(BigInt(mem.length)); break;
       case 0x5a: spend(GAS.BASE); push(gasLeft); break;
       case 0x5b: spend(GAS.JUMPDEST); break;
+      // Armazenamento TRANSIENTE (Cancun, EIP-1153): vive só dentro da transação
+      // e some no fim — não vai para o stateRoot. É o trilho barato de reentrancy
+      // guard, que hoje custa uma escrita permanente de storage.
+      case 0x5c: {
+        spend(GAS.SLOAD_TRANSIENT);
+        if (!osaka) throw new EavmError('opcode 0x5c inválido nesta altura');
+        push(host.tload(self, slotKey(pop())));
+        break;
+      }
+      case 0x5d: {
+        spend(GAS.SSTORE_TRANSIENT);
+        if (!osaka) throw new EavmError('opcode 0x5d inválido nesta altura');
+        if (isStatic) throw new EavmError('TSTORE proibido em chamada estática');
+        const k = slotKey(pop()), v = u256(pop());
+        host.tstore(self, k, v);
+        break;
+      }
+      // MCOPY (Cancun, EIP-5656): cópia memória→memória. `Buffer.copy` lida com
+      // sobreposição corretamente (usa memmove), que é o ponto delicado aqui.
+      case 0x5e: {
+        spend(GAS.VERYLOW);
+        if (!osaka) throw new EavmError('opcode 0x5e inválido nesta altura');
+        const d = pop(), o = pop(), s2 = Number(pop());
+        spend(GAS.COPY_WORD * Math.ceil(s2 / 32));
+        memWrite(d, Buffer.from(memRead(o, s2)));
+        break;
+      }
       case 0x5f: spend(GAS.BASE); push(0n); break;
       case 0xa0: case 0xa1: case 0xa2: case 0xa3: case 0xa4: {
         if (isStatic) throw new EavmError('LOG proibido em chamada estática');

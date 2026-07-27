@@ -6,7 +6,7 @@ import { isValidHash } from '../crypto/hash.js';
 import { walletAddress } from '../crypto/keys.js';
 import { State } from './state.js';
 import { verifyTransaction } from './transaction.js';
-import { buildBlock, buildGenesisBlock, verifyBlockIntegrity } from './block.js';
+import { buildBlock, blockValidator, buildGenesisBlock, verifyBlockIntegrity } from './block.js';
 import { BlockStore } from './blockstore.js';
 import { computeStateRoot } from './stateroot.js';
 
@@ -68,6 +68,12 @@ export class Blockchain {
     this.addressTxIndex = new Map(); // endereço -> [alturas de blocos com tx desse endereço] (asc)
     this.blocksWithTxs = []; // alturas (asc) de blocos que contêm ≥1 transação (feed global de txs)
     this.logIndex = []; // #33: eventos EAVM (ring buffer node-local, NÃO-consenso) para /logs
+    // Fase 2.3: transferências INTERNAS (valor movido pela execução de contrato, não por
+    // uma tx assinada). Como os logs, é derivável e fica FORA do consenso/stateRoot.
+    this.internalIndex = [];
+    // Recibo de execução EAVM por txId (sucesso/revert). Só existe para tx de contrato:
+    // qualquer outra tx incluída num bloco, por definição, aplicou-se com sucesso.
+    this.receipts = new Map();
     this.store = null;
     if (dataDir) {
       mkdirSync(dataDir, { recursive: true });
@@ -198,15 +204,24 @@ export class Blockchain {
       // Isso também mantém válidos blocos de backup históricos (sem hard-fork de altura).
       const validators = this.state.validators();
       if (validators.length === 0) throw new Error('nenhum validador ativo na rede');
+      // `witness`: quem assinou é a chave de produção, quem produz é a conta. A ligação
+      // depende do ESTADO, então é conferida aqui — verifyBlockIntegrity é sem estado.
+      const efetivo = blockValidator(block);
+      if (block.producerAccount) {
+        const perm = this.state.permissions[block.producerAccount];
+        if (perm?.witness !== block.producer) {
+          throw new Error('assinante não é a chave witness registrada para a conta produtora');
+        }
+      }
       if (block.height >= CHAIN.STRICT_PRODUCER_HEIGHT) {
         // ESTRITO: só o produtor escalado do slot (round-robin). Sem isto, um
         // validador bizantino produziria fora de turno e, com os buracos deixados
         // por validadores honestos offline, forjaria a cadeia mais longa (C1).
         const expected = this.expectedProducer(block.timestamp);
-        if (block.producer !== expected) {
-          throw new Error(`produtor fora do slot (esperado ${expected}, recebido ${block.producer})`);
+        if (efetivo !== expected) {
+          throw new Error(`produtor fora do slot (esperado ${expected}, recebido ${efetivo})`);
         }
-      } else if (!validators.some((v) => v.address === block.producer)) {
+      } else if (!validators.some((v) => v.address === efetivo)) {
         // blocos ANTES do fork: grandfathered (só exige ser validador ativo)
         throw new Error(`produtor não é um validador ativo (${block.producer})`);
       }
@@ -241,8 +256,18 @@ export class Blockchain {
     for (const tx of block.transactions) this.txIndex.set(tx.id, block.height);
     this.#indexAddressTxs(block);
     if (blockLogs.length) { // #33: índice node-local de logs (ring buffer)
-      this.logIndex.push(...blockLogs);
+      // O mesmo sink carrega eventos (LOG), transferências internas e recibos de
+      // execução; separa por destino.
+      for (const e of blockLogs) {
+        // `contract` é o endereço do contrato criado (deploy) — sem guardá-lo aqui,
+        // `eth_getTransactionReceipt` não teria como devolver `contractAddress`, que é
+        // como toda ferramenta descobre o endereço de um contrato recém-implantado.
+        if (e.receipt) this.receipts.set(e.txId, { success: e.success, gasUsed: e.gasUsed, contract: e.contract ?? null, blockHeight: e.blockHeight });
+        else if (e.internal) this.internalIndex.push(e);
+        else this.logIndex.push(e);
+      }
       if (this.logIndex.length > CHAIN.MAX_LOG_INDEX) this.logIndex.splice(0, this.logIndex.length - CHAIN.MAX_LOG_INDEX);
+      if (this.internalIndex.length > CHAIN.MAX_LOG_INDEX) this.internalIndex.splice(0, this.internalIndex.length - CHAIN.MAX_LOG_INDEX);
     }
     this.#slideTail();
     this.#maybeSnapshot();
@@ -255,15 +280,25 @@ export class Blockchain {
   #simulate(sim, block, blockLogs) {
     let fees = 0n;
     const seen = new Set();
+    // EIP-2935: registra o hash do PAI antes de executar qualquer transação —
+    // é o mais recente que BLOCKHASH pode enxergar (o bloco atual ainda não tem
+    // hash, por definição). Fork-gated: abaixo da altura o anel nem existe.
+    if (block.height > 0 && block.height >= CHAIN.EAVM_OSAKA_HEIGHT) {
+      sim.recordBlockHash(block.height - 1, block.previousHash);
+    }
     for (const tx of block.transactions) {
       const txErr = verifyTransaction(tx);
       if (txErr) throw new Error(`transação ${tx?.id ?? '?'} inválida: ${txErr}`);
       if (seen.has(tx.id) || this.txIndex.has(tx.id)) throw new Error(`transação duplicada: ${tx.id}`);
       seen.add(tx.id);
-      fees += sim.applyTransaction(tx, block.height, block.timestamp, blockLogs ? (lg) => blockLogs.push({ ...lg, blockHeight: block.height }) : null);
+      // blockTime acompanha a altura para o explorer poder mostrar "idade" de eventos
+      // e transferências internas sem ter de buscar o bloco de cada linha.
+      fees += sim.applyTransaction(tx, block.height, block.timestamp, blockLogs ? (lg) => blockLogs.push({ ...lg, blockHeight: block.height, blockTime: block.timestamp }) : null);
     }
     const reward = this.blockReward(block.height, sim);
-    sim.distributeBlockReward(block.producer, reward + fees); // comissão + partilha c/ eleitores
+    // Recompensa vai para a CONTA validadora, nunca para a chave witness — ela não
+    // tem stake nem autoridade de gasto; creditá-la perderia a recompensa.
+    sim.distributeBlockReward(blockValidator(block), reward + fees); // comissão + partilha c/ eleitores
     sim.totalMinted += reward; // contabiliza a emissão (para o supply real) — M1
     sim.blockTick(block.height); // aplica governança madura + poda estado (por bloco)
   }
@@ -273,9 +308,19 @@ export class Blockchain {
   // estado no ponto de fork num reorg. Determinístico — mesma sequência do addBlock.
   #applyBlockTo(state, block) {
     let fees = 0n;
+    // EIP-2935: o MESMO registro que o #simulate faz (linha ~287). Este caminho
+    // re-aplica blocos já aceitos (âncora do slideTail, rebuild do ponto de fork
+    // no reorg) e tem de produzir ESTADO IDÊNTICO ao da aplicação original —
+    // sem esta linha, acima de EAVM_OSAKA_HEIGHT o estado reconstruído perderia
+    // as entradas do anel e a raiz divergiria de quem nunca reorganizou. É a
+    // mesma classe do bug produtor/validador já corrigido no #simulate; no
+    // gênese-ativo (fork em 0) o anel está vivo desde o bloco 1.
+    if (block.height > 0 && block.height >= CHAIN.EAVM_OSAKA_HEIGHT) {
+      state.recordBlockHash(block.height - 1, block.previousHash);
+    }
     for (const tx of block.transactions) fees += state.applyTransaction(tx, block.height, block.timestamp);
     const reward = this.blockReward(block.height, state);
-    state.distributeBlockReward(block.producer, reward + fees);
+    state.distributeBlockReward(blockValidator(block), reward + fees);
     state.totalMinted += reward;
     state.blockTick(block.height);
   }
@@ -313,21 +358,29 @@ export class Blockchain {
     }
   }
 
-  produceBlock(wallet, transactions = [], { timestamp = Date.now() } = {}) {
+  produceBlock(wallet, transactions = [], { timestamp = Date.now(), producerAccount = null } = {}) {
     if (!this.hasGenesis()) throw new Error('cadeia sem bloco gênese');
     const producer = walletAddress(wallet);
+    // Com `witness`, quem detém o slot é a CONTA; a wallet apenas assina em nome dela.
+    const efetivo = producerAccount ?? producer;
     const expected = this.expectedProducer(timestamp);
-    if (expected !== producer) {
-      throw new Error(`slot pertence a ${expected ?? 'ninguém'}, não a ${producer}`);
+    if (expected !== efetivo) {
+      throw new Error(`slot pertence a ${expected ?? 'ninguém'}, não a ${efetivo}`);
     }
     const height = this.head.height + 1;
     // Aplica UMA vez: obtém o stateRoot pós-estado para o header e REUSA o mesmo `sim`
     // no addBlock (via presim), em vez de clonar+aplicar+computar a raiz duas vezes.
     const sim = this.state.clone();
     const blockLogs = [];
-    this.#simulate(sim, { height, producer, timestamp, transactions }, blockLogs);
+    // `previousHash` PRECISA entrar no pseudo-bloco: o EIP-2935 grava o hash do pai
+    // no anel de histórico, e sem ele o produtor não grava enquanto o validador —
+    // que recebe o bloco completo — grava. Acima de EAVM_OSAKA_HEIGHT isso dava DUAS
+    // raízes para o mesmo bloco, e o produtor commitava uma que a rede rejeita: a
+    // cadeia travaria no primeiro bloco após o fork. Reproduzido e corrigido.
+    const previousHash = this.head.hash;
+    this.#simulate(sim, { height, previousHash, producer, producerAccount, timestamp, transactions }, blockLogs);
     const stateRoot = height >= CHAIN.STATEROOT_HEIGHT ? computeStateRoot(sim) : null;
-    const block = buildBlock(wallet, { height, previousHash: this.head.hash, timestamp, transactions, stateRoot });
+    const block = buildBlock(wallet, { height, previousHash, timestamp, transactions, stateRoot, producerAccount });
     // Valida o próprio bloco contra o relógio real (slot-futuro/drift) e commita o `sim` já pronto.
     return this.addBlock(block, { now: Date.now(), presim: { sim, logs: blockLogs } });
   }
@@ -361,6 +414,19 @@ export class Blockchain {
     const block = this.getBlock(height);
     const tx = block?.transactions.find((t) => t.id === id);
     return tx ? { tx, blockHeight: height, blockHash: block.hash } : null;
+  }
+
+  // Metadados (altura, produtor, timestamp) dos últimos `maxCount` blocos disponíveis
+  // na janela em RAM — insumo do score de desempenho de validador ([[eav7-ai-roadmap]]).
+  // É LEITURA pura, O(janela), sem tocar consenso/estado.
+  recentProducerMeta(maxCount = 500) {
+    const out = [];
+    const lo = Math.max(1, this.tailStart ?? 1, this.height - maxCount + 1);
+    for (let h = lo; h <= this.height; h++) {
+      const b = this.getBlock(h);
+      if (b) out.push({ height: b.height, producer: b.producer, timestamp: b.timestamp });
+    }
+    return out;
   }
 
   // Finalidade BFT (#2): maior altura FINALIZADA — aquela sobre a qual >= 2/3+1

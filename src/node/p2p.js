@@ -89,6 +89,11 @@ export class P2P {
   // privado/loopback/metadata. Fecha a janela TOCTOU do DNS rebinding: o peer passa
   // no filtro do addPeer e depois reaponta o DNS para um alvo interno (achado H-3).
   async #guardPeer(peer) {
+    // Escape hatch explícito do operador: com allowPrivatePeers (dev/testnet/nós
+    // co-locados por localhost) o filtro anti-SSRF de host privado é dispensado —
+    // caso contrário o gossip/sync entre nós na mesma máquina nunca funciona.
+    // Na mainnet allowPrivatePeers é false (padrão), então o guard segue ativo.
+    if (this.allowPrivatePeers) return;
     if (isPrivateHost(peer)) throw new Error('peer resolve para host privado');
     const host = new URL(peer).hostname;
     if (!/^[\d.]+$/.test(host) && !host.includes(':')) { // hostname (não literal IP)

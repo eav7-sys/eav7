@@ -8,6 +8,8 @@ import { verifyTransaction } from '../core/transaction.js';
 import { P2P } from './p2p.js';
 import { createApiServer } from './api.js';
 import { createEavmRpcServer } from '../eavm/rpc.js';
+import { GatewayHealth } from './gateway.js';
+import { AbuseGuard } from './guard.js';
 
 export class Eav7Node {
   constructor({
@@ -38,6 +40,10 @@ export class Eav7Node {
     this.genesisFile = genesisFile;
     this.securityAlerts = [];
     this.p2p = new P2P({ node: this, selfUrl: selfUrl ?? `http://127.0.0.1:${port}`, peers, allowPrivatePeers, log });
+    // Balanceador/failover do gateway público (operacional, reversível, fora do consenso).
+    this.gateway = new GatewayHealth({ node: this, log });
+    // Auto-mitigação: bloqueio temporário de IPs abusivos (operacional, TTL, reversível).
+    this.guard = new AbuseGuard({ log });
     this.api = createApiServer(this);
     this.eavmEnabled = eavm;
     this.eavmPort = eavmPort ?? port + 1000;
@@ -49,19 +55,89 @@ export class Eav7Node {
     this.verifiedContracts = new Map();
   }
 
-  // #8: verifica um contrato EAVM conferindo que o bytecode submetido é idêntico ao
-  // código de runtime on-chain; se bater, guarda o source para o explorer exibir.
-  verifyContract(address, { source, language = 'solidity', compiler = '', bytecode }) {
+  // #8: verifica um contrato EAVM conferindo o bytecode submetido contra o runtime
+  // on-chain. Aceita o formato de saída do solc (standard JSON), que é o que Hardhat,
+  // Foundry e os verificadores do mercado produzem.
+  //
+  // Comparar byte a byte NÃO funciona, e é o erro que quase cometemos: variáveis
+  // `immutable` são gravadas no DEPLOY, então o compilador entrega zeros onde o
+  // on-chain tem valor. Um único `immutable` (ex.: `decimals`) já reprova um contrato
+  // legítimo. O compilador informa os offsets em `immutableReferences`; mascaramos
+  // essas faixas antes de comparar — mesma técnica dos verificadores de mercado.
+  //
+  // O grau do casamento é reportado, não escondido:
+  //   full      — idêntico byte a byte
+  //   immutable — idêntico fora das faixas de `immutable` declaradas
+  //   partial   — idêntico fora dos metadados finais (caminho de fonte/compilador
+  //               difere; o CÓDIGO executável é o mesmo)
+  verifyContract(address, {
+    source, language = 'solidity', compiler = '', bytecode,
+    evmVersion = '', optimizer = null, immutableReferences = null, contractName = '',
+  }) {
     const addr = String(address).toLowerCase();
-    const onchain = this.blockchain.state.contracts[addr]?.code;
-    if (!onchain) throw new Error('contrato não encontrado on-chain');
-    const provided = '0x' + String(bytecode ?? '').replace(/^0x/, '').toLowerCase();
-    if (provided !== onchain.toLowerCase()) throw new Error('bytecode não confere com o código on-chain');
-    if (typeof source !== 'string' || source.length === 0 || source.length > 200_000) throw new Error('source inválido (1..200000 chars)');
-    const codeHash = createHash('sha3-256').update(onchain).digest('hex');
-    const record = { address: addr, language: String(language), compiler: String(compiler), source, codeHash, verifiedAt: Date.now() };
+    const onchainRaw = this.blockchain.state.contracts[addr]?.code;
+    if (!onchainRaw) throw new Error('contrato não encontrado on-chain');
+    if (typeof source !== 'string' || source.length === 0 || source.length > 200_000) {
+      throw new Error('source inválido (1..200000 chars)');
+    }
+
+    const onchain = String(onchainRaw).replace(/^0x/, '').toLowerCase();
+    const provided = String(bytecode ?? '').replace(/^0x/, '').toLowerCase();
+    if (!/^[0-9a-f]*$/.test(provided)) throw new Error('bytecode deve ser hex');
+    if (provided.length !== onchain.length) {
+      throw new Error(`tamanho do bytecode difere (on-chain ${onchain.length / 2}B, enviado ${provided.length / 2}B)`);
+    }
+
+    // Faixas a ignorar, em BYTES. `immutableReferences` do solc é
+    // { idAST: [{ start, length }, …] } — achatamos e validamos os limites.
+    const spans = [];
+    for (const refs of Object.values(immutableReferences ?? {})) {
+      for (const r of refs ?? []) {
+        const start = Number(r?.start);
+        const length = Number(r?.length);
+        if (!Number.isInteger(start) || !Number.isInteger(length) || start < 0 || length <= 0) {
+          throw new Error('immutableReferences inválido');
+        }
+        if ((start + length) * 2 > onchain.length) throw new Error('immutableReferences fora do bytecode');
+        spans.push([start, length]);
+      }
+    }
+    const mask = (hex) => {
+      if (!spans.length) return hex;
+      const b = Buffer.from(hex, 'hex');
+      for (const [start, length] of spans) b.fill(0, start, start + length);
+      return b.toString('hex');
+    };
+
+    let match = null;
+    if (provided === onchain) match = 'full';
+    else if (spans.length && mask(provided) === mask(onchain)) match = 'immutable';
+    else {
+      // Metadados CBOR do solc ficam no FIM; os 2 últimos bytes dão o tamanho.
+      // Código igual com metadado diferente é o "partial match" do mercado.
+      const metaLen = parseInt(onchain.slice(-4), 16);
+      const cut = Number.isInteger(metaLen) && metaLen > 0 && (metaLen + 2) * 2 < onchain.length
+        ? onchain.length - (metaLen + 2) * 2
+        : -1;
+      if (cut > 0 && mask(provided).slice(0, cut) === mask(onchain).slice(0, cut)) match = 'partial';
+    }
+    if (!match) throw new Error('bytecode não confere com o código on-chain');
+
+    const codeHash = createHash('sha3-256').update(onchainRaw).digest('hex');
+    const record = {
+      address: addr,
+      contractName: String(contractName || ''),
+      language: String(language),
+      compiler: String(compiler),
+      evmVersion: String(evmVersion || ''),
+      optimizer: optimizer ? { enabled: !!optimizer.enabled, runs: Number(optimizer.runs) || 0 } : null,
+      match, // 'full' | 'immutable' | 'partial' — o explorer mostra o grau, não só um selo
+      source,
+      codeHash,
+      verifiedAt: Date.now(),
+    };
     this.verifiedContracts.set(addr, record);
-    return { verified: true, address: addr, codeHash };
+    return { verified: true, address: addr, match, codeHash };
   }
 
   getVerifiedContract(address) {
@@ -221,6 +297,7 @@ export class Eav7Node {
       });
     }
     await this.p2p.start();
+    this.gateway.start();
     if (this.validatorWallet) {
       this.productionTimer = setInterval(() => this.#produce(), 200);
     }
@@ -237,6 +314,7 @@ export class Eav7Node {
   stop() {
     if (this.productionTimer) clearInterval(this.productionTimer);
     this.productionTimer = null;
+    this.gateway.stop();
     this.p2p.stop();
     this.api.close();
     this.eavmServer?.close();

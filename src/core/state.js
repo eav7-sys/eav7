@@ -7,17 +7,32 @@ import { verifyTransaction } from './transaction.js';
 import { runEavm, EavmError } from '../eavm/vm.js';
 import { createHost } from '../eavm/host.js';
 import { keccak256 } from '../eavm/keccak.js';
-import { bridgeEventDigest, verifyCommitteeProof, committeeUpdateDigest } from '../bridge/proof.js';
+import { decodeE7Dest, encodeE7Dest, eavmToE7, EAVM_SCHEME } from '../eavm/envelope.js';
+import { bridgeEventDigest, verifyCommitteeProof, committeeUpdateDigest, aiAttestDigest } from '../bridge/proof.js';
+
+// Operações que uma conta multisig pode executar via MULTISIG_PROPOSE/APPROVE.
+// É também o vocabulário do ESCOPO da permissão `active` (docs/permissoes-v2.md) —
+// equivalente ao bitmap de 32 bytes que a TRON mantém sobre os IDs de contrato.
+// Manter em sincronia com o despacho em #executeMultisigOp.
+export const MULTISIG_OPS = Object.freeze([
+  'TRANSFER', 'STAKE', 'UNSTAKE', 'TOKEN_TRANSFER', 'NFT_TRANSFER',
+  'VOTE', 'SET_COMMISSION', 'CLAIM_VOTER_REWARD', 'PERMISSION_CHANGE',
+]);
 
 // Máquina de estado do protocolo eav20. Valores monetários são BigInt.
 // applyTransaction valida TUDO antes de mutar — uma transação que lança erro
 // não pode deixar o estado parcialmente modificado (o mempool reusa o mesmo clone).
+// Endereço de sistema do histórico de hashes (EIP-2935 usa um endereço fixo pelo
+// mesmo motivo: o dado precisa de um lugar canônico no estado).
+const BLOCKHASH_HISTORY_ADDR = '0x0000f90827f1c53a10cb7a02335b175320002935';
+
 export class State {
   constructor() {
     this.accounts = {}; // addr -> { balance: BigInt, nonce: Number, staked: BigInt }
     this.tokens = {}; // tokenId (hash E7) -> token EAV20
     this.aiTasks = {}; // taskId (id da tx AI_TASK) -> tarefa de IA
     this.oracles = {}; // addr -> oráculo de IA registrado
+    this.aiAttesters = {}; // Fase 6: attesterId -> { kind, members:[ethAddr], quorum, measurement } (registrado por governança a partir de AI_TEE_HEIGHT)
     // Ponte cross-chain. processedInbound deduplica depósitos de origem já
     // liberados; attestations acumula os relayers que atestaram cada depósito
     // até atingir o quórum (BRIDGE_MIN_ATTESTATIONS).
@@ -46,6 +61,12 @@ export class State {
     // pendingOps = opId (id da tx MULTISIG_PROPOSE) -> { account, op, approvals:{signer:peso}, weight }.
     this.permissions = {};
     this.pendingOps = {};
+    // Permissões v2: UMA mudança estrutural pendente por conta (proposta nova cancela a
+    // anterior, o que também serve de aborto sem inventar transação de cancelamento).
+    this.pendingPerm = {};
+    // Mudanças de comissão agendadas: { endereço -> { pct, activeAt } }. Ver
+    // COMMISSION_DELAY_BLOCKS — impede captura da recompensa dos eleitores.
+    this.pendingCommission = {};
     // Delegação de recurso (#6): delegador -> { delegatário: amount (BigInt) }. O espelho
     // agregado fica em acc.delegatedOut / acc.delegatedIn (usado por resourceStake).
     this.delegations = {};
@@ -102,6 +123,17 @@ export class State {
   // Bandwidth máximo: cota grátis + bônus por resourceStake (bytes por EAV7 de recurso).
   maxBandwidth(acc) {
     return CHAIN.BANDWIDTH.FREE + Number(this.resourceStake(acc) / CHAIN.UNIT) * CHAIN.BANDWIDTH.PER_STAKED_EAV7;
+  }
+
+  // Espelho de energyOf para largura de banda (leitura; a regeneração é linear e
+  // preguiçosa, então o `used` cru da conta não serve sozinho para exibição).
+  bandwidthOf(address, height) {
+    const acc = this.accounts[address];
+    if (!acc) return { max: CHAIN.BANDWIDTH.FREE, available: CHAIN.BANDWIDTH.FREE };
+    const maxB = this.maxBandwidth(acc);
+    const elapsed = Math.max(0, height - (acc.bandwidthBlock ?? 0));
+    const used = Math.max(0, (acc.bandwidthUsed ?? 0) - Math.floor((maxB * elapsed) / CHAIN.BANDWIDTH.REGEN_BLOCKS));
+    return { max: maxB, available: Math.max(0, maxB - used) };
   }
 
   // Falta de bandwidth para custear `bytes`, SEM mutar (regenera ao longo de REGEN_BLOCKS).
@@ -184,6 +216,231 @@ export class State {
     return { threshold, keys: norm };
   }
 
+  // --- Permissões v2 (docs/permissoes-v2.md) -------------------------------------------
+  // Estrutura: { owner, active, witness?, recovery?, delayBlocks }.
+  // `owner` e `active` são conjuntos com limiar (mesma forma da v1). `witness` e `recovery`
+  // têm UMA chave e nenhum limiar — recovery de propósito não tem poder próprio, só vota.
+  #normalizePermissionV2(p) {
+    if (!p || typeof p !== 'object') throw new Error('permissão inválida');
+    const owner = this.#normalizePermission(p.owner);
+
+    // Múltiplas `active` (a TRON permite 8): cada uma com chaves, limiar e ESCOPO
+    // próprios. A de índice 0 é a PRIMÁRIA — é ela que participa da recuperação.
+    // `active` no singular é açúcar para uma lista de um item.
+    const brutas = Array.isArray(p.actives) ? p.actives : p.active != null ? [p.active] : [];
+    if (brutas.length === 0) throw new Error('permissão precisa de ao menos uma active');
+    if (brutas.length > CHAIN.MAX_ACTIVE_PERMISSIONS) {
+      throw new Error(`no máximo ${CHAIN.MAX_ACTIVE_PERMISSIONS} permissões active`);
+    }
+    const actives = brutas.map((a, i) => this.#normalizeActive(a, i));
+
+    const oneKey = (v, nome) => {
+      if (v == null) return null;
+      if (typeof v !== 'string' || !isValidAddress(v)) throw new Error(`${nome} deve ser um endereço E7 válido`);
+      return v;
+    };
+    const witness = oneKey(p.witness, 'witness');
+    const recovery = oneKey(p.recovery, 'recovery');
+
+    const delay = p.delayBlocks == null ? CHAIN.PERM_DELAY_DEFAULT_BLOCKS : Number(p.delayBlocks);
+    if (!Number.isSafeInteger(delay) || delay < CHAIN.PERM_DELAY_MIN_BLOCKS || delay > CHAIN.PERM_DELAY_MAX_BLOCKS) {
+      throw new Error(`delayBlocks fora da faixa (${CHAIN.PERM_DELAY_MIN_BLOCKS}..${CHAIN.PERM_DELAY_MAX_BLOCKS})`);
+    }
+
+    const out = { owner, actives, delayBlocks: delay };
+    if (witness) out.witness = witness;
+    if (recovery) out.recovery = recovery;
+    return out;
+  }
+
+  // Uma permissão `active`: conjunto com limiar + nome opcional + escopo de operações.
+  #normalizeActive(a, id) {
+    const lvl = this.#normalizePermission(a);
+    lvl.id = id;
+    if (a?.name != null) {
+      if (typeof a.name !== 'string') throw new Error('nome da permissão inválido');
+      if (Buffer.byteLength(a.name) > CHAIN.MAX_PERMISSION_NAME) throw new Error('nome da permissão é longo demais');
+      lvl.name = a.name;
+    }
+    // ESCOPO (modelo da TRON, que usa bitmap de 32 bytes sobre IDs de contrato). Aqui é
+    // lista de tipos nomeados: nosso conjunto é pequeno e clareza vale mais que os bytes.
+    // Ausente = todas as operações permitidas.
+    if (a?.operations != null) {
+      const ops = a.operations;
+      if (!Array.isArray(ops) || ops.length === 0) throw new Error('operations deve ser uma lista não vazia');
+      if (ops.length > MULTISIG_OPS.length) throw new Error('operations com itens demais');
+      const norm = [];
+      for (const op of ops) {
+        if (typeof op !== 'string' || !MULTISIG_OPS.includes(op)) throw new Error(`operação desconhecida: ${op}`);
+        if (norm.includes(op)) throw new Error('operação duplicada em operations');
+        norm.push(op);
+      }
+      // PERMISSION_CHANGE nunca entra: conta v2 só troca permissão pelo caminho com
+      // timelock e veto. Deixar entrar reabriria o desvio que já fechamos.
+      if (norm.includes('PERMISSION_CHANGE')) throw new Error('PERMISSION_CHANGE não é escopável — use PERMISSION_PROPOSE');
+      lvl.operations = norm.sort(); // ordenado: serialização determinística no stateRoot
+    }
+    return lvl;
+  }
+
+  // Uma permissão é v2 quando tem o nível `owner`. Contas configuradas antes do fork
+  // continuam no formato v1 ({ threshold, keys }) e seguem funcionando.
+  #isV2(perm) {
+    return !!perm && typeof perm === 'object' && perm.owner != null;
+  }
+
+  // Peso somado das assinaturas presentes em `signers` para um nível com limiar.
+  #meetsThreshold(level, signers) {
+    if (!level) return false;
+    let peso = 0;
+    for (const s of signers) peso += Number(level.keys?.[s] ?? 0);
+    return peso >= Number(level.threshold);
+  }
+
+  // Nível que autoriza GASTO e operações do dia a dia. Em v1 é a própria permissão;
+  // em v2 é o `active`. Sem esta resolução, `perm.keys` é undefined numa conta v2 e ela
+  // fica INUTILIZÁVEL — recebe fundos e nunca gasta.
+  #spendLevel(perm, permissionId = 0) {
+    if (!perm) return null;
+    if (!this.#isV2(perm)) return perm;
+    return perm.actives?.find((a) => a.id === permissionId) ?? null;
+  }
+
+  // A active PRIMÁRIA (id 0) é a que participa da recuperação. Deliberadamente não é
+  // "qualquer active": uma com escopo estreito não deve poder autorizar troca de owner.
+  #primaryActive(perm) {
+    return this.#spendLevel(perm, 0);
+  }
+
+  // Toda chave que participa da permissão, em qualquer nível. Só elas podem propor,
+  // aprovar ou vetar — senão qualquer conta financiada encheria a fila alheia de lixo.
+  #isPermKey(perm, addr) {
+    if (!this.#isV2(perm)) return !!perm?.keys?.[addr];
+    return (
+      perm.owner?.keys?.[addr] != null ||
+      (perm.actives ?? []).some((a) => a.keys?.[addr] != null) ||
+      perm.witness === addr ||
+      perm.recovery === addr
+    );
+  }
+
+  // Valida o conteúdo de uma mudança estrutural ANTES de enfileirar.
+  #normalizeChange(change) {
+    if (!change || typeof change !== 'object') throw new Error('mudança inválida');
+    const level = String(change.level ?? '');
+    if (level === 'owner') {
+      return { level, value: this.#normalizePermission(change.value) };
+    }
+    if (level === 'active') {
+      // `id` escolhe QUAL active alterar; ausente = a primária. `value: null` remove.
+      const id = change.id == null ? 0 : Number(change.id);
+      if (!Number.isSafeInteger(id) || id < 0 || id >= CHAIN.MAX_ACTIVE_PERMISSIONS) throw new Error('id de active inválido');
+      if (change.value === null) return { level, id, value: null };
+      return { level, id, value: this.#normalizeActive(change.value, id) };
+    }
+    if (level === 'witness' || level === 'recovery') {
+      if (change.value === null) return { level, value: null }; // remover o nível
+      if (typeof change.value !== 'string' || !isValidAddress(change.value)) {
+        throw new Error(`${level} deve ser um endereço E7 válido ou null`);
+      }
+      return { level, value: change.value };
+    }
+    if (level === 'delay') {
+      const d = Number(change.value);
+      if (!Number.isSafeInteger(d) || d < CHAIN.PERM_DELAY_MIN_BLOCKS || d > CHAIN.PERM_DELAY_MAX_BLOCKS) {
+        throw new Error('delayBlocks fora da faixa');
+      }
+      return { level, value: d };
+    }
+    throw new Error(`nível de permissão desconhecido: ${level}`);
+  }
+
+  // Aplica uma mudança a uma cópia da permissão e verifica que a conta continua operável.
+  // Roda na PROPOSTA e de novo na EXECUÇÃO: o estado muda durante o timelock, e uma
+  // configuração segura ao propor pode inutilizar a conta ao aplicar.
+  #simulateChange(perm, change) {
+    const next = structuredClone(perm);
+    if (change.level === 'delay') next.delayBlocks = change.value;
+    else if (change.level === 'active') {
+      const lista = next.actives ?? [];
+      const i = lista.findIndex((a) => a.id === change.id);
+      if (change.value === null) {
+        if (i >= 0) lista.splice(i, 1);
+      } else if (i >= 0) lista[i] = change.value;
+      else {
+        if (lista.length >= CHAIN.MAX_ACTIVE_PERMISSIONS) throw new Error('limite de permissões active atingido');
+        lista.push(change.value);
+      }
+      // Reindexa para manter ids contíguos e a serialização determinística.
+      next.actives = lista.sort((a, b) => a.id - b.id).map((a, idx) => ({ ...a, id: idx }));
+    } else if (change.value === null) delete next[change.level];
+    else next[change.level] = change.value;
+
+    // Trilho anti-trava: sem owner ou sem active a conta fica sem caminho de operação.
+    if (!next.owner || Object.keys(next.owner.keys ?? {}).length === 0) throw new Error('configuração deixaria a conta sem owner');
+    if (!Array.isArray(next.actives) || next.actives.length === 0) throw new Error('configuração deixaria a conta sem active');
+    if (next.actives.some((a) => Object.keys(a.keys ?? {}).length === 0)) throw new Error('active sem chaves');
+    return next;
+  }
+
+  // Quem precisa autorizar cada mudança estrutural. Ver a tabela em docs/permissoes-v2.md.
+  // Devolve null se o conjunto de assinaturas NÃO satisfaz a regra.
+  #authorizesChange(perm, change, signers) {
+    const temRecovery = perm.recovery != null && signers.includes(perm.recovery);
+    switch (change?.level) {
+      case 'active':
+      case 'witness':
+      case 'delay':
+        return this.#meetsThreshold(perm.owner, signers);
+      case 'owner':
+        // A recuperação: active PRIMÁRIA + `recovery`. O recovery não age sozinho — só completa.
+        return this.#meetsThreshold(this.#primaryActive(perm), signers) && temRecovery;
+      case 'recovery':
+        return this.#meetsThreshold(perm.owner, signers) && this.#meetsThreshold(this.#primaryActive(perm), signers);
+      default:
+        return false;
+    }
+  }
+
+  // Aloca poder de voto de `account` aos candidatos. Extraído para que a transação VOTE e
+  // a operação multisig VOTE compartilhem EXATAMENTE o mesmo código — duas implementações
+  // da mesma regra de consenso divergiriam mais cedo ou mais tarde.
+  #applyVote(account, votes, _height) {
+    if (!votes || typeof votes !== 'object' || Array.isArray(votes)) throw new Error('votos inválidos');
+    const entries = Object.entries(votes);
+    if (entries.length === 0 || entries.length > CHAIN.MAX_VOTE_TARGETS) throw new Error('nº de candidatos inválido');
+    const acc = this.getAccount(account);
+    let total = 0n;
+    const parsed = [];
+    for (const [cand, amtRaw] of entries) {
+      if (!isValidAddress(cand)) throw new Error('endereço de candidato inválido');
+      if (cand === account) throw new Error('não pode votar em si mesmo (o self-stake já conta)');
+      // Candidato precisa ser ELEGÍVEL (self-stake >= mínimo) — senão votar num
+      // endereço-lixo acumularia `candidateVotes` que nunca vira validador (poeira de estado).
+      if ((this.accounts[cand]?.staked ?? 0n) < this.param('MIN_VALIDATOR_STAKE')) throw new Error('candidato não elegível (self-stake abaixo do mínimo)');
+      const amt = BigInt(amtRaw);
+      if (amt <= 0n) throw new Error('voto deve ser positivo');
+      total += amt;
+      parsed.push([cand, amt]);
+    }
+    if (total > acc.staked) throw new Error('votos excedem o poder de voto (stake)');
+    // remove a alocação ANTERIOR: LIQUIDA a recompensa pendente de cada candidato
+    // ANTES de mexer nos votos (senão o eleitor perderia o acumulado).
+    for (const [c, a] of Object.entries(this.votes[account] ?? {})) {
+      this.#settleVoterReward(account, c);
+      const left = (this.candidateVotes[c] ?? 0n) - BigInt(a);
+      if (left > 0n) this.candidateVotes[c] = left; else delete this.candidateVotes[c];
+    }
+    // aplica a nova alocação, zerando a dívida (começa a acumular do ponto atual)
+    const rec = {};
+    for (const [c, a] of parsed) {
+      this.candidateVotes[c] = (this.candidateVotes[c] ?? 0n) + a;
+      rec[c] = a.toString();
+      (this.voterRewardDebt[account] ??= {})[c] = this.rewardAccPerVote[c] ?? 0n;
+    }
+    this.votes[account] = rec;
+  }
+
   // Executa uma operação multisig APROVADA em nome da conta (#5). Suporta transferência
   // nativa e troca da própria permissão. Chamado só quando o peso das aprovações >= threshold.
   #executeMultisigOp(account, op, height) {
@@ -211,6 +468,13 @@ export class State {
       if (a.staked < amt) throw new Error('stake insuficiente');
       a.staked -= amt;
       if (this.validators().length === 0) { a.staked += amt; throw new Error('não é possível remover o último validador ativo da rede'); }
+      if (height >= CHAIN.PERMISSIONS_V2_HEIGHT) {
+        const emFila = this.unbonding.reduce((n, u) => n + (u.address === account ? 1 : 0), 0);
+        if (emFila >= CHAIN.MAX_UNBONDING_ENTRIES) {
+          a.staked += amt;
+          throw new Error(`limite de ${CHAIN.MAX_UNBONDING_ENTRIES} saques simultâneos atingido`);
+        }
+      }
       this.unbonding.push({ address: account, amount: amt.toString(), matureAt: height + CHAIN.UNBONDING_BLOCKS });
     } else if (op.type === 'TOKEN_TRANSFER') {
       const token = this.tokens[op.token];
@@ -230,6 +494,18 @@ export class State {
       if (!isValidAddress(op.to)) throw new Error('destino inválido');
       nft.owner = op.to;
       delete col.approvals[String(op.tokenId)];
+    } else if (op.type === 'VOTE' && height >= CHAIN.PERMISSIONS_V2_HEIGHT) {
+      // Sem isto o voto de uma conta multisig fica PRESO — é exatamente por isso que
+      // PERMISSION_UPDATE exigia `staked == 0`. Ver docs/permissoes-v2.md.
+      this.#applyVote(account, op.votes, height);
+    } else if (op.type === 'SET_COMMISSION' && height >= CHAIN.PERMISSIONS_V2_HEIGHT) {
+      const pct = Number(op.percent);
+      if (!Number.isSafeInteger(pct) || pct < 0 || pct > 100) throw new Error('comissão deve ser 0..100');
+      this.pendingCommission[account] = { pct, activeAt: height + CHAIN.COMMISSION_DELAY_BLOCKS };
+    } else if (op.type === 'CLAIM_VOTER_REWARD' && height >= CHAIN.PERMISSIONS_V2_HEIGHT) {
+      if (!isValidAddress(op.validator)) throw new Error('validador inválido');
+      if ((this.votes[account]?.[op.validator] ?? null) === null) throw new Error('você não vota nesse validador');
+      this.#settleVoterReward(account, op.validator);
     } else if (op.type === 'PERMISSION_CHANGE') {
       if (op.permission === null) delete this.permissions[account]; // remove multisig (volta a single-sig)
       else this.permissions[account] = this.#normalizePermission(op.permission);
@@ -279,6 +555,22 @@ export class State {
       if (pending > 0n) this.credit(voter, pending);
     }
     (this.voterRewardDebt[voter] ??= {})[validator] = acc;
+  }
+
+  // Recompensa de eleitor ainda NÃO resgatada, somada sobre todos os validadores em que
+  // a conta votou. Leitura pura (não liquida nada) — espelha a fórmula de
+  // #settleVoterReward para o explorer poder exibir "resgatável".
+  pendingVoterReward(voter) {
+    let total = 0n;
+    for (const [validator, amount] of Object.entries(this.votes[voter] ?? {})) {
+      const votes = BigInt(amount ?? 0n);
+      if (votes <= 0n) continue;
+      const acc = this.rewardAccPerVote[validator] ?? 0n;
+      const debt = this.voterRewardDebt[voter]?.[validator] ?? 0n;
+      const pending = (votes * (acc - debt)) / CHAIN.REWARD_SCALE;
+      if (pending > 0n) total += pending;
+    }
+    return total;
   }
 
   // Guarda de token EAV20: rejeita se pausado ou se algum endereço envolvido está na blacklist.
@@ -350,6 +642,16 @@ export class State {
       .map(({ address, staked, votes }) => ({ address, staked, votes }));
   }
 
+  // Nº de contas ELEGÍVEIS a validador (self-stake >= mínimo, não-EAVM), SEM o corte de
+  // MAX_VALIDATORS. Mede a DEMANDA por slots — insumo do conselheiro de governança
+  // ([[eav7-ai-roadmap]]). O chamador deve cachear por altura (varre contas — achado M2).
+  eligibleValidatorCount() {
+    const minStake = this.param('MIN_VALIDATOR_STAKE');
+    let n = 0;
+    for (const acc of Object.values(this.accounts)) if (acc.staked >= minStake && !acc.eavmManaged) n += 1;
+    return n;
+  }
+
   // #9: coage/valida o valor proposto para um parâmetro governável (tipo + limites).
   #coerceGovValue(spec, raw) {
     if (spec.kind === 'bigint') {
@@ -374,6 +676,26 @@ export class State {
     const quorum = Number(v.quorum);
     if (!Number.isSafeInteger(quorum) || quorum <= 0 || quorum > members.length) throw new Error('quorum inválido');
     return { sourceChain: sourceChain.toUpperCase(), members, quorum };
+  }
+
+  // Fase 6: valida um ATESTADOR de IA proposto por governança (enclave TEE / verificador
+  // zk). members = endereços eth das chaves de atestação; measurement = medida do enclave/
+  // commitment do modelo (o código atestado). Espelha #validateCommitteeValue.
+  #validateAttesterValue(v) {
+    if (!v || typeof v !== 'object') throw new Error('valor de atestador inválido');
+    const attesterId = String(v.attesterId ?? '');
+    if (!/^[A-Z0-9_.-]{2,64}$/i.test(attesterId)) throw new Error('attesterId inválido');
+    const kind = String(v.kind ?? 'TEE').toUpperCase();
+    if (kind !== 'TEE' && kind !== 'ZK') throw new Error('kind deve ser TEE ou ZK');
+    const members = (v.members ?? []).map((m) => String(m).toLowerCase());
+    if (members.length === 0 || members.length > CHAIN.MAX_AI_ATTESTER_MEMBERS) throw new Error('nº de membros inválido');
+    if (new Set(members).size !== members.length) throw new Error('membros duplicados');
+    for (const m of members) if (!/^0x[0-9a-f]{40}$/.test(m)) throw new Error('endereço de membro inválido (eth 0x+40 hex)');
+    const quorum = Number(v.quorum);
+    if (!Number.isSafeInteger(quorum) || quorum <= 0 || quorum > members.length) throw new Error('quorum inválido');
+    const measurement = String(v.measurement ?? '');
+    if (measurement.length === 0 || measurement.length > 256) throw new Error('measurement inválida (1..256 chars)');
+    return { attesterId, kind, members, quorum, measurement };
   }
 
   // Valida um gasto de tesouraria proposto por governança.
@@ -408,7 +730,18 @@ export class State {
   // aplicadas/expiradas, ops multisig vencidas) para o estado não crescer sem fim.
   blockTick(height) {
     // governança madura + poda de propostas
-    for (const [id, p] of Object.entries(this.proposals)) {
+    //
+    // ORDEM CANÔNICA POR id: quando DUAS propostas maturam no MESMO bloco com efeitos
+    // que interferem (mesmo param — o último a escrever vence; tesouraria que não cobre
+    // ambos os TREASURY_SPEND; dois overrides de MIN_VALIDATOR_STAKE/MAX_VALIDATORS cujo
+    // trilho anti-trava depende de quem veio antes), a ORDEM de aplicação é observável no
+    // estado. Iterar por ordem de inserção do objeto faria o consenso depender de um
+    // detalhe da engine; ordenar por id o fixa numa ordem que o cliente Rust reproduz
+    // NATIVAMENTE (BTreeMap<String> itera em ordem de bytes, == ordem de code unit UTF-16
+    // do .sort() para ids hex ASCII). Snapshot das chaves ANTES do laço: o corpo deleta
+    // de this.proposals, e sort() já materializa o array, então a remoção é segura.
+    for (const id of Object.keys(this.proposals).sort()) {
+      const p = this.proposals[id];
       if (p.status === 'QUEUED' && height >= p.executeAt) {
         if (p.param === 'BRIDGE_COMMITTEE') {
           const v = p.value;
@@ -421,6 +754,10 @@ export class State {
         } else if (p.param === 'TREASURY_SPEND') {
           const amt = BigInt(p.value.amount); // gasta só se a tesouraria cobre (senão a proposta não tem efeito)
           if (this.treasury >= amt) { this.treasury -= amt; this.credit(p.value.recipient, amt); }
+        } else if (p.param === 'AI_ATTESTER') {
+          // Fase 6: registra/atualiza o atestador de IA (enclave TEE / verificador zk).
+          const v = p.value;
+          this.aiAttesters[v.attesterId] = { kind: v.kind, members: v.members, quorum: v.quorum, measurement: v.measurement, registeredAt: height };
         } else {
           const prev = Object.prototype.hasOwnProperty.call(this.params, p.param) ? this.params[p.param] : undefined;
           this.params[p.param] = p.value; // aplica o override (efeito persiste em params)
@@ -438,6 +775,31 @@ export class State {
     // ops multisig pendentes vencidas
     for (const [id, op] of Object.entries(this.pendingOps)) {
       if (op.deadline !== undefined && height > op.deadline) delete this.pendingOps[id];
+    }
+    // Comissão agendada que venceu.
+    for (const [addr, p] of Object.entries(this.pendingCommission)) {
+      if (height >= p.activeAt) { this.commission[addr] = p.pct; delete this.pendingCommission[addr]; }
+    }
+    // Permissões v2: aplica as mudanças cujo timelock venceu.
+    for (const [conta, pend] of Object.entries(this.pendingPerm)) {
+      if (pend.executeAt === null || height < pend.executeAt) continue;
+      const perm = this.permissions[conta];
+      delete this.pendingPerm[conta]; // consome a pendência em qualquer desfecho
+      if (!this.#isV2(perm)) continue; // a conta deixou de ser v2 no meio do caminho
+      // REVALIDA A AUTORIZAÇÃO: as aprovações foram colhidas sob a permissão VIGENTE NA
+      // ÉPOCA. Se ela mudou durante o timelock, uma chave já removida não pode continuar
+      // valendo — é a mesma classe de furo que a TRON fecha invalidando assinaturas
+      // colhidas sob permissão antiga, em vez de honrá-las.
+      if (!this.#authorizesChange(perm, pend.change, Object.keys(pend.approvals))) continue;
+      try {
+        // E revalida o anti-trava: o estado muda durante o timelock, então uma
+        // configuração segura ao propor pode inutilizar a conta ao aplicar.
+        this.permissions[conta] = this.#simulateChange(perm, pend.change);
+        // Ops multisig pendentes foram aprovadas sob a permissão ANTIGA; não valem mais.
+        for (const [id, p] of Object.entries(this.pendingOps)) if (p.account === conta) delete this.pendingOps[id];
+      } catch {
+        /* descarta a mudança inválida; a permissão vigente permanece */
+      }
     }
     // unbonding maduro: devolve o stake dessteikado ao saldo depois do período (b)
     if (this.unbonding.length) {
@@ -469,6 +831,7 @@ export class State {
     copy.tokens = structuredClone(this.tokens);
     copy.aiTasks = structuredClone(this.aiTasks);
     copy.oracles = structuredClone(this.oracles);
+    copy.aiAttesters = structuredClone(this.aiAttesters);
     copy.bridge = structuredClone(this.bridge);
     copy.bridgeRelayers = structuredClone(this.bridgeRelayers);
     copy.bridgeSourceCommittees = structuredClone(this.bridgeSourceCommittees);
@@ -479,6 +842,8 @@ export class State {
     copy.candidateVotes = structuredClone(this.candidateVotes);
     copy.permissions = structuredClone(this.permissions);
     copy.pendingOps = structuredClone(this.pendingOps);
+    copy.pendingPerm = structuredClone(this.pendingPerm);
+    copy.pendingCommission = structuredClone(this.pendingCommission);
     copy.delegations = structuredClone(this.delegations);
     copy.params = structuredClone(this.params);
     copy.proposals = structuredClone(this.proposals);
@@ -527,28 +892,84 @@ export class State {
     return '0x' + keccak256(Buffer.from(String(addr))).subarray(12).toString('hex');
   }
 
+  // Conta NATIVA correspondente a um endereço do mundo 0x. É a MESMA regra que o
+  // envelope já usa para destino (`destE7For`): o prefixo 0xe7000000 carrega um E7
+  // literal (com checksum) e é decodificado de volta; qualquer outro 0x deriva por
+  // eavmToE7. Bidirecional — é isso que permite o ledger unificado sem estado novo.
+  #e7Of(addr0x) {
+    return decodeE7Dest(addr0x) ?? eavmToE7(addr0x);
+  }
+
+  // Forma 0x do REMETENTE dentro da VM. Acima de EAVM_VALUE_HEIGHT precisa ser
+  // reversível para #e7Of, senão um contrato que devolvesse valor ao remetente
+  // creditaria uma conta que ninguém controla (o achado A-3 por outra porta).
+  #senderEavmForm(tx, height) {
+    if (height < CHAIN.EAVM_VALUE_HEIGHT) return this.#eavmForm(tx.from);
+    // Conta EAVM (MetaMask): o 0x real é a identidade; eavmToE7 devolve tx.from.
+    if (tx.scheme === EAVM_SCHEME && tx.data?.eavmFrom) return String(tx.data.eavmFrom).toLowerCase();
+    // Conta E7 nativa: embute o próprio E7 no campo de 20 bytes (decodeE7Dest inverte).
+    return encodeE7Dest(tx.from);
+  }
+
   // Mundo de contratos (espaço 0x) para a VM: storage/código/saldo + snapshot/revert
-  // (isolamento de sub-chamadas que revertem). NON-PAYABLE nesta fase: NÃO há ponte
-  // de valor nativo↔contrato (removida no achado A-3). Os saldos do mundo de
-  // contratos começam e permanecem em 0 (SELFDESTRUCT proibido); só a taxa nativa é
-  // debitada. Value/payable é a Fase 2.3 com ledger unificado — NÃO reabilitar aqui.
-  #eavmWorld() {
+  // (isolamento de sub-chamadas que revertem).
+  //
+  // LEDGER: até EAVM_VALUE_HEIGHT os contratos são NON-PAYABLE — `contracts[].balance`
+  // é um livro separado que começa e permanece em 0 (achado A-3: a ponte de valor era
+  // unidirecional e prendia fundos). A PARTIR do fork o saldo do mundo 0x deixa de ser
+  // livro próprio e passa a SER o da conta nativa resolvida por #e7Of: um livro só,
+  // supply conservado por construção, valor entra e sai. `contracts[].balance` continua
+  // 0n em ambos os regimes, então a serialização do stateRoot é IDÊNTICA — o fork é
+  // puramente comportamental e não quebra replay.
+  #eavmWorld(height = 0, xfers = null) {
     const C = this.contracts;
+    const unified = height >= CHAIN.EAVM_VALUE_HEIGHT;
     // Journaling (undo-log): snapshot = comprimento do journal (O(1)); revert desfaz
     // só as entradas desde o snapshot (O(mudanças do frame)). Evita o structuredClone
     // do mundo inteiro a cada CALL/CREATE — que era um DoS de CPU (achados A-2/M-2).
     const journal = [];
     const get = (a) => { if (!C[a]) { C[a] = { code: '', storage: {}, balance: 0n, nonce: 0 }; journal.push(['new', a]); } return C[a]; };
-    return {
+    // Saldo nativo (ledger unificado). A leitura NÃO materializa conta — só a escrita.
+    const natBal = (a) => this.accounts[this.#e7Of(a)]?.balance ?? 0n;
+    const natAdd = (a, d) => {
+      const e7 = this.#e7Of(a);
+      const existed = this.accounts[e7] !== undefined;
+      const acct = this.getAccount(e7);
+      journal.push(['nbal', e7, acct.balance, existed]);
+      acct.balance += d;
+    };
+    const world = {
       getCode: (a) => Buffer.from((C[a]?.code ?? '').replace(/^0x/, ''), 'hex'),
       putCode: (a, buf) => { const c = get(a); journal.push(['code', a, c.code]); c.code = '0x' + Buffer.from(buf).toString('hex'); },
       getStorage: (a, k) => BigInt(C[a]?.storage?.[k] ?? 0n),
       setStorage: (a, k, v) => { const s = get(a).storage; journal.push(['stor', a, k, s[k]]); if (v === 0n) delete s[k]; else s[k] = '0x' + v.toString(16); },
-      getBalance: (a) => C[a]?.balance ?? 0n,
-      addBalance: (a, d) => { const c = get(a); journal.push(['bal', a, c.balance]); c.balance += d; },
+      getBalance: (a) => (unified ? natBal(a) : (C[a]?.balance ?? 0n)),
+      addBalance: (a, d) => {
+        if (unified) { natAdd(a, d); return; }
+        const c = get(a); journal.push(['bal', a, c.balance]); c.balance += d;
+      },
+      // Único ponto por onde valor se move dentro da VM (CALL/CREATE/precompile).
+      // Centralizar aqui é o que torna a transferência interna observável e mantém
+      // débito e crédito atômicos sob o mesmo journal. `entry` é o valor da própria
+      // transação — já aparece como `amount` na tx, então não vira transferência interna.
+      moveValue: (from, to, value, kind = 'call') => {
+        if (world.getBalance(from) < value) return false;
+        world.addBalance(from, -value);
+        world.addBalance(to, value);
+        if (xfers && kind !== 'entry') { xfers.push({ from, to, value, kind }); journal.push(['xfer']); }
+        return true;
+      },
       bumpNonce: (a) => { const c = get(a); journal.push(['non', a, c.nonce]); const n = c.nonce ?? 0; c.nonce = n + 1; return n; },
       createAddress: (s, n) => '0x' + keccak256(Buffer.from(s + ':' + n)).subarray(12).toString('hex'),
       create2Address: (s, salt, init) => '0x' + keccak256(Buffer.concat([Buffer.from(s.slice(2), 'hex'), Buffer.from(salt.toString(16).padStart(64, '0'), 'hex'), keccak256(init)])).subarray(12).toString('hex'),
+      // Histórico de hashes de bloco (EIP-2935), lido pelo BLOCKHASH. Fica no
+      // storage de um endereço de sistema: assim é ESTADO — determinístico,
+      // replicado e coberto pelo stateRoot — em vez de a VM ter de alcançar a
+      // camada de blocos, que ela não conhece nem deve conhecer.
+      blockHash: (n) => {
+        const slot = '0x' + (n % BigInt(CHAIN.BLOCKHASH_HISTORY)).toString(16);
+        return BigInt(C[BLOCKHASH_HISTORY_ADDR]?.storage?.[slot] ?? 0n);
+      },
       snapshot: () => journal.length,
       revert: (n) => {
         while (journal.length > n) {
@@ -558,9 +979,76 @@ export class State {
           else if (e[0] === 'stor') { if (e[3] === undefined) delete C[e[1]].storage[e[2]]; else C[e[1]].storage[e[2]] = e[3]; }
           else if (e[0] === 'bal') C[e[1]].balance = e[2];
           else if (e[0] === 'non') C[e[1]].nonce = e[2];
+          // Ledger unificado: restaura o saldo nativo e, se a conta só existia por
+          // causa deste frame, remove-a (senão um CALL revertido deixaria conta-fantasma
+          // de saldo 0 no estado — mudaria o stateRoot sem nenhuma transação efetiva).
+          else if (e[0] === 'nbal') { if (e[3]) this.accounts[e[1]].balance = e[2]; else delete this.accounts[e[1]]; }
+          else if (e[0] === 'xfer') xfers.pop();
         }
       },
     };
+    return world;
+  }
+
+  // Grava o hash de um bloco no anel de histórico (EIP-2935). Chamado pela camada
+  // de blocos, que é quem conhece o hash; o State só guarda. Anel de tamanho fixo:
+  // o custo de estado é constante, não cresce com a cadeia.
+  recordBlockHash(number, hash) {
+    if (!Number.isInteger(number) || number < 0 || typeof hash !== 'string') return;
+    const c = this.contracts[BLOCKHASH_HISTORY_ADDR]
+      ?? (this.contracts[BLOCKHASH_HISTORY_ADDR] = { code: '', storage: {}, balance: 0n, nonce: 0 });
+    const slot = '0x' + (BigInt(number) % BigInt(CHAIN.BLOCKHASH_HISTORY)).toString(16);
+    c.storage[slot] = '0x' + hash.replace(/^0x/, '').toLowerCase();
+  }
+
+  // Bytecode de runtime de um contrato, no formato 0x — o que `eth_getCode` devolve.
+  // Conta que não é contrato responde '0x', igual ao Ethereum.
+  codeOf(address) {
+    const addr = String(address ?? '').toLowerCase();
+    return this.contracts[addr]?.code || '0x';
+  }
+
+  // Execução SOMENTE LEITURA contra o estado atual — o motor de `eth_call` e
+  // `eth_estimateGas`. Roda a VM de verdade e depois desfaz TUDO pelo journal, então
+  // nenhuma consulta pode alterar o estado nem o stateRoot. Sem isto, `eth_call`
+  // devolvia `0x` constante e nenhuma biblioteca conseguia ler um contrato.
+  callEavm({ from, to, data = '0x', value = 0n, height = 0, blockTs = 0, gas = null } = {}) {
+    const target = String(to ?? '').toLowerCase();
+    if (!/^0x[0-9a-f]{40}$/.test(target)) throw new Error('destino inválido');
+    const caller = /^0x[0-9a-f]{40}$/.test(String(from ?? '').toLowerCase())
+      ? String(from).toLowerCase()
+      : '0x' + '0'.repeat(40);
+
+    const world = this.#eavmWorld(height);
+    const host = createHost(world);
+    const budget = BigInt(Math.min(Number(gas ?? CHAIN.MAX_EAVM_GAS), CHAIN.MAX_EAVM_GAS));
+    try {
+      const res = runEavm({
+        host,
+        code: world.getCode(target),
+        calldata: Buffer.from(String(data).replace(/^0x/, ''), 'hex'),
+        gas: budget,
+        caller,
+        address: target,
+        value: BigInt(value),
+        origin: caller,
+        gasPrice: 0n,
+        depth: 0,
+        block: { number: height, timestamp: blockTs, chainId: CHAIN.EAVM_CHAIN_ID },
+      });
+      return {
+        success: res.success,
+        returnData: '0x' + Buffer.from(res.returnData ?? Buffer.alloc(0)).toString('hex'),
+        gasUsed: Number(res.gasUsed),
+      };
+    } catch (e) {
+      if (e instanceof EavmError) return { success: false, returnData: '0x', gasUsed: Number(budget) };
+      throw e;
+    } finally {
+      // SEMPRE desfaz — inclusive no caminho de exceção. É o que garante que uma
+      // consulta jamais suje o estado consensual.
+      world.revert(0);
+    }
   }
 
   // Roda um contrato (DEPLOY/CALL) mutando o mundo de contratos; sub-chamadas que
@@ -569,10 +1057,13 @@ export class State {
   #runEavmTx(tx, height, baseCost, blockTs = 0) {
     const isDeploy = tx.type === 'EAVM_DEPLOY';
     const from = this.getAccount(tx.from);
-    // Fase 2.2: contratos NÃO são payable (sem ponte de valor nativo↔contrato, que
-    // era unidirecional e travava fundos — achado A-3). Value/payable é a Fase 2.3
-    // com ledger unificado. Rejeitado ANTES de rodar a VM (sem mutação).
-    if (BigInt(tx.amount) !== 0n) throw new Error('EAVM não aceita valor (amount) nesta fase — use 0');
+    // Fase 2.3: acima de EAVM_VALUE_HEIGHT contratos são PAGÁVEIS sobre ledger
+    // unificado (ver #eavmWorld). Abaixo do fork continuam non-payable — rejeitado
+    // ANTES de rodar a VM, sem mutação, exatamente como antes.
+    const payable = height >= CHAIN.EAVM_VALUE_HEIGHT;
+    const value = BigInt(tx.amount);
+    if (!payable && value !== 0n) throw new Error('EAVM não aceita valor (amount) nesta fase — use 0');
+    if (value < 0n) throw new Error('valor inválido');
     const avail = this.energyOf(tx.from, height).available;
     const feeBurnable = BigInt(tx.fee) / CHAIN.ENERGY.BURN_PER_ENERGY;
     const balBurnable = from.balance / CHAIN.ENERGY.BURN_PER_ENERGY;
@@ -583,9 +1074,10 @@ export class State {
     if (budgetEnergy <= 0) throw new Error('energia/saldo insuficiente para executar o contrato');
     const budget = BigInt(Math.min(CHAIN.MAX_EAVM_GAS, budgetEnergy * CHAIN.GAS_PER_ENERGY));
 
-    const world = this.#eavmWorld();
+    const xfers = [];
+    const world = this.#eavmWorld(height, xfers);
     const host = createHost(world);
-    const sender0x = this.#eavmForm(tx.from);
+    const sender0x = this.#senderEavmForm(tx, height);
     // M-1: usa o timestamp REAL do bloco (validado contra o drift do relógio), não
     // o tx.timestamp arbitrário do remetente — único por bloco, como no EVM.
     const block = { number: height, timestamp: blockTs, chainId: CHAIN.EAVM_CHAIN_ID };
@@ -602,12 +1094,20 @@ export class State {
       code = world.getCode(contractAddr);
     }
 
+    // Valor da PRÓPRIA transação entrando no contrato. Vai pelo journal do mundo,
+    // então se a VM reverter (ou uma checagem posterior de taxa lançar) o valor volta
+    // sozinho ao remetente — semântica de revert do EVM. Não é transferência interna:
+    // já é visível como `amount` na transação (kind 'entry' não é registrado).
+    if (value > 0n && !world.moveValue(sender0x, contractAddr, value, 'entry')) {
+      throw new Error('saldo insuficiente para o valor enviado ao contrato');
+    }
+
     let res;
     try {
       res = runEavm({
         host, code,
         calldata: Buffer.from(String(isDeploy ? '' : (tx.data?.input ?? '')).replace(/^0x/, ''), 'hex'),
-        gas: budget, caller: sender0x, address: contractAddr, value: 0n,
+        gas: budget, caller: sender0x, address: contractAddr, value,
         origin: sender0x, gasPrice: 0n, depth: 0, block,
       });
       if (isDeploy) {
@@ -627,7 +1127,7 @@ export class State {
     if (!res.success) world.revert(0); // reverte tudo no mundo de contratos
     // world é retornado para o applyTransaction poder reverter atomicamente se
     // uma checagem posterior (fee/saldo) lançar depois da VM (corrige C-1/A-4).
-    return { success: res.success, gasUsed: res.gasUsed, returnData: res.returnData, contractAddr, isDeploy, logs: res.success ? (res.logs ?? []) : [], world };
+    return { success: res.success, gasUsed: res.gasUsed, returnData: res.returnData, contractAddr, isDeploy, logs: res.success ? (res.logs ?? []) : [], xfers, world };
   }
 
   // Aplica uma transação já validada de forma stateless. Lança Error se as
@@ -656,6 +1156,13 @@ export class State {
     // Contratos EAVM: roda a VM ANTES de cobrar (o gás gasto vira energia).
     let vm = null;
     if (tx.type === 'EAVM_DEPLOY' || tx.type === 'EAVM_CALL') {
+      // GATE DO FORK. O envelope aceita contrato pela rota EVM de forma stateless
+      // (não tem altura), então a recusa vive aqui. Abaixo da altura, nó velho
+      // (que barra no envelope) e nó novo (que barra aqui) rejeitam IGUAL — sem isto
+      // a relaxação stateless abriria uma cisão de rede retroativa.
+      if (tx.scheme === EAVM_SCHEME && height < CHAIN.EAVM_CONTRACTS_HEIGHT) {
+        throw new Error('contratos pela rota EVM ainda não ativos nesta altura');
+      }
       vm = this.#runEavmTx(tx, height, cost, blockTs);
       cost += Math.ceil(Number(vm.gasUsed) / CHAIN.GAS_PER_ENERGY);
     }
@@ -706,41 +1213,11 @@ export class State {
 
       case 'VOTE': {
         if (height < CHAIN.VOTING_HEIGHT) throw new Error('votação de validadores ainda não ativa');
-        const votes = tx.data?.votes;
-        if (!votes || typeof votes !== 'object' || Array.isArray(votes)) throw new Error('votos inválidos');
-        const entries = Object.entries(votes);
-        if (entries.length === 0 || entries.length > CHAIN.MAX_VOTE_TARGETS) throw new Error('nº de candidatos inválido');
-        let total = 0n;
-        const parsed = [];
-        for (const [cand, amtRaw] of entries) {
-          if (!isValidAddress(cand)) throw new Error('endereço de candidato inválido');
-          if (cand === tx.from) throw new Error('não pode votar em si mesmo (o self-stake já conta)');
-          // Candidato precisa ser ELEGÍVEL (self-stake >= mínimo) — senão votar num
-          // endereço-lixo acumularia `candidateVotes` que nunca vira validador (poeira de estado).
-          if ((this.accounts[cand]?.staked ?? 0n) < this.param('MIN_VALIDATOR_STAKE')) throw new Error('candidato não elegível (self-stake abaixo do mínimo)');
-          const amt = BigInt(amtRaw);
-          if (amt <= 0n) throw new Error('voto deve ser positivo');
-          total += amt;
-          parsed.push([cand, amt]);
-        }
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
-        if (total > acc.staked) throw new Error('votos excedem o poder de voto (stake)');
+        // Valida e aplica ANTES de debitar: se a alocação for inválida, a tx lança sem
+        // deixar taxa cobrada (o clone do estado é reusado pelo mempool).
+        this.#applyVote(tx.from, tx.data?.votes, height);
         acc.balance -= fee;
-        // remove a alocação ANTERIOR: LIQUIDA a recompensa pendente de cada candidato
-        // ANTES de mexer nos votos (senão o eleitor perderia o acumulado).
-        for (const [c, a] of Object.entries(this.votes[tx.from] ?? {})) {
-          this.#settleVoterReward(tx.from, c);
-          const left = (this.candidateVotes[c] ?? 0n) - BigInt(a);
-          if (left > 0n) this.candidateVotes[c] = left; else delete this.candidateVotes[c];
-        }
-        // aplica a nova alocação, zerando a dívida (começa a acumular do ponto atual)
-        const rec = {};
-        for (const [c, a] of parsed) {
-          this.candidateVotes[c] = (this.candidateVotes[c] ?? 0n) + a;
-          rec[c] = a.toString();
-          (this.voterRewardDebt[tx.from] ??= {})[c] = this.rewardAccPerVote[c] ?? 0n;
-        }
-        this.votes[tx.from] = rec;
         break;
       }
 
@@ -751,7 +1228,13 @@ export class State {
         if (!Number.isSafeInteger(pct) || pct < 0 || pct > 100) throw new Error('comissão deve ser 0..100');
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
         acc.balance -= fee;
-        this.commission[tx.from] = pct;
+        if (height >= CHAIN.PERMISSIONS_V2_HEIGHT) {
+          // Agenda em vez de aplicar: mudança imediata permitiria capturar a recompensa
+          // dos eleitores no próprio slot. Nova mudança substitui a anterior.
+          this.pendingCommission[tx.from] = { pct, activeAt: height + CHAIN.COMMISSION_DELAY_BLOCKS };
+        } else {
+          this.commission[tx.from] = pct;
+        }
         break;
       }
 
@@ -841,6 +1324,13 @@ export class State {
         acc.balance -= fee;
         // (b) unbonding: os fundos NÃO voltam agora — entram na fila e o blockTick os
         // devolve após UNBONDING_BLOCKS. O stake já saiu (perdeu voto/validação na hora).
+        if (height >= CHAIN.PERMISSIONS_V2_HEIGHT) {
+          const emFila = this.unbonding.reduce((n, u) => n + (u.address === tx.from ? 1 : 0), 0);
+          if (emFila >= CHAIN.MAX_UNBONDING_ENTRIES) {
+            acc.staked += amount; // desfaz: a redução de stake já foi aplicada acima
+            throw new Error(`limite de ${CHAIN.MAX_UNBONDING_ENTRIES} saques simultâneos atingido`);
+          }
+        }
         this.unbonding.push({ address: tx.from, amount: amount.toString(), matureAt: height + CHAIN.UNBONDING_BLOCKS });
         break;
       }
@@ -859,7 +1349,19 @@ export class State {
         if (blockA.producer !== blockB.producer) throw new Error('produtores diferentes — não é assinatura dupla');
         if (blockA.height !== blockB.height) throw new Error('alturas diferentes — não é assinatura dupla');
         if (blockA.hash === blockB.hash) throw new Error('mesmo bloco — não há conflito');
-        const offender = blockA.producer;
+        // `witness`: quem assina é a chave de produção, quem tem STAKE é a conta. Punir
+        // `producer` cru cairia numa chave sem stake — a equivocação ficaria IMPUNE.
+        // Os dois blocos precisam apontar para a MESMA conta produtora.
+        if ((blockA.producerAccount ?? null) !== (blockB.producerAccount ?? null)) {
+          throw new Error('contas produtoras diferentes — não é assinatura dupla');
+        }
+        const offender = blockA.producerAccount ?? blockA.producer;
+        // Impede forjar evidência contra terceiro: só vale se a conta REALMENTE delegou
+        // a produção a essa chave. Se o witness foi rotacionado desde então, a evidência
+        // não é verificável e falha FECHADA — melhor não punir do que punir inocente.
+        if (blockA.producerAccount && this.permissions[offender]?.witness !== blockA.producer) {
+          throw new Error('chave assinante não é o witness registrado para a conta produtora');
+        }
         const key = `${offender}:${blockA.height}`;
         if (this.slashed[key]) throw new Error('essa assinatura dupla já foi penalizada');
         const off = this.accounts[offender];
@@ -893,7 +1395,14 @@ export class State {
         if (off && BigInt(off.delegatedOut ?? 0n) > off.staked) {
           let excess = BigInt(off.delegatedOut) - off.staked;
           const dmap = this.delegations[offender] ?? {};
-          for (const to of Object.keys(dmap)) {
+          // ORDEM CANÔNICA POR endereço: a revogação para no primeiro `to` que zera o
+          // `excess`, então QUEM perde a delegação (e tem `delegatedIn` debitado)
+          // depende da ordem — recurso finito com early-exit. Iterar por ordem de
+          // inserção faria o consenso depender de um detalhe da engine e divergiria do
+          // cliente Rust, onde `delegations` é um BTreeMap ordenado por endereço. O
+          // `.sort()` fixa a mesma ordem que o Rust reproduz NATIVAMENTE (endereços E7
+          // são ASCII, então ordem de code unit UTF-16 == ordem de bytes do BTreeMap).
+          for (const to of Object.keys(dmap).sort()) {
             if (excess === 0n) break;
             const amt = BigInt(dmap[to]);
             const take = amt < excess ? amt : excess;
@@ -966,6 +1475,9 @@ export class State {
           value = this.#validateCommitteeValue(tx.data?.value);
         } else if (param === 'TREASURY_SPEND') {
           value = this.#validateTreasurySpend(tx.data?.value);
+        } else if (param === 'AI_ATTESTER') {
+          if (height < CHAIN.AI_TEE_HEIGHT) throw new Error('atestação de IA (Fase 6) ainda não ativa');
+          value = this.#validateAttesterValue(tx.data?.value);
         } else {
           const spec = CHAIN.GOVERNABLE[param];
           if (!spec) throw new Error(`parâmetro não governável: ${param}`);
@@ -1004,11 +1516,83 @@ export class State {
         // Conta COM stake não pode virar multisig: as ops multisig só fazem TRANSFER/
         // PERMISSION_CHANGE (não STAKE/UNSTAKE/VOTE), então um validador ficaria com stake
         // e voto PRESOS. Dessteike primeiro. (Multisig é para contas de custódia/tesouraria.)
-        if (acc.staked > 0n) throw new Error('conta com stake não pode virar multisig — faça UNSTAKE primeiro');
-        const perm = this.#normalizePermission(tx.data?.permission);
+        // A trava existia porque VOTE/SET_COMMISSION/CLAIM_VOTER_REWARD não eram operações
+        // multisig: um validador multisig ficaria com stake e voto PRESOS. A partir de
+        // PERMISSIONS_V2_HEIGHT essas ops existem, então a trava cai — é o que libera
+        // validador a ter permissões (pré-requisito do `witness`). Ver docs/permissoes-v2.md.
+        if (height < CHAIN.PERMISSIONS_V2_HEIGHT && acc.staked > 0n) {
+          throw new Error('conta com stake não pode virar multisig — faça UNSTAKE primeiro');
+        }
+        // Acima do fork aceita TAMBÉM o formato v2 (níveis owner/active/witness/recovery).
+        // A forma é detectada pelo campo `owner`; sem ele, continua v1.
+        const raw = tx.data?.permission;
+        const v2 = height >= CHAIN.PERMISSIONS_V2_HEIGHT && raw?.owner != null;
+        const perm = v2 ? this.#normalizePermissionV2(raw) : this.#normalizePermission(raw);
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
         acc.balance -= fee;
         this.permissions[tx.from] = perm;
+        break;
+      }
+
+      // --- Permissões v2: mudança estrutural com fila, timelock e veto -------------------
+      // Só contas em formato v2 usam este caminho. A conta v1 continua trocando permissão
+      // pela op multisig PERMISSION_CHANGE, sem timelock — comportamento preservado.
+      case 'PERMISSION_PROPOSE': {
+        if (height < CHAIN.PERMISSIONS_V2_HEIGHT) throw new Error('permissões v2 ainda não ativas');
+        const conta = tx.data?.account;
+        if (!isValidAddress(conta)) throw new Error('conta inválida');
+        const perm = this.permissions[conta];
+        if (!this.#isV2(perm)) throw new Error('conta não usa permissões v2');
+        if (!this.#isPermKey(perm, tx.from)) throw new Error('remetente não participa desta permissão');
+        const change = this.#normalizeChange(tx.data?.change);
+        this.#simulateChange(perm, change); // valida já na proposta
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+
+        // Proposta nova SUBSTITUI a anterior — uma pendência por conta. Isso também dá
+        // o caminho de aborto sem inventar transação de cancelamento.
+        const pend = { change, approvals: { [tx.from]: true }, vetoes: {}, proposedAt: height, executeAt: null };
+        if (this.#authorizesChange(perm, change, Object.keys(pend.approvals))) {
+          pend.executeAt = height + Number(perm.delayBlocks);
+        }
+        this.pendingPerm[conta] = pend;
+        break;
+      }
+
+      case 'PERMISSION_APPROVE': {
+        if (height < CHAIN.PERMISSIONS_V2_HEIGHT) throw new Error('permissões v2 ainda não ativas');
+        const conta = tx.data?.account;
+        if (!isValidAddress(conta)) throw new Error('conta inválida');
+        const pend = this.pendingPerm[conta];
+        if (!pend) throw new Error('não há mudança pendente para esta conta');
+        const perm = this.permissions[conta];
+        if (!this.#isPermKey(perm, tx.from)) throw new Error('remetente não participa desta permissão');
+        if (pend.approvals[tx.from]) throw new Error('já aprovado por esta chave');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        pend.approvals[tx.from] = true;
+        // Só inicia a contagem do timelock quando a regra de autorização é satisfeita.
+        if (pend.executeAt === null && this.#authorizesChange(perm, pend.change, Object.keys(pend.approvals))) {
+          pend.executeAt = height + Number(perm.delayBlocks);
+        }
+        break;
+      }
+
+      case 'PERMISSION_VETO': {
+        if (height < CHAIN.PERMISSIONS_V2_HEIGHT) throw new Error('permissões v2 ainda não ativas');
+        const conta = tx.data?.account;
+        if (!isValidAddress(conta)) throw new Error('conta inválida');
+        const pend = this.pendingPerm[conta];
+        if (!pend) throw new Error('não há mudança pendente para esta conta');
+        const perm = this.permissions[conta];
+        if (!perm?.owner?.keys?.[tx.from]) throw new Error('veto exige chave do owner');
+        if (pend.vetoes[tx.from]) throw new Error('já vetado por esta chave');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        pend.vetoes[tx.from] = true;
+        // Veto usa o limiar do OWNER — deliberadamente não é "qualquer chave sozinha":
+        // senão um ladrão com uma única chave bloquearia a recuperação legítima para sempre.
+        if (this.#meetsThreshold(perm.owner, Object.keys(pend.vetoes))) delete this.pendingPerm[conta];
         break;
       }
 
@@ -1021,16 +1605,33 @@ export class State {
         if (!isValidAddress(account)) throw new Error('conta multisig inválida');
         const perm = this.permissions[account];
         if (!perm) throw new Error('conta não é multisig');
-        const weight = perm.keys[tx.from];
+        // v1: a própria permissão. v2: a `active` indicada por permissionId (padrão 0).
+        const permissionId = Number(tx.data?.permissionId ?? 0);
+        if (!Number.isSafeInteger(permissionId) || permissionId < 0) throw new Error('permissionId inválido');
+        const lvl = this.#spendLevel(perm, permissionId);
+        if (!lvl) throw new Error(`permissão active ${permissionId} inexistente`);
+        const weight = lvl?.keys?.[tx.from];
         if (!weight) throw new Error('remetente não é uma chave autorizada da conta');
         if (!op || typeof op !== 'object' || typeof op.type !== 'string') throw new Error('operação inválida');
+        // Conta v2 troca permissão SÓ pelo caminho com timelock e veto. Sem este bloqueio,
+        // uma active de limiar 1 reconfiguraria a conta na hora e o desenho inteiro cairia.
+        if (op.type === 'PERMISSION_CHANGE' && this.#isV2(perm)) {
+          throw new Error('conta v2: altere permissões via PERMISSION_PROPOSE/APPROVE');
+        }
+        // ESCOPO: `operations` ausente = tudo liberado. Presente, restringe a chave quente
+        // ao que ela realmente precisa — é o que dá sentido ao nível `active`.
+        if (lvl.operations && !lvl.operations.includes(op.type)) {
+          throw new Error(`operação fora do escopo desta permissão: ${op.type}`);
+        }
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
         acc.balance -= fee;
         const approvals = { [tx.from]: weight };
-        if (weight >= perm.threshold) {
+        if (weight >= lvl.threshold) {
           this.#executeMultisigOp(account, op, height); // quórum imediato (1 chave já basta)
         } else {
-          this.pendingOps[tx.id] = { account, op, approvals, weight, createdAt: tx.timestamp, deadline: height + CHAIN.MULTISIG_OP_TTL_BLOCKS };
+          // Guarda o permissionId: a APROVAÇÃO tem de contar peso na MESMA permissão,
+          // senão chaves de níveis diferentes somariam para um limiar que não é o delas.
+          this.pendingOps[tx.id] = { account, op, approvals, weight, permissionId, createdAt: tx.timestamp, deadline: height + CHAIN.MULTISIG_OP_TTL_BLOCKS };
         }
         break;
       }
@@ -1043,14 +1644,21 @@ export class State {
         if (!pending) throw new Error('operação pendente inexistente');
         const perm = this.permissions[pending.account];
         if (!perm) throw new Error('conta não é mais multisig'); // permissão mudou sob a op
-        const weight = perm.keys[tx.from];
+        const lvl = this.#spendLevel(perm, pending.permissionId ?? 0);
+        if (!lvl) throw new Error('permissão active da operação não existe mais');
+        const weight = lvl?.keys?.[tx.from];
         if (!weight) throw new Error('remetente não é uma chave autorizada da conta');
         if (pending.approvals[tx.from]) throw new Error('chave já aprovou esta operação');
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
         acc.balance -= fee;
         pending.approvals[tx.from] = weight;
         pending.weight += weight;
-        if (pending.weight >= perm.threshold) {
+        if (pending.weight >= lvl.threshold) {
+          // Reconfere o escopo: a permissão pode ter mudado entre propor e completar
+          // o limiar, e a op não pode escapar do escopo VIGENTE na execução.
+          if (lvl.operations && !lvl.operations.includes(pending.op?.type)) {
+            throw new Error(`operação fora do escopo desta permissão: ${pending.op?.type}`);
+          }
           this.#executeMultisigOp(pending.account, pending.op, height);
           delete this.pendingOps[opId];
         }
@@ -1060,6 +1668,15 @@ export class State {
       case 'TOKEN_CREATE': {
         const err = validateTokenParams(tx.data);
         if (err) throw new Error(err);
+        // Unicidade de SÍMBOLO: sem isto, qualquer um emite um segundo token "USDT" e
+        // personifica o primeiro em carteira e explorer. A TRON usa o nome do ativo como
+        // identificador único justamente por isso.
+        if (height >= CHAIN.PERMISSIONS_V2_HEIGHT) {
+          const sym = tx.data.symbol;
+          for (const t of Object.values(this.tokens)) {
+            if (t.symbol === sym) throw new Error(`símbolo de token já existe: ${sym}`);
+          }
+        }
         if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa de criação');
         const tokenId = eavHash('EAV20-TOKEN:' + tx.id);
         const totalSupply = BigInt(tx.data.totalSupply);
@@ -1350,6 +1967,41 @@ export class State {
         if (typeof prompt !== 'string' || prompt.length === 0) throw new Error('prompt obrigatório');
         if (Buffer.byteLength(prompt) > CHAIN.MAX_AI_PROMPT_BYTES) throw new Error('prompt excede o limite');
         if (amount <= 0n) throw new Error('recompensa da tarefa deve ser positiva');
+        // Fase 2: modo QUÓRUM (commit-reveal) — N oráculos independentes em vez de um
+        // único designado. Elimina o ponto único de confiança.
+        if (height >= CHAIN.AI_QUORUM_HEIGHT && tx.data.quorum != null) {
+          const q = Number(tx.data.quorum);
+          if (!Number.isInteger(q) || q < CHAIN.MIN_AI_QUORUM || q > CHAIN.MAX_AI_QUORUM) {
+            throw new Error(`quórum inválido (${CHAIN.MIN_AI_QUORUM}..${CHAIN.MAX_AI_QUORUM})`);
+          }
+          if (acc.balance < amount + fee) throw new Error('saldo insuficiente para escrow da recompensa');
+          acc.balance -= amount + fee;
+          this.aiTasks[tx.id] = {
+            id: tx.id, requester: tx.from, mode: 'QUORUM', quorum: q,
+            model: typeof model === 'string' ? model : null, prompt, params: tx.data.params ?? null,
+            reward: amount, status: 'PENDING', phase: 'COMMIT', createdAt: blockTs,
+            commitDeadline: blockTs + CHAIN.AI_COMMIT_WINDOW_MS,
+            revealDeadline: blockTs + CHAIN.AI_COMMIT_WINDOW_MS + CHAIN.AI_REVEAL_WINDOW_MS,
+            expiresAt: blockTs + CHAIN.AI_COMMIT_WINDOW_MS + CHAIN.AI_REVEAL_WINDOW_MS,
+            commits: {}, reveals: {}, winners: null, resultHash: null, output: null, completedAt: null,
+          };
+          break;
+        }
+        // Fase 4: modo ABERTO (leilão) — orçamento escrowado; oráculos dão lances
+        // (AI_BID) e o solicitante adjudica ao melhor (AI_AWARD). Sem oráculo designado.
+        if (height >= CHAIN.AI_MARKET_HEIGHT && tx.data.open === true) {
+          if (acc.balance < amount + fee) throw new Error('saldo insuficiente para o orçamento da tarefa');
+          acc.balance -= amount + fee;
+          this.aiTasks[tx.id] = {
+            id: tx.id, requester: tx.from, mode: 'OPEN',
+            model: typeof model === 'string' ? model : null, prompt, params: tx.data.params ?? null,
+            budget: amount, reward: amount, status: 'BIDDING', createdAt: blockTs,
+            bidDeadline: blockTs + CHAIN.AI_BID_WINDOW_MS,
+            expiresAt: blockTs + CHAIN.AI_TASK_TIMEOUT_MS,
+            bids: {}, assignedOracle: null, oracle: null, resultHash: null, output: null, completedAt: null,
+          };
+          break;
+        }
         // Oráculo designado obrigatório: o solicitante escolhe em quem confia; só
         // esse oráculo pode resgatar a recompensa. Impede que qualquer oráculo
         // registrado saque o escrow com um output lixo.
@@ -1364,6 +2016,7 @@ export class State {
           prompt,
           params: tx.data.params ?? null,
           reward: amount,
+          private: tx.data.private === true, // Fase 5: tarefa privada (prompt/output cifrados off-chain)
           status: 'PENDING',
           createdAt: blockTs,
           // H-2: expiração ancorada no timestamp REAL do bloco (validado por drift),
@@ -1391,6 +2044,11 @@ export class State {
           bridgeTransfers: 0,
           registeredAt: tx.timestamp,
           endpoint: null,
+          // IA que aprende (Fase 1): reputação on-chain acumulada dos resultados.
+          completed: 0,
+          failed: 0,
+          slashed: 0n,
+          reputation: 50, // 0..100, começa neutro e evolui com o desempenho
         });
         oracle.stake += amount;
         if (typeof tx.data.endpoint === 'string') oracle.endpoint = tx.data.endpoint;
@@ -1405,17 +2063,287 @@ export class State {
         if (task.status !== 'PENDING') throw new Error('tarefa de IA já concluída');
         // Só o oráculo designado pela tarefa pode entregar o resultado.
         if (task.assignedOracle !== tx.from) throw new Error('remetente não é o oráculo designado para esta tarefa');
-        const output = tx.data.output;
-        if (typeof output !== 'string' || output.length === 0) throw new Error('output obrigatório');
-        if (Buffer.byteLength(output) > CHAIN.MAX_AI_OUTPUT_BYTES) throw new Error('output excede o limite');
-        task.status = 'DONE';
+        // Fase 5: modo HASH-ONLY (resultado verificável/privado) — o oráculo grava só o
+        // compromisso (resultHash) + ponteiro opcional; o output real fica off-chain
+        // (cifrado p/ o solicitante em tarefas private). Abaixo do fork, output é obrigatório.
+        let output = null, resultHash, resultUri = null;
+        if (height >= CHAIN.AI_PRIVATE_HEIGHT && tx.data.resultHash != null) {
+          if (typeof tx.data.resultHash !== 'string' || !/^[0-9a-fA-F]{64}$/.test(tx.data.resultHash)) {
+            throw new Error('resultHash inválido (64 hex)');
+          }
+          // Canonicaliza em MINÚSCULA: é a forma que `eavHash` produz, e sem isto
+          // o mesmo resultado enviado em caixa diferente contaria como outro no quórum.
+          resultHash = tx.data.resultHash.toLowerCase();
+          if (tx.data.resultUri != null) {
+            if (typeof tx.data.resultUri !== 'string' || Buffer.byteLength(tx.data.resultUri) > CHAIN.MAX_AI_URI_BYTES) {
+              throw new Error('resultUri inválido');
+            }
+            resultUri = tx.data.resultUri;
+          }
+        } else {
+          output = tx.data.output;
+          if (typeof output !== 'string' || output.length === 0) throw new Error('output obrigatório');
+          if (Buffer.byteLength(output) > CHAIN.MAX_AI_OUTPUT_BYTES) throw new Error('output excede o limite');
+          resultHash = eavHash(output);
+        }
         task.oracle = tx.from;
-        task.output = output;
-        task.resultHash = eavHash(output);
+        task.output = output; // null no modo hash-only (resultado off-chain)
+        task.resultHash = resultHash;
+        task.resultUri = resultUri;
         task.completedAt = tx.timestamp;
         task.prompt = null; task.params = null; // poda a ENTRADA (fica no tx AI_TASK) — limita o crescimento de estado
-        oracle.tasksCompleted += 1;
-        acc.balance += task.reward;
+        // Fase 6 — ATESTAÇÃO (TEE/zk): se o resultado vem com uma prova de um atestador
+        // REGISTRADO (>= quórum de assinaturas sobre o digest taskId/resultHash/measurement),
+        // é VERIFICADO criptograficamente. `verified` só é setado quando de fato atestado →
+        // abaixo do fork / sem atestação, o campo NEM existe (serialização de task inalterada
+        // → replay-safe). Forjar exige as chaves do enclave, não confiar no oráculo.
+        let verified = null;
+        if (height >= CHAIN.AI_TEE_HEIGHT && tx.data.attestation != null) {
+          const att = tx.data.attestation;
+          const attester = this.aiAttesters[att?.attesterId];
+          if (!attester) throw new Error('atestador de IA não registrado');
+          const digest = aiAttestDigest({ taskId: tx.data.taskId, resultHash, attesterId: att.attesterId, measurement: attester.measurement });
+          const valid = verifyCommitteeProof(digest, att.sigs, attester);
+          if (valid < attester.quorum) throw new Error(`atestação insuficiente (${valid}/${attester.quorum})`);
+          verified = attester.kind; // 'TEE' | 'ZK'
+        }
+        if (verified) {
+          // Fase 6: resultado atestado — liquida NA HORA, sem janela de desafio nem
+          // dependência de reputação (é criptograficamente verificado).
+          task.verified = verified;
+          task.status = 'DONE';
+          oracle.tasksCompleted += 1;
+          oracle.completed = (oracle.completed ?? 0) + 1;
+          oracle.reputation = Math.min(100, (oracle.reputation ?? 50) + 4);
+          acc.balance += task.reward;
+        } else if (height >= CHAIN.AI_CHALLENGE_HEIGHT) {
+          // Fase 3 — verificação otimista: a recompensa FICA em escrow numa janela de
+          // desafio. Só é liberada por AI_CLAIM (se não contestada) ou pelo veredito do
+          // júri (se contestada via AI_CHALLENGE). Reputação também fica pendente.
+          task.status = 'CHALLENGE_PERIOD';
+          task.challengeDeadline = blockTs + CHAIN.AI_CHALLENGE_WINDOW_MS;
+        } else {
+          // Fase 1 (grandfather): paga na hora + reputação sobe.
+          task.status = 'DONE';
+          oracle.tasksCompleted += 1;
+          oracle.completed = (oracle.completed ?? 0) + 1;
+          oracle.reputation = Math.min(100, (oracle.reputation ?? 50) + 4);
+          acc.balance += task.reward;
+        }
+        break;
+      }
+
+      // Fase 3 — CLAIM: liquida uma tarefa cuja janela de desafio fechou SEM contestação
+      // (paga o oráculo). Permissionless → nunca prende fundos. Também resolve uma disputa
+      // sem júri suficiente após o prazo (inconclusiva: resultado mantido, fiança devolvida).
+      case 'AI_CLAIM': {
+        if (height < CHAIN.AI_CHALLENGE_HEIGHT) throw new Error('desafio de IA ainda não ativo');
+        const task = this.aiTasks[tx.data.taskId];
+        if (!task) throw new Error('tarefa de IA inexistente');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        if (task.status === 'CHALLENGE_PERIOD') {
+          if (blockTs < task.challengeDeadline) throw new Error('janela de desafio ainda aberta');
+          this.credit(task.oracle, task.reward);
+          const o = this.oracles[task.oracle];
+          if (o) { o.tasksCompleted += 1; o.completed = (o.completed ?? 0) + 1; o.reputation = Math.min(100, (o.reputation ?? 50) + 4); }
+          task.status = 'DONE';
+        } else if (task.status === 'DISPUTED') {
+          if (blockTs < task.verdictDeadline) throw new Error('júri ainda no prazo');
+          if (Object.keys(task.votes ?? {}).length >= CHAIN.AI_VERDICT_QUORUM) throw new Error('disputa deve ser resolvida por veredito');
+          this.credit(task.oracle, task.reward); // inconclusiva → resultado mantido
+          this.credit(task.challenger, task.bond); // fiança devolvida (desafio de boa-fé)
+          task.status = 'DONE'; task.votes = {};
+        } else {
+          throw new Error('tarefa não está liquidável');
+        }
+        break;
+      }
+
+      // Fase 3 — CHALLENGE: qualquer conta contesta um resultado postando uma fiança.
+      case 'AI_CHALLENGE': {
+        if (height < CHAIN.AI_CHALLENGE_HEIGHT) throw new Error('desafio de IA ainda não ativo');
+        const task = this.aiTasks[tx.data.taskId];
+        if (!task) throw new Error('tarefa de IA inexistente');
+        if (task.status !== 'CHALLENGE_PERIOD') throw new Error('tarefa não está em janela de desafio');
+        if (blockTs >= task.challengeDeadline) throw new Error('janela de desafio expirada');
+        const bond = CHAIN.AI_CHALLENGE_BOND;
+        if (acc.balance < bond + fee) throw new Error('saldo insuficiente para a fiança do desafio');
+        acc.balance -= bond + fee;
+        task.status = 'DISPUTED';
+        task.challenger = tx.from;
+        task.bond = bond;
+        task.verdictDeadline = blockTs + CHAIN.AI_VERDICT_WINDOW_MS;
+        task.votes = {}; // oráculo-jurado -> bool (resultado válido?)
+        break;
+      }
+
+      // Fase 3 — VERDICT: oráculos-jurados votam se o resultado é válido; ao quórum, resolve
+      // e o PERDEDOR é slashado. Os jurados também aprendem (votar com a maioria sobe reputação).
+      case 'AI_VERDICT': {
+        if (height < CHAIN.AI_CHALLENGE_HEIGHT) throw new Error('desafio de IA ainda não ativo');
+        if (!this.oracles[tx.from]) throw new Error('só oráculo registrado pode julgar');
+        const task = this.aiTasks[tx.data.taskId];
+        if (!task || task.status !== 'DISPUTED') throw new Error('tarefa não está em disputa');
+        if (blockTs >= task.verdictDeadline) throw new Error('janela de veredito expirada');
+        if (tx.from === task.oracle || tx.from === task.challenger) throw new Error('parte interessada não pode julgar');
+        if (task.votes[tx.from] !== undefined) throw new Error('jurado já votou nesta disputa');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        task.votes[tx.from] = tx.data.valid === true;
+        const votes = Object.values(task.votes);
+        if (votes.length >= CHAIN.AI_VERDICT_QUORUM) {
+          const validCount = votes.filter((v) => v).length;
+          const upheld = validCount > votes.length / 2; // maioria: resultado válido?
+          const oracle = this.oracles[task.oracle];
+          const jurors = Object.keys(task.votes);
+          if (upheld) {
+            // MANTIDO: oráculo leva reward + a fiança (desafio infundado).
+            this.credit(task.oracle, task.reward + task.bond);
+            if (oracle) { oracle.tasksCompleted += 1; oracle.completed = (oracle.completed ?? 0) + 1; oracle.reputation = Math.min(100, (oracle.reputation ?? 50) + 4); }
+            task.status = 'UPHELD';
+          } else {
+            // DERRUBADO: requester reembolsado; oráculo slashado (bounty ao desafiante,
+            // que recupera a fiança).
+            this.credit(task.requester, task.reward);
+            let bounty = 0n;
+            if (oracle) {
+              oracle.failed = (oracle.failed ?? 0) + 1;
+              oracle.reputation = Math.max(0, (oracle.reputation ?? 50) - 12);
+              bounty = (oracle.stake ?? 0n) < CHAIN.AI_ORACLE_SLASH ? (oracle.stake ?? 0n) : CHAIN.AI_ORACLE_SLASH;
+              if (bounty > 0n) { oracle.stake -= bounty; oracle.slashed = (oracle.slashed ?? 0n) + bounty; }
+            }
+            this.credit(task.challenger, task.bond + bounty);
+            task.status = 'OVERTURNED';
+          }
+          for (const j of jurors) {
+            const jo = this.oracles[j];
+            if (jo) jo.reputation = task.votes[j] === upheld ? Math.min(100, (jo.reputation ?? 50) + 2) : Math.max(0, (jo.reputation ?? 50) - 4);
+          }
+          task.output = null; task.votes = {}; // poda
+        }
+        break;
+      }
+
+      // Fase 4 — BID: oráculo dá um lance (preço) numa tarefa aberta.
+      case 'AI_BID': {
+        if (height < CHAIN.AI_MARKET_HEIGHT) throw new Error('marketplace de IA ainda não ativo');
+        if (!this.oracles[tx.from]) throw new Error('só oráculo registrado pode dar lance');
+        const task = this.aiTasks[tx.data.taskId];
+        if (!task || task.mode !== 'OPEN') throw new Error('tarefa aberta inexistente');
+        if (task.status !== 'BIDDING') throw new Error('lances encerrados');
+        if (blockTs >= task.bidDeadline) throw new Error('janela de lances expirada');
+        let price;
+        try { price = BigInt(tx.data.price); } catch { throw new Error('preço do lance inválido'); }
+        if (price <= 0n || price > task.budget) throw new Error('preço do lance inválido (0 < preço <= orçamento)');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        task.bids[tx.from] = { price, at: blockTs };
+        break;
+      }
+
+      // Fase 4 — AWARD: o solicitante adjudica a tarefa ao melhor lance (preço × reputação,
+      // escolha off-chain). O excedente do orçamento é devolvido; o preço fica em escrow
+      // para o oráculo, que passa a entregar via AI_RESULT (→ janela de desafio da Fase 3).
+      case 'AI_AWARD': {
+        if (height < CHAIN.AI_MARKET_HEIGHT) throw new Error('marketplace de IA ainda não ativo');
+        const task = this.aiTasks[tx.data.taskId];
+        if (!task || task.mode !== 'OPEN') throw new Error('tarefa aberta inexistente');
+        if (task.requester !== tx.from) throw new Error('só o solicitante adjudica');
+        if (task.status !== 'BIDDING') throw new Error('tarefa não está em lances');
+        if (blockTs >= task.expiresAt) throw new Error('tarefa expirada');
+        const winner = tx.data.oracle;
+        const bid = task.bids[winner];
+        if (!bid) throw new Error('oráculo escolhido não deu lance');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        const refund = task.budget - bid.price; // excedente do orçamento
+        if (refund > 0n) acc.balance += refund;
+        task.assignedOracle = winner;
+        task.reward = bid.price;
+        task.status = 'PENDING'; // vira tarefa de oráculo único (entrega + janela de desafio)
+        task.bids = {}; // poda
+        break;
+      }
+
+      // Fase 2 — COMMIT: oráculo trava o hash(output|salt) antes de ver as respostas
+      // dos outros. Impede copie-e-cole entre oráculos.
+      case 'AI_COMMIT': {
+        if (height < CHAIN.AI_QUORUM_HEIGHT) throw new Error('quórum de IA ainda não ativo');
+        if (!this.oracles[tx.from]) throw new Error('remetente não é um oráculo de IA registrado');
+        const task = this.aiTasks[tx.data.taskId];
+        if (!task || task.mode !== 'QUORUM') throw new Error('tarefa de quórum inexistente');
+        if (task.status !== 'PENDING' || task.phase !== 'COMMIT') throw new Error('fase de commit encerrada');
+        if (blockTs >= task.commitDeadline) throw new Error('janela de commit expirada');
+        if (task.commits[tx.from]) throw new Error('oráculo já commitou nesta tarefa');
+        const commit = tx.data.commit;
+        if (typeof commit !== 'string' || !/^[0-9a-fA-F]{64}$/.test(commit)) throw new Error('commit inválido (64 hex)');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        task.commits[tx.from] = commit;
+        break;
+      }
+
+      // Fase 2 — REVEAL: oráculo revela (output, salt); verifica-se contra o commit.
+      // Quando >= quorum revelam o MESMO resultado, a tarefa conclui e a recompensa é
+      // dividida entre eles (a IA aprende: acerto sobe reputação, minoria divergente cai).
+      case 'AI_REVEAL': {
+        if (height < CHAIN.AI_QUORUM_HEIGHT) throw new Error('quórum de IA ainda não ativo');
+        if (!this.oracles[tx.from]) throw new Error('remetente não é um oráculo de IA registrado');
+        const task = this.aiTasks[tx.data.taskId];
+        if (!task || task.mode !== 'QUORUM') throw new Error('tarefa de quórum inexistente');
+        if (task.status !== 'PENDING') throw new Error('tarefa já concluída');
+        const committed = task.commits[tx.from];
+        if (!committed) throw new Error('oráculo não commitou nesta tarefa');
+        if (task.reveals[tx.from]) throw new Error('oráculo já revelou');
+        if (blockTs < task.commitDeadline) throw new Error('a janela de reveal ainda não abriu');
+        if (blockTs >= task.revealDeadline) throw new Error('janela de reveal expirada');
+        const { output, salt } = tx.data;
+        if (typeof output !== 'string' || output.length === 0) throw new Error('output obrigatório');
+        if (Buffer.byteLength(output) > CHAIN.MAX_AI_OUTPUT_BYTES) throw new Error('output excede o limite');
+        if (typeof salt !== 'string' || salt.length === 0 || salt.length > 128) throw new Error('salt inválido');
+        if (eavHash(`${output}|${salt}`) !== String(committed).toLowerCase()) throw new Error('reveal não confere com o commit');
+        if (acc.balance < fee) throw new Error('saldo insuficiente para a taxa');
+        acc.balance -= fee;
+        task.reveals[tx.from] = { resultHash: eavHash(output), output };
+        // Apura: algum resultHash atingiu o quórum?
+        const counts = {};
+        for (const r of Object.values(task.reveals)) counts[r.resultHash] = (counts[r.resultHash] ?? 0) + 1;
+        let winHash = null;
+        for (const [h, c] of Object.entries(counts)) if (c >= task.quorum) { winHash = h; break; }
+        if (winHash) {
+          // ORDEM CANÔNICA (endereço crescente), não ordem de chegada.
+          //
+          // A ordem de chegada NÃO entra na raiz do estado: `encodeCanonical`
+          // ordena as chaves dos mapas, então `task.reveals` perde a ordem na
+          // folha. Enquanto `winners` saía na ordem de chegada, o consenso
+          // dependia de um dado que a raiz não commita — e um nó que
+          // reconstruísse o estado a partir dela (snapshot de boot) apuraria a
+          // revelação final noutra ordem, gravaria outro `winners` e creditaria o
+          // resto a outro oráculo. Mesma raiz antes, raízes diferentes depois.
+          //
+          // Ordenar remove a dependência em vez de committá-la: nada em consenso
+          // passa a depender de QUANDO algo chegou.
+          const winners = Object.keys(task.reveals).filter((a) => task.reveals[a].resultHash === winHash).sort();
+          const losers = Object.keys(task.reveals).filter((a) => task.reveals[a].resultHash !== winHash).sort();
+          task.status = 'DONE'; task.phase = 'DONE'; task.resultHash = winHash;
+          task.output = task.reveals[winners[0]].output; task.completedAt = tx.timestamp; task.winners = winners;
+          const share = task.reward / BigInt(winners.length);
+          const rem = task.reward - share * BigInt(winners.length);
+          // O resto da divisão vai ao MENOR endereço (o primeiro da ordem
+          // canônica). É poeira — menor que o número de vencedores, no máximo 21
+          // e7 — e o que importa é a regra ser única e derivável do estado
+          // committado, não quem leva.
+          winners.forEach((a, i) => {
+            this.credit(a, share + (i === 0 ? rem : 0n));
+            const o = this.oracles[a];
+            if (o) { o.completed = (o.completed ?? 0) + 1; o.tasksCompleted += 1; o.reputation = Math.min(100, (o.reputation ?? 50) + 4); }
+          });
+          losers.forEach((a) => { const o = this.oracles[a]; if (o) { o.failed = (o.failed ?? 0) + 1; o.reputation = Math.max(0, (o.reputation ?? 50) - 12); } });
+          // poda entradas e outputs (mantém só os resultHash) — limita o crescimento de estado
+          task.prompt = null; task.params = null;
+          for (const a of Object.keys(task.reveals)) task.reveals[a] = { resultHash: task.reveals[a].resultHash };
+        }
         break;
       }
 
@@ -1425,12 +2353,42 @@ export class State {
         const task = this.aiTasks[tx.data.taskId];
         if (!task) throw new Error('tarefa de IA inexistente');
         if (task.requester !== tx.from) throw new Error('apenas o solicitante pode reembolsar');
-        if (task.status !== 'PENDING') throw new Error('tarefa de IA não está pendente');
+        // PENDING (oráculo não entregou) ou BIDDING (tarefa aberta sem adjudicação).
+        if (task.status !== 'PENDING' && task.status !== 'BIDDING') throw new Error('tarefa de IA não é reembolsável');
         if (blockTs < task.expiresAt) throw new Error('a tarefa ainda não expirou'); // H-2: usa timestamp do bloco
         task.status = 'REFUNDED';
         task.completedAt = tx.timestamp;
         task.prompt = null; task.params = null; // poda a ENTRADA (limita o crescimento de estado)
         acc.balance += task.reward;
+        // IA se auto-corrige (Fase 1, fork-gated): o oráculo DESIGNADO que deixou a
+        // tarefa expirar sem entrega é responsabilizado — perde reputação e é slashado
+        // em AI_ORACLE_SLASH, que vai como COMPENSAÇÃO ao solicitante (além do refund).
+        // Conserva supply: o slash sai do STAKE travado do oráculo.
+        if (task.mode === 'QUORUM') {
+          // Fase 2: tarefa de quórum expirada sem consenso. Oráculos que commitaram mas
+          // NÃO revelaram desperdiçaram a tarefa → perdem reputação (IA aprende a filtrá-los).
+          if (height >= CHAIN.AI_QUORUM_HEIGHT) {
+            for (const a of Object.keys(task.commits ?? {})) {
+              if (!task.reveals?.[a]) {
+                const o = this.oracles[a];
+                if (o) { o.failed = (o.failed ?? 0) + 1; o.reputation = Math.max(0, (o.reputation ?? 50) - 8); }
+              }
+            }
+          }
+          task.commits = {}; task.reveals = {}; // poda
+        } else if (height >= CHAIN.AI_ACCOUNTABILITY_HEIGHT) {
+          const orc = this.oracles[task.assignedOracle];
+          if (orc) {
+            orc.failed = (orc.failed ?? 0) + 1;
+            orc.reputation = Math.max(0, (orc.reputation ?? 50) - 12);
+            const slash = (orc.stake ?? 0n) < CHAIN.AI_ORACLE_SLASH ? (orc.stake ?? 0n) : CHAIN.AI_ORACLE_SLASH;
+            if (slash > 0n) {
+              orc.stake -= slash;
+              orc.slashed = (orc.slashed ?? 0n) + slash;
+              acc.balance += slash; // compensação ao solicitante
+            }
+          }
+        }
         break;
       }
 
@@ -1560,6 +2518,25 @@ export class State {
           } else if (this.bridge.lockedNative < amount) {
             throw new Error('ponte não possui EAV7 travado suficiente');
           }
+          // Circuit breaker (auto-mitigação de consenso): a soma das liberações do ativo
+          // na janela deslizante não pode exceder BRIDGE_BREAKER_BPS do pool no início da
+          // janela. Falha FECHADA — bloqueia dreno rápido de relayer/comitê comprometido
+          // (achado C1). Determinístico (altura+valores são consenso). Fork-gated p/ não
+          // mexer na serialização de bridge (stateRoot) antes do rollout coordenado.
+          if (height >= CHAIN.BRIDGE_BREAKER_HEIGHT) {
+            const asset = token ?? 'NATIVE';
+            const cutoff = height - CHAIN.BRIDGE_BREAKER_WINDOW_BLOCKS;
+            let windowSum = 0n;
+            for (const r of this.bridge.releaseLog ?? []) {
+              if (r.height > cutoff && r.asset === asset) windowSum += BigInt(r.amount);
+            }
+            const locked = token != null ? (this.bridge.lockedTokens[token] ?? 0n) : this.bridge.lockedNative;
+            const poolAtStart = locked + windowSum; // `locked` já exclui as liberações da janela
+            const cap = (poolAtStart * BigInt(this.param('BRIDGE_BREAKER_BPS'))) / 10_000n;
+            if (windowSum + amount > cap) {
+              throw new Error(`circuit breaker da ponte: limite de velocidade atingido (janela ${windowSum + amount} > cap ${cap})`);
+            }
+          }
         }
 
         // --- mutação (todas as validações passaram) ---
@@ -1582,6 +2559,14 @@ export class State {
         } else {
           this.bridge.lockedNative -= amount;
           this.credit(tx.to, amount);
+        }
+        // Registra a liberação na janela do circuit breaker (só cria releaseLog a partir
+        // do fork → serialização de bridge inalterada antes dele, preservando o stateRoot
+        // histórico). Poda p/ manter o log enxuto e determinístico.
+        if (height >= CHAIN.BRIDGE_BREAKER_HEIGHT) {
+          (this.bridge.releaseLog ??= []).push({ height, asset: token ?? 'NATIVE', amount: amount.toString() });
+          const cutoff = height - CHAIN.BRIDGE_BREAKER_WINDOW_BLOCKS;
+          this.bridge.releaseLog = this.bridge.releaseLog.filter((r) => r.height > cutoff);
         }
         this.bridge.processedInbound[replayKey] = tx.id;
         delete this.bridge.attestations[attKey];
@@ -1614,12 +2599,42 @@ export class State {
       // debita valor+taxa; se a VM reverteu, o valor volta (o mundo já foi desfeito).
       case 'EAVM_DEPLOY':
       case 'EAVM_CALL': {
-        // amount é 0 (non-payable nesta fase). Só a taxa (queimada). Se o saldo não
-        // cobrir, reverte atomicamente o mundo de contratos antes de lançar.
+        // O valor (amount) já foi movido dentro de #runEavmTx, pelo journal do mundo —
+        // aqui resta só a taxa (queimada). Se o saldo não cobrir, reverte atomicamente
+        // o mundo de contratos, o que também devolve o valor ao remetente.
         if (acc.balance < fee) { vm.world.revert(0); throw new Error('saldo insuficiente'); }
         acc.balance -= fee;
         // #33: emite os eventos (LOGs) da execução para o índice NODE-LOCAL (não-consenso).
         if (logSink && vm.logs?.length) for (const lg of vm.logs) logSink({ txId: tx.id, address: lg.address, topics: lg.topics, data: lg.data });
+        // Recibo de execução: uma EAVM_CALL que REVERTE continua sendo uma transação
+        // válida (entra no bloco, paga taxa, devolve o valor) — só a execução falhou.
+        // Sem isto o explorer não teria como distinguir os dois casos e mostraria
+        // "sucesso" para uma chamada revertida. Node-local, fora do consenso.
+        // `contract` no deploy: o endereço é DERIVADO na execução (nonce do momento e
+        // forma 0x do remetente, que muda com o fork). Carregá-lo aqui evita reimplementar
+        // essa derivação na API — e é o que permite listar "contratos publicados".
+        if (logSink) {
+          logSink({
+            receipt: true,
+            txId: tx.id,
+            success: vm.success,
+            gasUsed: vm.gasUsed?.toString?.() ?? null,
+            contract: vm.isDeploy && vm.success ? vm.contractAddr : null,
+          });
+        }
+        // Fase 2.3: transferências INTERNAS (valor movido pela execução, não por uma
+        // transação assinada). Como os LOGs, é índice NODE-LOCAL e derivável — fica
+        // FORA do consenso e do stateRoot. Só de execução bem-sucedida.
+        if (logSink && vm.success && vm.xfers?.length) {
+          for (const x of vm.xfers) {
+            logSink({
+              internal: true, txId: tx.id, kind: x.kind,
+              from: x.from, to: x.to,
+              fromE7: this.#e7Of(x.from), toE7: this.#e7Of(x.to),
+              amount: x.value.toString(),
+            });
+          }
+        }
         break;
       }
 

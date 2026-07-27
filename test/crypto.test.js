@@ -25,10 +25,10 @@ test('endereços E7: formato de 34 caracteres com checksum', () => {
   assert.equal(isValidAddress('E7ABC'), false);
 });
 
-test('hashes eav20: 64 caracteres (padrão Tron), sempre iniciando com E7', () => {
+test('hashes eav20: 64 hex minúsculos, sem prefixo (padrão de mercado)', () => {
   const hash = eavHash('eav7');
   assert.equal(hash.length, CHAIN.HASH_LENGTH);
-  assert.ok(hash.startsWith('E7'));
+  assert.ok(/^[0-9a-f]{64}$/.test(hash)); // sem prefixo: 256 bits inteiros
   assert.ok(isValidHash(hash));
   assert.equal(hash, eavHash('eav7')); // determinística
   assert.notEqual(hash, eavHash('eav8'));
@@ -68,7 +68,7 @@ test('transações: build/verify íntegras, adulteração detectada', () => {
   const destino = walletAddress(generateKeyPair());
   const tx = buildTransaction(wallet, { type: 'TRANSFER', to: destino, amount: 123n, nonce: 1 });
 
-  assert.ok(tx.id.startsWith('E7'));
+  assert.ok(/^[0-9a-f]{64}$/.test(tx.id));
   assert.equal(tx.id.length, CHAIN.HASH_LENGTH);
   assert.equal(verifyTransaction(tx), null);
 

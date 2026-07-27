@@ -5,8 +5,10 @@ import { CHAIN, toJson, formatEav7 } from '../config.js';
 import { isValidAddress } from '../crypto/keys.js';
 import { tokenView, tokenBalanceOf, EAV20_STANDARD } from '../token/eav20.js';
 import { eavmToE7, isEavmAddress, buildEavmEnvelope } from '../eavm/envelope.js';
-import { createRateLimiter } from './ratelimit.js';
+import { createRateLimiter, clientIp } from './ratelimit.js';
 import { accountProof as stateProof } from '../core/stateroot.js';
+import { scoreValidators } from './validator-score.js';
+import { adviseGovernance } from './governance-advisor.js';
 
 const rateLimit = createRateLimiter();
 
@@ -18,13 +20,57 @@ const MAX_BODY_BYTES = 2 * 1024 * 1024;
 // fecha o DoS assimético de varredura full-state por request (achado M2).
 let statsCache = { height: -1, value: null };
 let searchIndexCache = { height: -1, sorted: null };
+let eligibleCache = { height: -1, value: 0 }; // contagem de validadores elegíveis (conselheiro de governança)
+
+const NATIVE_VOLUME_TYPES = new Set(['TRANSFER', 'EAVM_TRANSFER']);
+const STATS_BUCKETS = 24; // séries horárias (24h)
+const STATS_SCAN_CAP = 5_000; // teto de blocos-com-tx varridos por recálculo (anti-DoS)
 
 function computeStats(blockchain, state) {
   if (statsCache.value && statsCache.height === blockchain.height) return statsCache.value;
   const accs = Object.keys(state.accounts);
   let staked = 0n;
   for (const a of accs) staked += (state.accounts[a].staked ?? 0n);
-  const value = { accounts: accs.length, staked, transactions: blockchain.txIndex.size };
+
+  // Janela de 24h: volume nativo transferido, contagem de txs e séries horárias REAIS
+  // (para os sparklines). Usa o índice ESPARSO de blocos-com-tx (não varre a cadeia
+  // inteira) + teto anti-DoS; tudo cacheado por altura.
+  const now = blockchain.head?.timestamp ?? 0;
+  const dayMs = 86_400_000;
+  const from = now - dayMs;
+  const bucketMs = dayMs / STATS_BUCKETS;
+  const txSeries = new Array(STATS_BUCKETS).fill(0);
+  const volSeries = new Array(STATS_BUCKETS).fill(0);
+  let volume24h = 0n;
+  let txCount24h = 0;
+  const bwt = blockchain.blocksWithTxs ?? [];
+  let scanned = 0;
+  for (let i = bwt.length - 1; i >= 0 && scanned < STATS_SCAN_CAP; i--) {
+    const b = blockchain.getBlock(bwt[i]);
+    if (!b) continue;
+    scanned++;
+    if (b.timestamp < from) break; // saímos da janela de 24h
+    const bucket = Math.min(STATS_BUCKETS - 1, Math.max(0, Math.floor((b.timestamp - from) / bucketMs)));
+    for (const t of (b.transactions ?? [])) {
+      txCount24h++;
+      txSeries[bucket]++;
+      if (NATIVE_VOLUME_TYPES.has(t.type)) {
+        const amt = BigInt(t.amount ?? '0');
+        volume24h += amt;
+        volSeries[bucket] += Number(amt / CHAIN.UNIT);
+      }
+    }
+  }
+
+  const value = {
+    accounts: accs.length,
+    staked,
+    transactions: blockchain.txIndex.size,
+    volume24h,
+    txCount24h,
+    txSeries,
+    volSeries,
+  };
   statsCache = { height: blockchain.height, value };
   return value;
 }
@@ -96,7 +142,9 @@ function isFrontendRoute(parts) {
 // do app são encaminhados ao Next. A API (accept: application/json), o P2P (sem
 // accept text/html) e o RPC seguem sendo servidos pelo próprio nó.
 const WEB_HOST = '127.0.0.1';
-const WEB_PORT = 3000;
+// Porta do frontend Next para o reverse-proxy. Sobrescrevível por env para
+// rodar uma segunda instância (ex.: testnet em 3001) no mesmo servidor.
+const WEB_PORT = Number(process.env.EAV7_WEB_PORT) || 3000;
 // Prefixos de diretório do app (proxy por startsWith — inclui /_next/image, sem extensão).
 const WEB_PREFIXES = ['/_next/', '/bg/', '/brand/'];
 const WEB_FILES_RE = /^\/(?:favicon\.ico|icon\.svg|icon\.png|apple-icon|opengraph-image|twitter-image|robots\.txt|sitemap\.xml|manifest|sw\.js)/i;
@@ -118,6 +166,45 @@ function proxyToWeb(req, res, node) {
     if (!res.headersSent) { res.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' }); res.end('EAV7 Web temporariamente indisponível'); }
   });
   req.pipe(upstream);
+}
+
+// Proxy /buy/* -> serviço de fulfillment "Comprar EAV7" (instância única; ver server/buy-fulfillment.mjs).
+// EAV7_BUY_HOST aponta para o nó que roda o serviço (127.0.0.1 se for local; IP privado do node1 nos demais).
+const BUY_HOST = process.env.EAV7_BUY_HOST || '127.0.0.1';
+const BUY_PORT = Number(process.env.EAV7_BUY_PORT || 8790);
+function proxyToBuy(req, res, node) {
+  const upstream = httpRequest({ host: BUY_HOST, port: BUY_PORT, method: req.method, path: req.url, headers: { ...req.headers, host: `${BUY_HOST}:${BUY_PORT}` } }, (up) => {
+    res.writeHead(up.statusCode ?? 502, up.headers);
+    up.pipe(res);
+  });
+  upstream.on('error', (e) => {
+    node.log?.(`[buy] proxy indisponível: ${e.message}`);
+    if (!res.headersSent) { res.writeHead(502, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify({ error: 'serviço de compra indisponível' })); }
+  });
+  req.pipe(upstream);
+}
+
+// Failover de gateway: encaminha uma LEITURA (GET) ao peer mais saudável quando este nó
+// está stale. Marca x-eav7-proxied para não formar loop. Retorna true se serviu, false
+// se falhou (o chamador cai no atendimento local).
+async function proxyToPeer(req, res, target, node) {
+  try {
+    const up = await fetch(target + req.url, {
+      headers: { accept: 'application/json', 'x-eav7-proxied': '1' },
+      signal: AbortSignal.timeout(8000),
+    });
+    const body = Buffer.from(await up.arrayBuffer());
+    res.writeHead(up.status, {
+      'content-type': up.headers.get('content-type') || 'application/json; charset=utf-8',
+      'access-control-allow-origin': '*',
+      'x-eav7-served-by': target,
+    });
+    res.end(body);
+    return true;
+  } catch (e) {
+    node.log?.(`[gateway] proxy de leitura falhou (${target}): ${e.message}`);
+    return false;
+  }
 }
 
 export function createApiServer(node) {
@@ -170,11 +257,22 @@ async function handle(node, req, res) {
     res.end();
     return;
   }
+  const ip = clientIp(req);
+  // Auto-mitigação (operacional/reversível): IP com bloqueio ativo é recusado de imediato.
+  if (node.guard?.blocked(ip)) {
+    res.writeHead(429, { 'content-type': 'application/json; charset=utf-8', 'retry-after': '600' });
+    res.end(JSON.stringify({ error: 'IP temporariamente bloqueado por abuso — expira automaticamente' }));
+    return;
+  }
   if (!rateLimit(req)) {
+    node.guard?.strike(ip, 1); // flood de rate-limit conta como falta leve
     res.writeHead(429, { 'content-type': 'application/json; charset=utf-8', 'retry-after': '10' });
     res.end(JSON.stringify({ error: 'muitas requisições — tente novamente em instantes' }));
     return;
   }
+
+  // "Comprar EAV7" (OTC): repassa /buy/* ao serviço de fulfillment (instância única no node1).
+  if (req.url.startsWith('/buy/')) { proxyToBuy(req, res, node); return; }
 
   const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
   const parts = url.pathname.split('/').filter(Boolean);
@@ -184,9 +282,18 @@ async function handle(node, req, res) {
   const POST = req.method === 'POST';
 
   // Encaminha ao frontend Next (navegação/RSC/assets). A API e o P2P seguem abaixo.
-  if ((GET || req.method === 'HEAD') && isWebRequest(req, url.pathname)) {
+  // /gateway é endpoint de API (JSON) sem página no front → não vai ao proxy web,
+  // assim abre direto no navegador (senão o Next devolveria "não existe").
+  if ((GET || req.method === 'HEAD') && url.pathname !== '/gateway' && isWebRequest(req, url.pathname)) {
     proxyToWeb(req, res, node);
     return;
+  }
+
+  // Failover de gateway (operacional): se este nó-gateway está stale, serve as LEITURAS
+  // públicas (GET, exceto /gateway) do peer mais saudável. Não afeta escrita nem consenso;
+  // x-eav7-proxied evita loop; se o peer falhar, cai no atendimento local abaixo.
+  if (GET && node.gateway?.target && !('x-eav7-proxied' in req.headers) && url.pathname !== '/gateway') {
+    if (await proxyToPeer(req, res, node.gateway.target, node)) return;
   }
 
   // ---- SPA React (web/dist) — legado (fallback quando o Next está fora) -----
@@ -230,6 +337,12 @@ async function handle(node, req, res) {
         'GET /status', 'GET /blocks', 'GET /blocks/latest', 'GET /blocks/:alturaOuHash',
         'GET /chain', 'POST /blocks', 'GET /tx/:id', 'POST /tx', 'GET /address/:endereco',
         'GET /mempool', 'GET /validators', 'GET /tokens', 'GET /tokens/:id',
+        'GET /tokens/:id/holders', 'GET /tokens/:id/transfers',
+        'GET /address/:endereco/txs', 'GET /address/:endereco/analysis', 'GET /proof/:endereco',
+        'GET /name/:nome', 'GET /logs', 'GET /internal',
+        'GET /nfts', 'GET /nfts/:id', 'GET /names',
+        'GET /governance', 'GET /governance/proposals', 'GET /treasury',
+        'GET /contract/:addr', 'POST /contract/:addr/verify',
         'GET /ai/tasks', 'GET /ai/tasks/:id', 'GET /ai/oracles',
         'GET /bridge/transfers', 'GET /bridge/transfers/:id',
         'GET /security/alerts', 'POST /security/alerts',
@@ -285,8 +398,13 @@ async function handle(node, req, res) {
   if (POST && parts[0] === 'eavm' && parts[1] === 'tx') {
     const { raw } = await readBody(req);
     if (typeof raw !== 'string') return send(res, 400, { error: 'campo raw (0x…) obrigatório' });
-    const envelope = buildEavmEnvelope(raw, { state });
-    send(res, 200, node.submitTransaction(envelope));
+    try {
+      const envelope = buildEavmEnvelope(raw, { state });
+      send(res, 200, node.submitTransaction(envelope));
+    } catch (err) {
+      node.guard?.strike(ip, 3); // tx inválida em série = provável abuso (falta grave)
+      throw err;
+    }
     return;
   }
 
@@ -322,10 +440,47 @@ async function handle(node, req, res) {
         lockedNative: state.bridge.lockedNative,
       },
       security: { alerts: node.securityAlerts.length },
+      // Alturas dos forks DORMENTES (rollout coordenado) — todos os nós DEVEM reportar o
+      // MESMO valor antes de a cadeia cruzá-las, senão divergem. Ver docs/rollout-forks.md.
+      forkHeights: {
+        bridgeBreaker: CHAIN.BRIDGE_BREAKER_HEIGHT,
+        aiTee: CHAIN.AI_TEE_HEIGHT,
+        bridgeQuorum: CHAIN.BRIDGE_QUORUM_HEIGHT,
+        canonicalHash: CHAIN.CANONICAL_HASH_HEIGHT,
+      },
       eavm: node.eavmEnabled
         ? { chainId: CHAIN.EAVM_CHAIN_ID, rpcPort: node.eavmPort, decimals: 18, rpcUrl: node.publicRpcUrl }
         : null,
     });
+    return;
+  }
+
+  // Saúde/roteamento do gateway (balanceador + failover, operacional).
+  if (GET && parts[0] === 'gateway' && parts.length === 1) {
+    const g = node.gateway;
+    send(res, 200, {
+      failover: process.env.EAV7_GATEWAY_FAILOVER === '1',
+      servingLocal: !g?.target,
+      target: g?.target ?? null, // peer de onde as leituras estão sendo servidas (null = local)
+      self: g?.snapshot?.self ?? blockchain.height,
+      lag: g?.lag ?? null,
+      peers: g?.snapshot?.peers ?? [],
+      at: g?.snapshot?.at ?? null,
+    });
+    return;
+  }
+
+  // Auto-mitigação: bloqueios de IP ativos (operacional, TTL). Observabilidade pública.
+  if (GET && parts[0] === 'guard' && parts.length === 1) {
+    send(res, 200, node.guard ? node.guard.snapshot() : { enabled: false });
+    return;
+  }
+  // Admin: desbloqueia um IP manualmente (default-deny sem token — como /peers, /alerts).
+  if (POST && parts[0] === 'guard' && parts[1] === 'clear' && parts.length === 2) {
+    if (!node.checkAdmin(req)) return send(res, 403, { error: 'não autorizado' });
+    const { ip: target } = await readBody(req);
+    if (typeof target !== 'string' || !target) return send(res, 400, { error: 'campo ip obrigatório' });
+    send(res, 200, { cleared: node.guard?.clear(target) ?? false, ip: target });
     return;
   }
 
@@ -382,7 +537,12 @@ async function handle(node, req, res) {
   // ---- transações -----------------------------------------------------------
   if (POST && parts[0] === 'tx') {
     const tx = await readBody(req);
-    send(res, 200, node.submitTransaction(tx));
+    try {
+      send(res, 200, node.submitTransaction(tx));
+    } catch (err) {
+      node.guard?.strike(ip, 3); // tx inválida em série = provável abuso (falta grave)
+      throw err;
+    }
     return;
   }
 
@@ -424,6 +584,31 @@ async function handle(node, req, res) {
       out.push(lg);
     }
     send(res, 200, { logs: out });
+    return;
+  }
+
+  // Fase 2.3: transferências INTERNAS (valor movido pela execução de contrato, sem
+  // transação assinada própria). Índice node-local, derivável, fora do consenso —
+  // mesma natureza de /logs. Filtra por endereço nativo (E7) ou do mundo 0x.
+  if (GET && parts[0] === 'internal' && parts.length === 1) {
+    const q = url.searchParams.get('address');
+    let e7 = null;
+    let a0x = null;
+    if (q) {
+      if (isEavmAddress(q)) { a0x = q.toLowerCase(); e7 = eavmToE7(q); }
+      else if (isValidAddress(q)) e7 = q;
+      else return send(res, 400, { error: 'endereço EAV7 (E7…) ou EAVM (0x…) inválido' });
+    }
+    const from = intParam(url.searchParams.get('from'), 0);
+    const limit = Math.min(Math.max(intParam(url.searchParams.get('limit'), 100), 1), 1000);
+    const out = [];
+    for (let i = blockchain.internalIndex.length - 1; i >= 0 && out.length < limit; i--) {
+      const x = blockchain.internalIndex[i];
+      if (x.blockHeight < from) continue;
+      if (e7 && x.fromE7 !== e7 && x.toE7 !== e7 && x.from !== a0x && x.to !== a0x) continue;
+      out.push(x);
+    }
+    send(res, 200, { internal: out });
     return;
   }
 
@@ -491,7 +676,7 @@ async function handle(node, req, res) {
       const ql = q.toLowerCase();
       if (isValidAddress(q)) { const a = state.accounts[q]; push({ kind: 'Endereço', label: q, to: `/address/${q}`, detail: a ? `${formatEav7(a.balance)} EAV7` : 'conta' }); }
       else if (isEavmAddress(q)) { const a = state.accounts[eavmToE7(q)]; push({ kind: 'MetaMask', label: q, to: `/address/${q}`, detail: a ? `${formatEav7(a.balance)} EAV7` : 'conta EAVM' }); }
-      if (/^E7[0-9A-Fa-f]{20,}$/.test(q) && blockchain.getTransaction(q)) push({ kind: 'Transação', label: q, to: `/tx/${q}` });
+      if (/^[0-9a-fA-F]{20,64}$/.test(q) && blockchain.getTransaction(q)) push({ kind: 'Transação', label: q, to: `/tx/${q}` });
       if (/^\d+$/.test(q) && Number(q) >= 0 && Number(q) <= blockchain.height) push({ kind: 'Bloco', label: `#${q}`, to: `/block/${q}` });
       for (const [id, tok] of Object.entries(state.tokens)) {
         const sym = String(tok.symbol ?? ''); const nm = String(tok.name ?? '');
@@ -530,13 +715,15 @@ async function handle(node, req, res) {
     const s = computeStats(blockchain, state);
     send(res, 200, {
       accounts: s.accounts,
-      accountsDelta: 0,
+      accountsDelta: 0, // sem histórico de estado → não há delta real (front oculta)
       transactions: s.transactions,
-      transactionsDelta: 0,
-      volume: 0,
-      volumeDelta: 0,
+      transactionsDelta: s.txCount24h, // REAL: transações nas últimas 24h
+      volume: Number(s.volume24h / CHAIN.UNIT), // REAL: volume nativo transferido em 24h (EAV7)
+      volumeDelta: Number(s.volume24h / CHAIN.UNIT),
       staked: Number(s.staked / CHAIN.UNIT),
-      stakedDelta: 0,
+      stakedDelta: 0, // sem histórico → sem delta real (front oculta)
+      txSeries: s.txSeries, // série horária real (24 buckets) p/ o sparkline de transações
+      volSeries: s.volSeries, // série horária real de volume
     });
     return;
   }
@@ -556,19 +743,197 @@ async function handle(node, req, res) {
     const acc = state.accounts[address];
     const balance = acc?.balance ?? 0n;
     const staked = acc?.staked ?? 0n;
+    // NFTs (EAV721) e nomes (EAV-NS) possuídos pela conta — varredura limitada (anti-DoS).
+    const ownedNfts = [];
+    for (const [cid, c] of Object.entries(state.nfts)) {
+      for (const [tokenId, tk] of Object.entries(c.tokens ?? {})) {
+        if (tk.owner === address) ownedNfts.push({ collection: cid, symbol: c.symbol, tokenId, uri: tk.uri });
+        if (ownedNfts.length >= 200) break;
+      }
+      if (ownedNfts.length >= 200) break;
+    }
+    const ownedNames = Object.entries(state.names)
+      .filter(([, r]) => r.owner === address)
+      .slice(0, 100)
+      .map(([name, r]) => ({ name, target: r.target }));
     send(res, 200, {
       address,
-      eavmAddress, // endereço 0x da MetaMask, quando a consulta veio de um 0x
+      // vínculo E7 -> 0x: consulta por 0x ecoa; consulta por E7 resolve pelo histórico
+      // EAVM do próprio endereço (índice por endereço; leitura, sem impacto de consenso).
+      eavmAddress: eavmAddress ?? (() => {
+        const heights = blockchain.addressTxIndex.get(address) ?? [];
+        for (let i = heights.length - 1, seen = 0; i >= 0 && seen < 80; i--, seen++) {
+          const b = blockchain.getBlock(heights[i]);
+          if (!b) continue;
+          for (const t of b.transactions) {
+            if (t.scheme !== 'eav7-eavm-1' || !t.data) continue;
+            if (t.from === address && t.data.eavmFrom) return t.data.eavmFrom;
+            if (t.to === address && t.data.eavmTo) return t.data.eavmTo;
+          }
+        }
+        return null;
+      })(),
       balance,
       balanceFormatted: `${formatEav7(balance)} ${CHAIN.SYMBOL}`,
       staked,
       stakedFormatted: `${formatEav7(staked)} ${CHAIN.SYMBOL}`,
+      // unbonding (b): parcelas de UNSTAKE aguardando maturação — o app mostra "em desbloqueio"
+      unbonding: state.unbonding
+        .filter((u) => u.address === address)
+        .map((u) => ({
+          amount: u.amount,
+          matureAt: u.matureAt,
+          blocksLeft: Math.max(0, u.matureAt - blockchain.height),
+        })),
       nonce: acc?.nonce ?? 0,
       nextNonce: node.nextNonceFor(address), // ciente do mempool (para relayers/workers)
       energy: state.energyOf(address, blockchain.height), // { max, available }
+      bandwidth: state.bandwidthOf(address, blockchain.height), // { max, available }
+      // Recursos delegados (#6): capacidade emprestada a/de terceiros, sem mover voto.
+      resources: {
+        resourceStake: acc ? state.resourceStake(acc) : 0n,
+        delegatedOut: acc?.delegatedOut ?? 0n,
+        delegatedIn: acc?.delegatedIn ?? 0n,
+        // state.delegations é um mapa aninhado { de: { para: valor } }; achatamos para
+        // uma lista com direção. A varredura de ENTRADAS tem teto (anti-DoS).
+        delegations: (() => {
+          const out = [];
+          for (const [to, amount] of Object.entries(state.delegations[address] ?? {})) {
+            out.push({ from: address, to, amount, direction: 'out' });
+          }
+          let scanned = 0;
+          for (const [from, d] of Object.entries(state.delegations)) {
+            if (scanned++ >= 5000 || out.length >= 100) break;
+            if (from === address) continue;
+            if (d?.[address] != null) out.push({ from, to: address, amount: d[address], direction: 'in' });
+          }
+          return out;
+        })(),
+      },
+      // Votos EMITIDOS pela conta (o campo `votes` acima são os RECEBIDOS como candidato).
+      votesCast: Object.entries(state.votes[address] ?? {}).map(([to, amount]) => ({ to, amount })),
+      votedTotal: state.votedTotal(address),
+      // #5: estrutura de permissões/multisig da conta.
+      // `keys` é um mapa { endereço: peso } no estado; achatamos para lista ordenada.
+      //
+      // Quando a conta NÃO configurou multisig, devolvemos a permissão EFETIVA padrão
+      // (limiar 1, a própria conta, peso 1) marcada com `default: true`. Não é invenção:
+      // é literalmente como a conta autoriza hoje. Sintetizar aqui — em vez de gravar um
+      // registro por conta, como a TRON faz — mantém o estado enxuto, o que importa
+      // porque computeStateRoot é O(|estado|) por bloco.
+      permissions: (() => {
+        const p = state.permissions[address];
+        if (!p) return { default: true, threshold: 1, keys: [{ address, weight: 1 }] };
+        const lista = (nivel) =>
+          Object.entries(nivel?.keys ?? {})
+            .map(([keyAddress, weight]) => ({ address: keyAddress, weight }))
+            .sort((a, b) => b.weight - a.weight);
+        // v2 tem NÍVEIS; ler `.threshold`/`.keys` do topo devolveria undefined e uma lista
+        // vazia — a carteira exibiria a conta como se não tivesse chave nenhuma.
+        if (p.owner != null) {
+          return {
+            default: false,
+            version: 2,
+            owner: { threshold: p.owner.threshold, keys: lista(p.owner) },
+            actives: (p.actives ?? []).map((a) => ({
+              id: a.id,
+              name: a.name ?? null,
+              threshold: a.threshold,
+              keys: lista(a),
+              operations: a.operations ?? null,
+            })),
+            witness: p.witness ?? null,
+            recovery: p.recovery ?? null,
+            delayBlocks: p.delayBlocks,
+            // Compat: quem só conhece o formato antigo enxerga a active PRIMÁRIA.
+            threshold: p.actives?.[0]?.threshold,
+            keys: lista(p.actives?.[0]),
+          };
+        }
+        return { default: false, version: 1, threshold: p.threshold, keys: lista(p) };
+      })(),
+      // Mudança estrutural de permissão enfileirada (timelock), se houver.
+      pendingPermission: state.pendingPerm?.[address]
+        ? {
+            level: state.pendingPerm[address].change?.level,
+            approvals: Object.keys(state.pendingPerm[address].approvals ?? {}),
+            vetoes: Object.keys(state.pendingPerm[address].vetoes ?? {}),
+            executeAt: state.pendingPerm[address].executeAt,
+            blocksLeft:
+              state.pendingPerm[address].executeAt === null
+                ? null
+                : Math.max(0, state.pendingPerm[address].executeAt - blockchain.height),
+          }
+        : null,
+      // Vesting em que a conta é beneficiária.
+      vesting: Object.entries(state.vesting)
+        .filter(([, v]) => v.beneficiary === address)
+        .slice(0, 50)
+        .map(([id, v]) => ({ id, total: v.total, claimed: v.claimed, cliff: v.cliff, duration: v.duration })),
+      // Contrato EAVM cuja conta nativa é esta (a página de endereço vira página de contrato).
+      contract: (() => {
+        const c0x = eavmAddress && state.contracts[eavmAddress] ? eavmAddress : null;
+        if (!c0x) return null;
+        const c = state.contracts[c0x];
+        return { address: c0x, codeSize: Math.max(0, (c.code?.length ?? 2) / 2 - 1), verified: !!c.source, nonce: c.nonce ?? 0 };
+      })(),
+      // Resumo de atividade para o cabeçalho da página de conta (padrão de explorer:
+      // criada em / total de transações / última atividade). `blocks` é exato e O(1)
+      // pelo índice; `txCount` varre os blocos com teto — `truncated` avisa quando cortou.
+      activity: (() => {
+        const heights = blockchain.addressTxIndex.get(address) ?? [];
+        if (heights.length === 0) return { firstSeen: null, lastSeen: null, txCount: 0, blocks: 0, truncated: false };
+        const SCAN_CAP = 2000;
+        const first = blockchain.getBlock(heights[0]);
+        const last = blockchain.getBlock(heights[heights.length - 1]);
+        let txCount = 0;
+        let transfersIn = 0;
+        let transfersOut = 0;
+        let scanned = 0;
+        for (let i = heights.length - 1; i >= 0 && scanned < SCAN_CAP; i--, scanned++) {
+          const b = blockchain.getBlock(heights[i]);
+          if (!b) continue;
+          for (const t of b.transactions) {
+            const out = t.from === address;
+            const inc = t.to === address;
+            if (!out && !inc) continue;
+            txCount += 1;
+            // "Transferências" no sentido do explorer: movimento de valor, não toda tx.
+            if (BigInt(t.amount ?? 0) > 0n) { if (out) transfersOut += 1; else transfersIn += 1; }
+          }
+        }
+        return {
+          firstSeen: first?.timestamp ?? null,
+          lastSeen: last?.timestamp ?? null,
+          txCount,
+          transfers: transfersIn + transfersOut,
+          transfersIn,
+          transfersOut,
+          blocks: heights.length,
+          truncated: heights.length > SCAN_CAP,
+        };
+      })(),
+      // Recompensa de eleitor ainda não resgatada (CLAIM_VOTER_REWARD).
+      claimableVoterReward: state.pendingVoterReward(address),
+      // Aprovações EAV20 concedidas por esta conta (allowance por token/gastador).
+      approvals: (() => {
+        const out = [];
+        for (const [tokenId, tk] of Object.entries(state.tokens)) {
+          for (const [spender, amount] of Object.entries(tk.allowances?.[address] ?? {})) {
+            if (BigInt(amount ?? 0n) <= 0n) continue;
+            out.push({ token: tokenId, symbol: tk.symbol, spender, amount: amount.toString() });
+            if (out.length >= 100) return out;
+          }
+        }
+        return out;
+      })(),
       feeExempt: state.isFeeExempt(address),
       isValidator: state.validators().some((v) => v.address === address),
+      votes: state.candidateVotes[address] ?? 0n, // #4 votos recebidos como candidato
+      commission: state.commission[address], // % de comissão do validador (se definida)
       tokens: state.tokenBalancesOf(address),
+      nfts: ownedNfts,
+      names: ownedNames,
       oracle: state.oracles[address] ?? null,
     });
     return;
@@ -595,7 +960,22 @@ async function handle(node, req, res) {
       if (!b) continue;
       const inBlock = [];
       for (const t of b.transactions) {
-        if (t.from === addr || t.to === addr) inBlock.push({ ...t, blockHeight: h, blockTime: b.timestamp });
+        if (t.from !== addr && t.to !== addr) continue;
+        // `receipt` só existe para tx EAVM; ausência = a tx aplicou-se com sucesso.
+        const rc = blockchain.receipts.get(t.id);
+        // Identidade do ativo movido, quando não é o EAV7 nativo. Resolver aqui evita
+        // que o explorer tenha de buscar o catálogo de tokens para cada linha.
+        let asset = null;
+        const tokId = t.data?.token;
+        const colId = t.data?.collection;
+        if (typeof tokId === 'string' && state.tokens[tokId]) {
+          const tk = state.tokens[tokId];
+          asset = { kind: 'EAV20', id: tokId, symbol: tk.symbol, name: tk.name, decimals: tk.decimals };
+        } else if (typeof colId === 'string' && state.nfts[colId]) {
+          const col = state.nfts[colId];
+          asset = { kind: 'EAV721', id: colId, symbol: col.symbol, name: col.name, tokenId: String(t.data?.tokenId ?? '') };
+        }
+        inBlock.push({ ...t, blockHeight: h, blockTime: b.timestamp, receipt: rc ?? null, asset });
       }
       for (let j = inBlock.length - 1; j >= 0; j--) txs.push(inBlock[j]);
       if (txs.length >= limit && i > 0) nextBefore = h;
@@ -604,13 +984,85 @@ async function handle(node, req, res) {
     return;
   }
 
+  // Agregados da conta para a aba de análise: contagem por tipo, volume entrada/saída,
+  // contrapartes e primeira/última atividade. Varredura limitada pelo índice por
+  // endereço (mesmo teto anti-DoS do /txs); serve para gráficos no explorer.
+  if (GET && parts[0] === 'address' && parts[2] === 'analysis' && parts.length === 3) {
+    let addr = parts[1];
+    if (isEavmAddress(addr)) addr = eavmToE7(addr);
+    else if (!isValidAddress(addr)) return send(res, 400, { error: 'endereço inválido' });
+    const SCAN_CAP = 2000;
+    const heights = blockchain.addressTxIndex.get(addr) ?? [];
+    const byType = {};
+    const counterparties = new Map();
+    const daily = new Map();
+    let sent = 0n;
+    let received = 0n;
+    let feesPaid = 0n;
+    let firstSeen = null;
+    let lastSeen = null;
+    let scanned = 0;
+    for (let i = heights.length - 1; i >= 0 && scanned < SCAN_CAP; i--) {
+      const b = blockchain.getBlock(heights[i]);
+      if (!b) continue;
+      for (const t of b.transactions) {
+        const out = t.from === addr;
+        const inc = t.to === addr;
+        if (!out && !inc) continue;
+        scanned += 1;
+        byType[t.type] = (byType[t.type] ?? 0) + 1;
+        const amt = BigInt(t.amount ?? 0);
+        if (out) { sent += amt; feesPaid += BigInt(t.fee ?? 0); if (t.to) counterparties.set(t.to, (counterparties.get(t.to) ?? 0) + 1); }
+        if (inc) { received += amt; if (t.from) counterparties.set(t.from, (counterparties.get(t.from) ?? 0) + 1); }
+        const day = new Date(b.timestamp).toISOString().slice(0, 10);
+        daily.set(day, (daily.get(day) ?? 0) + 1);
+        if (lastSeen === null) lastSeen = b.timestamp;
+        firstSeen = b.timestamp;
+      }
+    }
+    send(res, 200, {
+      address: addr,
+      txCount: scanned,
+      truncated: scanned >= SCAN_CAP,
+      firstSeen,
+      lastSeen,
+      sent,
+      received,
+      feesPaid,
+      byType,
+      topCounterparties: [...counterparties.entries()].sort((a, b2) => b2[1] - a[1]).slice(0, 10).map(([address2, count]) => ({ address: address2, count })),
+      daily: [...daily.entries()].sort().map(([date, count]) => ({ date, count })),
+    });
+    return;
+  }
+
+  // Score de desempenho de validador (leitura pura da cadeia; sem consenso). Detalhado.
+  if (GET && parts[0] === 'validators' && parts[1] === 'performance') {
+    const window = Math.max(50, Math.min(5000, intParam(url.searchParams.get('window'), 500)));
+    const perf = scoreValidators({
+      validators: state.validators(),
+      blocks: blockchain.recentProducerMeta(window),
+      blockTimeMs: CHAIN.BLOCK_TIME_MS,
+    });
+    send(res, 200, perf);
+    return;
+  }
+
   if (GET && parts[0] === 'validators') {
+    const perf = scoreValidators({
+      validators: state.validators(),
+      blocks: blockchain.recentProducerMeta(500),
+      blockTimeMs: CHAIN.BLOCK_TIME_MS,
+    });
     send(res, 200, {
       maxValidators: CHAIN.MAX_VALIDATORS,
       minStake: CHAIN.MIN_VALIDATOR_STAKE,
       blockReward: blockchain.blockReward(Math.max(blockchain.height + 1, 0)),
       current: state.validators(),
       slotProducer: blockchain.expectedProducer(Date.now()),
+      performance: perf.validators,        // score/status por validador (desempenho recente)
+      performanceSummary: perf.summary,    // agregado: saudáveis, degradados, pior score
+      performanceWindow: perf.window,
     });
     return;
   }
@@ -628,6 +1080,169 @@ async function handle(node, req, res) {
     const address = url.searchParams.get('address');
     if (address) view.balanceOf = { address, balance: tokenBalanceOf(token, address) };
     send(res, 200, view);
+    return;
+  }
+
+  // Ranking de holders — o explorer precisa da DISTRIBUIÇÃO, não só da contagem que
+  // `tokenView` devolve. Ordena por saldo desc e corta no limite: a lista completa de um
+  // token popular é grande demais para uma resposta, e ninguém pagina até o fim dela.
+  if (GET && parts[0] === 'tokens' && parts.length === 3 && parts[2] === 'holders') {
+    const token = state.tokens[parts[1]];
+    if (!token) return send(res, 404, { error: 'token EAV20 não encontrado' });
+    const limit = Math.min(Number(url.searchParams.get('limit')) || 100, 500);
+    const supply = token.totalSupply > 0n ? token.totalSupply : 1n;
+    const all = Object.entries(token.balances ?? {}).filter(([, b]) => b > 0n);
+    all.sort((a, b) => (b[1] > a[1] ? 1 : b[1] < a[1] ? -1 : 0));
+    send(res, 200, {
+      token: token.id,
+      decimals: token.decimals,
+      totalSupply: String(token.totalSupply),
+      holders: all.length,
+      // Participação em pontos-base: fração exata em inteiro, sem float no servidor.
+      list: all.slice(0, limit).map(([address, balance], i) => ({
+        rank: i + 1,
+        address,
+        balance: String(balance),
+        shareBps: Number((balance * 10_000n) / supply),
+        frozen: String(token.frozen?.[address]?.amount ?? 0n),
+        blacklisted: token.blacklist?.[address] === true,
+      })),
+    });
+    return;
+  }
+
+  // Transferências DE UM token. O índice por endereço não serve aqui: numa
+  // TOKEN_TRANSFER o `to` é o destinatário, e o id do token vive em `data.token` —
+  // o token nunca aparece como parte da tx. Varre `blocksWithTxs` de trás para frente,
+  // com o mesmo teto anti-DoS das demais rotas de varredura.
+  if (GET && parts[0] === 'tokens' && parts.length === 3 && parts[2] === 'transfers') {
+    const token = state.tokens[parts[1]];
+    if (!token) return send(res, 404, { error: 'token EAV20 não encontrado' });
+    const limit = Math.min(Math.max(intParam(url.searchParams.get('limit'), 25), 1), 100);
+    const before = intParam(url.searchParams.get('before'), Number.MAX_SAFE_INTEGER);
+    const SCAN_CAP = 2000; // blocos-com-tx visitados, não blocos da cadeia
+    const bwt = blockchain.blocksWithTxs;
+    const asset = { kind: 'EAV20', id: token.id, symbol: token.symbol, name: token.name, decimals: token.decimals };
+    const txs = [];
+    let nextBefore = null;
+    let scanned = 0;
+    for (let i = bwt.length - 1; i >= 0 && txs.length < limit && scanned < SCAN_CAP; i--) {
+      const h = bwt[i];
+      if (h >= before) continue;
+      scanned++;
+      const b = blockchain.getBlock(h);
+      if (!b) continue;
+      for (let j = b.transactions.length - 1; j >= 0 && txs.length < limit; j--) {
+        const t = b.transactions[j];
+        if (t.data?.token !== token.id) continue;
+        txs.push({ ...t, blockHeight: h, blockTime: b.timestamp, receipt: blockchain.receipts.get(t.id) ?? null, asset });
+      }
+      if (txs.length >= limit && i > 0) nextBefore = h;
+    }
+    send(res, 200, { token: token.id, txs, nextBefore, scanned });
+    return;
+  }
+
+  // ---- NFTs EAV721 -------------------------------------------------------------
+  if (GET && parts[0] === 'nfts' && parts.length === 1) {
+    const list = Object.entries(state.nfts).map(([id, c]) => ({
+      id,
+      name: c.name,
+      symbol: c.symbol,
+      owner: c.owner,
+      supply: Object.keys(c.tokens ?? {}).length,
+      nextId: c.nextId,
+    }));
+    send(res, 200, list);
+    return;
+  }
+  if (GET && parts[0] === 'nfts' && parts.length === 2) {
+    const c = state.nfts[parts[1]];
+    if (!c) return send(res, 404, { error: 'coleção EAV721 não encontrada' });
+    const limit = Math.min(Math.max(intParam(url.searchParams.get('limit'), 200), 1), 1000);
+    const owner = url.searchParams.get('owner');
+    const tokens = [];
+    for (const [tokenId, tk] of Object.entries(c.tokens ?? {})) {
+      if (owner && tk.owner !== owner) continue;
+      tokens.push({ tokenId, owner: tk.owner, uri: tk.uri });
+      if (tokens.length >= limit) break;
+    }
+    send(res, 200, {
+      id: parts[1], name: c.name, symbol: c.symbol, owner: c.owner,
+      supply: Object.keys(c.tokens ?? {}).length, nextId: c.nextId, tokens,
+    });
+    return;
+  }
+
+  // ---- serviço de nomes EAV-NS -------------------------------------------------
+  if (GET && parts[0] === 'names' && parts.length === 1) {
+    const limit = Math.min(Math.max(intParam(url.searchParams.get('limit'), 200), 1), 1000);
+    const owner = url.searchParams.get('owner');
+    const out = [];
+    // ORDEM CANÔNICA POR nome: o `break` no limite decide QUAIS entradas aparecem
+    // na página, então iterar por ordem de inserção faria dois nós (ou o cliente
+    // Rust, cujo BTreeMap ordena por chave) servirem páginas diferentes do mesmo
+    // estado. Mesmo racional das propostas no blockTick.
+    for (const name of Object.keys(state.names).sort()) {
+      const r = state.names[name];
+      if (owner && r.owner !== owner) continue;
+      out.push({ name, target: r.target, owner: r.owner, registeredAt: r.registeredAt });
+      if (out.length >= limit) break;
+    }
+    send(res, 200, out);
+    return;
+  }
+
+  // ---- governança on-chain (#9) ------------------------------------------------
+  if (GET && parts[0] === 'governance' && parts[1] === 'proposals' && parts.length === 2) {
+    const status = url.searchParams.get('status');
+    let proposals = Object.values(state.proposals);
+    if (status) proposals = proposals.filter((p) => p.status === status.toUpperCase());
+    send(res, 200, proposals.map((p) => ({ ...p, voteCount: Object.keys(p.votes ?? {}).length })));
+    return;
+  }
+  // Conselheiro de governança: a IA REDIGE rascunhos de GOV_PROPOSE para parâmetros fora
+  // da faixa saudável (propose-only; governança decide). Vazio quando tudo está saudável.
+  if (GET && parts[0] === 'governance' && parts[1] === 'advisories' && parts.length === 2) {
+    if (eligibleCache.height !== blockchain.height) {
+      eligibleCache = { height: blockchain.height, value: state.eligibleValidatorCount() }; // varredura cacheada por altura (M2)
+    }
+    const params = {};
+    for (const k of Object.keys(CHAIN.GOVERNABLE)) params[k] = state.param(k);
+    const advisories = adviseGovernance({
+      params,
+      stats: {
+        eligibleValidators: eligibleCache.value,
+        activeValidators: state.validators().length,
+        finalityMinValidators: CHAIN.FINALITY_MIN_VALIDATORS,
+        bridge: { breakerActive: blockchain.height >= CHAIN.BRIDGE_BREAKER_HEIGHT, breakerTripsWindow: 0 },
+      },
+    });
+    send(res, 200, { advisories, count: advisories.length, at: Date.now() });
+    return;
+  }
+  if (GET && parts[0] === 'governance' && parts.length === 1) {
+    const proposals = Object.values(state.proposals).map((p) => ({
+      ...p, voteCount: Object.keys(p.votes ?? {}).length,
+    }));
+    // Lista COMPLETA dos parâmetros governáveis com o valor efetivo atual (override ou default)
+    // + limites min/max — para a página /governance mostrar a governança de fato, não só os overrides.
+    const governable = Object.entries(CHAIN.GOVERNABLE).map(([param, spec]) => ({
+      param, kind: spec.kind, value: state.param(param), min: spec.min, max: spec.max,
+      overridden: Object.prototype.hasOwnProperty.call(state.params, param),
+    }));
+    send(res, 200, {
+      params: state.params, governable, proposals,
+      validators: state.validators().length,
+      quorum: Math.floor((state.validators().length * 2) / 3) + 1,
+      governanceActive: blockchain.height >= CHAIN.GOVERNANCE_HEIGHT,
+    });
+    return;
+  }
+
+  // ---- tesouraria --------------------------------------------------------------
+  if (GET && parts[0] === 'treasury' && parts.length === 1) {
+    send(res, 200, { balance: state.treasury, treasuryPct: state.param('TREASURY_PCT') });
     return;
   }
 

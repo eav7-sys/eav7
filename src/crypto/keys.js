@@ -41,7 +41,7 @@ function addressChecksum(body) {
 // usado para chaves híbridas e para o mapeamento de contas do protocolo EAVM.
 export function deriveAddressFrom(data) {
   const body = sha3(data).subarray(0, 14).toString('hex').toUpperCase();
-  return CHAIN.HASH_PREFIX + body + addressChecksum(body);
+  return CHAIN.ADDRESS_PREFIX + body + addressChecksum(body);
 }
 
 // Endereço EAV7: "E7" + 28 hex do SHA3-256 das duas chaves públicas + 4 hex de checksum.
@@ -57,8 +57,8 @@ export function walletAddress(wallet) {
 
 export function isValidAddress(address) {
   if (typeof address !== 'string' || address.length !== CHAIN.ADDRESS_LENGTH) return false;
-  if (!address.startsWith(CHAIN.HASH_PREFIX)) return false;
-  if (!/^[0-9A-F]+$/.test(address.slice(CHAIN.HASH_PREFIX.length))) return false;
+  if (!address.startsWith(CHAIN.ADDRESS_PREFIX)) return false;
+  if (!/^[0-9A-F]+$/.test(address.slice(CHAIN.ADDRESS_PREFIX.length))) return false;
   const body = address.slice(2, 30);
   return address.slice(30) === addressChecksum(body);
 }

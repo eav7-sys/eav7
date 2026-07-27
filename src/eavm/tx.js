@@ -66,6 +66,21 @@ export function decodeRawTransaction(rawHex) {
     throw new Error(`tipo de transação EVM não suportado: 0x${raw[0].toString(16)}`);
   }
 
+  // TODO campo escalar tem de ser byte string, não LISTA. Sem esta guarda o JS
+  // aceita aninhamento onde o Rust (`require_bytes`) rejeita, e os dois clientes
+  // divergem — split de rede na primeira tx forjada. Dois modos de falha do JS:
+  //   • lista NÃO vazia em `to`/`data` → `hex(array)` cai em `Array.toString` e
+  //     produz um campo de lixo (vírgulas, UTF-8) que um envelope casado passaria;
+  //   • lista VAZIA num campo numérico → `rlpBufToBigInt([])` devolve `0n` em
+  //     silêncio, aceitando o que o Rust recusa.
+  // São os MESMOS oito campos que o `require_bytes` do envelope Rust cobre.
+  // Carteira legítima nunca emite lista aqui; recusar só barra tx adulterada.
+  for (const [nome, valor] of Object.entries(fields)) {
+    if (!Buffer.isBuffer(valor)) {
+      throw new Error(`RLP: campo \`${nome}\` deve ser byte string, não lista`);
+    }
+  }
+
   const r = rlpBufToBigInt(fields.r);
   const s = rlpBufToBigInt(fields.s);
   if (s > N / 2n) throw new Error('assinatura com s alto rejeitada (EIP-2)');
@@ -88,8 +103,10 @@ export function decodeRawTransaction(rawHex) {
 
 // Cria uma transação legacy EIP-155 assinada — usada nos testes e em
 // ferramentas locais; carteiras (Trust Wallet etc.) assinam do lado delas.
-export function createSignedTx({ privateKey, nonce, to, valueWei, chainId, gasPriceWei = 476190476190n, gasLimit = 21000n }) {
-  const base = [BigInt(nonce), gasPriceWei, gasLimit, to, valueWei, '0x'];
+export function createSignedTx({ privateKey, nonce, to, valueWei, chainId, gasPriceWei = 476190476190n, gasLimit = 21000n, data = '0x' }) {
+  // `to` nulo/ausente = IMPLANTAÇÃO de contrato (campo vazio no RLP, como no
+  // Ethereum); `data` carrega o bytecode do deploy ou o calldata da chamada.
+  const base = [BigInt(nonce), gasPriceWei, gasLimit, to ?? '0x', valueWei, data];
   const signingHash = keccak256(rlpEncode([...base, BigInt(chainId), Buffer.alloc(0), Buffer.alloc(0)]));
   const { r, s, recId } = sign(signingHash, privateKey);
   const v = BigInt(chainId) * 2n + 35n + recId;

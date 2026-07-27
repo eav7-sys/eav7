@@ -12,6 +12,7 @@
   },
   "scripts": {
     "start": "node bin/eav7.js node start",
-    "test": "node --test"
+    "test": "node --test",
+    "verificar": "bash bin/eav7-verificar.sh"
   }
 }

@@ -8,6 +8,7 @@
 // Os alertas são enviados ao nó (POST /security/alerts) e ficam visíveis na
 // plataforma de mineração e via GET /security/alerts.
 import { CHAIN, formatEav7 } from '../config.js';
+import { draftValidatorGovernanceProposal } from '../node/validator-score.js';
 
 const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-5';
 
@@ -22,6 +23,14 @@ export class SecuritySentinel {
     this.producerHistory = []; // produtores dos últimos blocos
     this.recentActivity = []; // resumo por bloco para o dossiê da IA
     this.lastAiDigestAt = 0;
+    // Saúde de validador: exige degradação SUSTENTADA (evita flap durante replay/restart).
+    this.degradedTicks = Number(process.env.EAV7_DEGRADED_TICKS || 6); // ciclos consecutivos p/ alertar
+    this.degradedStreak = new Map(); // address -> ciclos consecutivos degradado
+    this.alertedDegraded = new Set(); // já alertado nesta ocorrência (não repetir)
+    // Conselheiro de governança (propose-only): publica advisories NOVOS como alerta.
+    this.advisoryMs = Number(process.env.EAV7_ADVISORY_MS || 10 * 60_000);
+    this.lastAdvisoryAt = 0;
+    this.advisedKeys = new Set(); // param:valor já alertado (dedup até voltar ao saudável)
     this.timer = null;
   }
 
@@ -105,8 +114,15 @@ export class SecuritySentinel {
     const status = await this.#getJson('/status');
 
     if (status.height < this.lastHeight) {
-      await this.alert('CHAIN_ROLLBACK', 'critical',
-        `altura da cadeia regrediu de ${this.lastHeight} para ${status.height}`, {});
+      // Queda além de qualquer reorg plausível (> 50k blocos) = troca de gênese /
+      // relaunch da rede, não um rollback real. Re-baseline em silêncio em vez de
+      // alertar para sempre (senão a sentinela cospe CHAIN_ROLLBACK a cada tick).
+      if (this.lastHeight - status.height > 50_000) {
+        this.lastHeight = status.height;
+      } else {
+        await this.alert('CHAIN_ROLLBACK', 'critical',
+          `altura da cadeia regrediu de ${this.lastHeight} para ${status.height}`, {});
+      }
     }
     if (status.mempool > 1000) {
       await this.alert('MEMPOOL_FLOOD', 'warning', `mempool com ${status.mempool} transações pendentes`, {});
@@ -119,12 +135,82 @@ export class SecuritySentinel {
       this.lastHeight = blocks.at(-1)?.height ?? status.height;
     }
 
+    await this.#checkValidatorHealth().catch((err) =>
+      this.log(`[sentinela] checagem de validadores falhou: ${err.message}`));
+
+    if (Date.now() - this.lastAdvisoryAt > this.advisoryMs) {
+      this.lastAdvisoryAt = Date.now();
+      await this.#checkGovernanceAdvisories().catch((err) =>
+        this.log(`[sentinela] conselheiro de governança falhou: ${err.message}`));
+    }
+
     if (process.env.ANTHROPIC_API_KEY && Date.now() - this.lastAiDigestAt > this.aiDigestMs) {
       this.lastAiDigestAt = Date.now();
       await this.#aiDigest(status).catch((err) =>
         this.log(`[sentinela] análise por IA falhou: ${err.message}`),
       );
     }
+  }
+
+  // Vigia a saúde/desempenho dos validadores via /validators (score derivado da cadeia).
+  // Quando um validador fica degradado de forma SUSTENTADA, publica um alerta e anexa uma
+  // recomendação de governança REDIGIDA pela IA (propose-only: NÃO é executada — quem decide
+  // rotacionar/mexer em stake é a governança/humano). A única mitigação automática é
+  // operacional/reversível (roteamento de leitura do gateway). Ver [[eav7-ai-roadmap]].
+  async #checkValidatorHealth() {
+    let data;
+    try { data = await this.#getJson('/validators'); } catch { return; }
+    const perf = data.performance;
+    const summary = data.performanceSummary;
+    if (!Array.isArray(perf) || !summary || summary.count < 2) return; // sem garantia com <2 validadores
+
+    const currentlyDegraded = new Set();
+    for (const v of perf) {
+      if (!v.degraded) continue;
+      currentlyDegraded.add(v.address);
+      const streak = (this.degradedStreak.get(v.address) ?? 0) + 1;
+      this.degradedStreak.set(v.address, streak);
+      if (streak >= this.degradedTicks && !this.alertedDegraded.has(v.address)) {
+        this.alertedDegraded.add(v.address);
+        const draft = draftValidatorGovernanceProposal(v, { sustainedTicks: streak });
+        await this.alert('VALIDATOR_DEGRADED', 'warning',
+          `validador ${v.address} degradado de forma sustentada (score ${v.score}/100, `
+          + `produtividade ${v.productivityPct}%, ${v.missed} slots perdidos). `
+          + `IA redigiu recomendação de governança (NÃO executada).`,
+          { validator: v.address, score: v.score, status: v.status, draftProposal: draft });
+      }
+    }
+    // Quem recuperou: zera o streak e, se havíamos alertado, publica a recuperação.
+    for (const addr of [...this.degradedStreak.keys()]) {
+      if (currentlyDegraded.has(addr)) continue;
+      this.degradedStreak.delete(addr);
+      if (this.alertedDegraded.delete(addr)) {
+        await this.alert('VALIDATOR_RECOVERED', 'info',
+          `validador ${addr} voltou a operar de forma saudável`, { validator: addr });
+      }
+    }
+  }
+
+  // Conselheiro de governança: o nó avalia parâmetros governáveis e redige rascunhos de
+  // GOV_PROPOSE (propose-only). Publica cada advisory NOVO como alerta com o rascunho —
+  // a IA propõe, os validadores votam. Dedup por param:valor; esquece quando o parâmetro
+  // volta ao saudável (pode re-alertar depois). Ver [[eav7-ai-roadmap]].
+  async #checkGovernanceAdvisories() {
+    let data;
+    try { data = await this.#getJson('/governance/advisories'); } catch { return; }
+    const list = data.advisories;
+    if (!Array.isArray(list)) return;
+    const seen = new Set();
+    for (const a of list) {
+      const key = `${a.param}:${a.suggestedValue}`;
+      seen.add(key);
+      if (this.advisedKeys.has(key)) continue;
+      this.advisedKeys.add(key);
+      await this.alert('GOVERNANCE_ADVISORY', a.severity === 'warning' ? 'warning' : 'info',
+        `IA redigiu proposta de governança: ${a.param} ${a.currentValue} → ${a.suggestedValue}. ${a.reason}`,
+        { advisory: a });
+    }
+    for (const key of [...this.advisedKeys]) if (!seen.has(key)) this.advisedKeys.delete(key);
   }
 
   async #aiDigest(status) {
