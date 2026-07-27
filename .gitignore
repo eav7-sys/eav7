@@ -11,3 +11,16 @@ wallet-*.json
 *.pem
 secrets/
 eav7.env
+rust/target/
+
+# arquivo de build do frontend (12 MB) — o fonte está em web-next/
+eav7-frontend-web.rar
+
+# notas pessoais do editor, não fazem parte do projeto
+.obsidian/
+*.canvas
+*.base
+2026-*.md
+
+# skills locais do Claude Code (não são do projeto)
+.claude/skill/
