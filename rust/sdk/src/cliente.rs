@@ -230,8 +230,9 @@ impl Eav7Client {
     }
 
     /// Remetente com reserva de nonce — use para rajadas (stake+voto+claim).
-    pub fn remetente(&self) -> Remetente<'_> {
-        Remetente { cliente: self, proximo_nonce: None }
+    /// Falha sem carteira, como qualquer escrita.
+    pub fn remetente(&self) -> R<Remetente<'_>> {
+        Remetente::novo(self)
     }
 
     /// Endereço da carteira, quando há uma.
@@ -564,65 +565,105 @@ fn dados_de_claim(validador: &str) -> JsonValue {
     JsonValue::map([("validator".to_string(), JsonValue::str(validador))])
 }
 
-/// Envio com nonce reservado localmente — evita colisão em rajadas.
+/// O padrão de RESERVA DE NONCE, extraído do relayer da ponte (`bridge.rs`) —
+/// a mesma máquina serve o [`Remetente`] e o [`crate::bridge::Relayer`].
 ///
-/// Extraído da lógica do [`crate::bridge::Relayer`]: reserva `n`, incrementa se
-/// aceito, ressincroniza se recusado/timeout.
+/// Reserva `n` (do cache ou do nó), envia, e:
+/// - ACEITA → `n+1` fica reservado para a próxima;
+/// - recusada ou erro (INCLUSIVE timeout) → esquece a reserva e ressincroniza
+///   com o nó no próximo envio. Um nonce reservado para uma transação que não
+///   chegou ao mempool bloquearia todas as seguintes, em silêncio.
+pub(crate) fn enviar_reservando(
+    cliente: &Eav7Client,
+    endereco: &str,
+    reserva: &mut Option<i64>,
+    monta: impl FnOnce(i64) -> TxSpec,
+) -> R<Tx> {
+    let nonce = match *reserva {
+        Some(n) => n,
+        None => cliente.proximo_nonce(endereco)?,
+    };
+    let tx = cliente.montar(monta(nonce))?;
+    match cliente.enviar(&tx) {
+        Ok(r) if r.accepted => {
+            *reserva = Some(nonce + 1);
+            Ok(tx)
+        }
+        Ok(r) => {
+            // Recusada: o nonce reservado não foi consumido, e insistir nele
+            // travaria todas as seguintes. Ressincroniza.
+            *reserva = None;
+            Err(ErroCliente::Api {
+                status: 400,
+                mensagem: r.reason.unwrap_or_else(|| "transação recusada".into()),
+            })
+        }
+        Err(e) => {
+            // Inclusive TIMEOUT: a transação pode ou não ter chegado, e
+            // adivinhar é pior que perguntar ao nó no próximo envio.
+            *reserva = None;
+            Err(e)
+        }
+    }
+}
+
+/// Envio em RAJADA: nonce reservado localmente, sem colisão entre chamadas
+/// consecutivas.
+///
+/// [`Eav7Client::executar`] pergunta o nonce ao nó a cada chamada — correto
+/// para uma transação avulsa, mas duas seguidas leem o MESMO `nextNonce` se a
+/// primeira ainda não entrou no mempool quando a segunda pergunta. O remetente
+/// reserva: a segunda usa `n+1` sem perguntar. Qualquer recusa ou erro de rede
+/// ressincroniza (ver [`enviar_reservando`]).
 pub struct Remetente<'a> {
     cliente: &'a Eav7Client,
+    endereco: String,
     proximo_nonce: Option<i64>,
 }
 
-impl Remetente<'_> {
+impl<'a> Remetente<'a> {
+    /// Exige carteira: um remetente sem assinatura não tem o que enviar.
+    pub fn novo(cliente: &'a Eav7Client) -> R<Self> {
+        let endereco = cliente
+            .endereco()
+            .ok_or_else(|| ErroCliente::Transacao("cliente sem carteira".into()))?;
+        Ok(Remetente { cliente, endereco, proximo_nonce: None })
+    }
+
+    pub fn endereco(&self) -> &str {
+        &self.endereco
+    }
+
+    /// Envia reservando o nonce. Devolve a transação COMPLETA (com `id`) — é o
+    /// que [`Eav7Client::aguardar_confirmacao`] recebe depois.
+    pub fn enviar(&mut self, monta: impl FnOnce(i64) -> TxSpec) -> R<Tx> {
+        enviar_reservando(self.cliente, &self.endereco, &mut self.proximo_nonce, monta)
+    }
+
+    /// Como [`Eav7Client::executar`], mas com a reserva de nonce.
     pub fn executar(
         &mut self,
         tipo: &str,
         amount: u128,
         monta: impl FnOnce(TxSpec) -> TxSpec,
-    ) -> R<Submissao> {
-        let de = self
-            .cliente
-            .endereco()
-            .ok_or_else(|| ErroCliente::Transacao("cliente sem carteira".into()))?;
-        let nonce = match self.proximo_nonce {
-            Some(n) => n,
-            None => self.cliente.proximo_nonce(&de)?,
-        };
-        let spec = monta(TxSpec::nova(tipo, amount, nonce, agora_ms()));
-        let tx = self.cliente.montar(spec)?;
-        match self.cliente.enviar(&tx) {
-            Ok(r) if r.accepted => {
-                self.proximo_nonce = Some(nonce + 1);
-                Ok(r)
-            }
-            Ok(r) => {
-                self.proximo_nonce = None;
-                Err(ErroCliente::Api {
-                    status: 400,
-                    mensagem: r.reason.unwrap_or_else(|| "transação recusada".into()),
-                })
-            }
-            Err(e) => {
-                self.proximo_nonce = None;
-                Err(e)
-            }
-        }
+    ) -> R<Tx> {
+        self.enviar(|nonce| monta(TxSpec::nova(tipo, amount, nonce, agora_ms())))
     }
 
-    pub fn transferir(&mut self, para: &str, amount: u128) -> R<Submissao> {
+    pub fn transferir(&mut self, para: &str, amount: u128) -> R<Tx> {
         let para = para.to_string();
         self.executar("TRANSFER", amount, move |s| s.para(para))
     }
 
-    pub fn stake(&mut self, amount: u128) -> R<Submissao> {
+    pub fn stake(&mut self, amount: u128) -> R<Tx> {
         self.executar("STAKE", amount, |s| s)
     }
 
-    pub fn unstake(&mut self, amount: u128) -> R<Submissao> {
+    pub fn unstake(&mut self, amount: u128) -> R<Tx> {
         self.executar("UNSTAKE", amount, |s| s)
     }
 
-    pub fn votar(&mut self, votos: Vec<(String, u128)>) -> R<Submissao> {
+    pub fn votar(&mut self, votos: Vec<(String, u128)>) -> R<Tx> {
         let mapa = JsonValue::map(
             votos.into_iter().map(|(k, v)| (k, JsonValue::str(v.to_string()))),
         );
@@ -631,9 +672,61 @@ impl Remetente<'_> {
         })
     }
 
-    pub fn reivindicar_recompensa(&mut self) -> R<Submissao> {
-        self.executar("CLAIM_VOTER_REWARD", 0, |s| s)
+    pub fn reivindicar_recompensa(&mut self, validador: &str) -> R<Tx> {
+        let dados = dados_de_claim(validador);
+        self.executar("CLAIM_VOTER_REWARD", 0, move |s| s.com_dados(dados))
     }
+}
+
+/// Valor monetário da API: BigInt vira STRING no JSON do nó (`"1000"`), mas
+/// números pequenos podem sair crus. Aceita as duas formas; ausente/inválido é 0.
+fn texto_ou_numero_u128(v: Option<&serde_json::Value>) -> u128 {
+    match v {
+        Some(serde_json::Value::String(s)) => s.parse().unwrap_or(0),
+        Some(serde_json::Value::Number(n)) => n.as_u64().map(u128::from).unwrap_or(0),
+        _ => 0,
+    }
+}
+
+/// Uma entrada de `performance` → `(endereço, Desempenho)`. Sem endereço não há
+/// com quem casar — a entrada é descartada.
+fn desempenho_de(v: &serde_json::Value) -> Option<(String, Desempenho)> {
+    let address = v.get("address")?.as_str()?.to_string();
+    let f = |k: &str| v.get(k).and_then(serde_json::Value::as_f64);
+    let n = |k: &str| v.get(k).and_then(serde_json::Value::as_u64).unwrap_or(0);
+    Some((
+        address,
+        Desempenho {
+            score: f("score").unwrap_or(0.0),
+            status: v.get("status").and_then(|x| x.as_str()).unwrap_or_default().to_string(),
+            degraded: v.get("degraded").and_then(serde_json::Value::as_bool).unwrap_or(false),
+            productivity_pct: f("productivityPct").unwrap_or(0.0),
+            expected: n("expected"),
+            produced: n("produced"),
+            in_turn: n("inTurn"),
+            missed: n("missed"),
+            out_of_turn: n("outOfTurn"),
+            avg_latency_ms: f("avgLatencyMs"),
+            last_produced_height: v.get("lastProducedHeight").and_then(serde_json::Value::as_u64),
+            last_produced_at: v.get("lastProducedAt").and_then(serde_json::Value::as_i64),
+        },
+    ))
+}
+
+/// Uma transação do histórico. `id`, `from` e `blockHeight` são obrigatórios —
+/// uma linha sem eles não é referenciável e é descartada, não inventada.
+fn tx_resumida_de(v: &serde_json::Value) -> Option<TxResumida> {
+    Some(TxResumida {
+        id: v.get("id")?.as_str()?.to_string(),
+        tx_type: v.get("type").and_then(|x| x.as_str()).unwrap_or_default().to_string(),
+        from: v.get("from")?.as_str()?.to_string(),
+        to: v.get("to").and_then(|x| x.as_str()).map(str::to_string),
+        amount: texto_ou_numero_u128(v.get("amount")),
+        fee: texto_ou_numero_u128(v.get("fee")),
+        nonce: v.get("nonce").and_then(serde_json::Value::as_i64).unwrap_or(0),
+        block_height: v.get("blockHeight").and_then(serde_json::Value::as_u64)?,
+        block_time: v.get("blockTime").and_then(serde_json::Value::as_i64).unwrap_or(0),
+    })
 }
 
 /// `Date.now()` — só o `timestamp` da transação, que não entra em consenso além
@@ -834,5 +927,56 @@ mod tests {
         );
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Valor monetário aceita as DUAS formas que a API emite: BigInt→string
+    /// ("1000") e número cru. Ausente ou malformado é 0.
+    #[test]
+    fn valor_monetario_aceita_texto_e_numero() {
+        assert_eq!(texto_ou_numero_u128(Some(&serde_json::json!("1000"))), 1000);
+        assert_eq!(texto_ou_numero_u128(Some(&serde_json::json!(1000))), 1000);
+        assert_eq!(texto_ou_numero_u128(Some(&serde_json::json!(null))), 0);
+        assert_eq!(texto_ou_numero_u128(Some(&serde_json::json!("abc"))), 0);
+        assert_eq!(texto_ou_numero_u128(None), 0);
+    }
+
+    /// Linha de histórico sem `id`, `from` ou `blockHeight` é DESCARTADA — uma
+    /// transação que não dá para referenciar não vira um registro meio vazio.
+    #[test]
+    fn tx_resumida_exige_id_from_e_altura() {
+        let completa = serde_json::json!({
+            "id": "abc", "type": "TRANSFER", "from": "E7A", "to": "E7B",
+            "amount": "10", "fee": "1", "nonce": 3,
+            "blockHeight": 7, "blockTime": 1_700_000_000_000i64,
+        });
+        let t = tx_resumida_de(&completa).expect("completa");
+        assert_eq!(t.id, "abc");
+        assert_eq!(t.amount, 10);
+        assert_eq!(t.block_height, 7);
+
+        for obrigatorio in ["id", "from", "blockHeight"] {
+            let mut sem = completa.clone();
+            sem.as_object_mut().expect("objeto").remove(obrigatorio);
+            assert!(tx_resumida_de(&sem).is_none(), "sem `{obrigatorio}` não é linha");
+        }
+    }
+
+    /// Entrada de performance sem endereço não tem com quem casar — descartada.
+    /// Os Option (`avgLatencyMs` etc.) ficam `None` quando a API manda null.
+    #[test]
+    fn desempenho_sem_endereco_e_descartado_e_nulls_viram_none() {
+        assert!(desempenho_de(&serde_json::json!({ "score": 100 })).is_none());
+
+        let (endereco, d) = desempenho_de(&serde_json::json!({
+            "address": "E7A", "score": 100, "status": "healthy", "degraded": false,
+            "productivityPct": 0, "expected": 0, "produced": 0, "inTurn": 0,
+            "missed": 0, "outOfTurn": 0, "avgLatencyMs": null,
+            "lastProducedHeight": null, "lastProducedAt": null,
+        }))
+        .expect("tem endereço");
+        assert_eq!(endereco, "E7A");
+        assert_eq!(d.score, 100.0);
+        assert_eq!(d.avg_latency_ms, None);
+        assert_eq!(d.last_produced_height, None);
     }
 }

@@ -146,33 +146,13 @@ impl Relayer {
     }
 
     /// Envia uma transação reservando o nonce, com ressincronização em erro.
+    ///
+    /// A máquina de reserva vive em `cliente::enviar_reservando` — a MESMA que o
+    /// [`crate::Remetente`] usa. Extraída daqui (Fase S2) sem mudar semântica: a
+    /// invariante anti-pagamento-duplo não depende do nonce, e sim do conjunto
+    /// `liquidando` em [`Relayer::ciclo`].
     fn enviar(&mut self, monta: impl FnOnce(i64) -> TxSpec) -> Result<Tx, ErroCliente> {
-        let nonce = match self.proximo_nonce {
-            Some(n) => n,
-            None => self.cliente.proximo_nonce(&self.endereco)?,
-        };
-        let tx = self.cliente.montar(monta(nonce))?;
-        match self.cliente.enviar(&tx) {
-            Ok(r) if r.accepted => {
-                self.proximo_nonce = Some(nonce + 1);
-                Ok(tx)
-            }
-            Ok(r) => {
-                // Recusada: o nonce reservado não foi consumido, e insistir nele
-                // travaria todas as seguintes. Ressincroniza.
-                self.proximo_nonce = None;
-                Err(ErroCliente::Api {
-                    status: 400,
-                    mensagem: r.reason.unwrap_or_else(|| "transação recusada".into()),
-                })
-            }
-            Err(e) => {
-                // Inclusive TIMEOUT: a transação pode ou não ter chegado, e
-                // adivinhar é pior que perguntar ao nó no próximo envio.
-                self.proximo_nonce = None;
-                Err(e)
-            }
-        }
+        crate::cliente::enviar_reservando(&self.cliente, &self.endereco, &mut self.proximo_nonce, monta)
     }
 
     /// Depósito confirmado numa cadeia externa → `BRIDGE_IN` na EAV7.
