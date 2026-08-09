@@ -25,6 +25,7 @@ pub mod config;
 pub mod eavm;
 pub mod hash;
 pub mod mempool;
+pub mod money;
 pub mod signature;
 pub mod state;
 pub mod stateroot;
@@ -44,6 +45,7 @@ pub mod blockstore;
 pub mod snapshot;
 
 pub use address::{derive_address_from, is_valid_address, ADDRESS_LEN, ADDRESS_PREFIX};
+pub use money::format_eav7;
 pub use block::{
     block_hash, block_validator, build_block, verify_block_integrity, Block, BlockSigner,
     BuildParams, GENESIS_PREVIOUS_HASH,

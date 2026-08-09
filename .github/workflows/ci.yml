@@ -97,6 +97,48 @@ jobs:
           NEXT_PUBLIC_USE_MOCK: "false"
         run: npm run build
 
+  api-parity:
+    name: G5 paridade API JS↔Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - run: sudo apt-get update && sudo apt-get install -y jq
+      - run: npm ci
+      - name: build eav7-node
+        working-directory: rust
+        run: cargo build -p eav7-node
+      - name: parity boot (6 rotas)
+        run: bash bin/eav7-api-parity-boot.sh
+
+  e2e-smoke:
+    name: G12 Playwright smoke (mock)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-next
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-next/package-lock.json
+      - run: npm ci
+      - name: instalar Chromium
+        run: npx playwright install --with-deps chromium
+      - name: smoke 6 rotas
+        env:
+          NEXT_PUBLIC_USE_MOCK: "true"
+        run: npm run test:e2e
+
   verificar:
     name: eav7-verificar (completo)
     # Mais caro; roda no push à branch principal e sob demanda.

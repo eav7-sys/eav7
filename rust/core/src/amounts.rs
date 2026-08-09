@@ -40,18 +40,7 @@ pub fn eav7_to_e7(text: &str, campo: &str) -> Result<u128, String> {
     Ok(valor)
 }
 
-pub fn format_eav7(e7: u128) -> String {
-    let whole = e7 / UNIT;
-    let frac = e7 % UNIT;
-    if frac == 0 {
-        return whole.to_string();
-    }
-    let mut casas = format!("{frac:06}");
-    while casas.ends_with('0') {
-        casas.pop();
-    }
-    format!("{whole}.{casas}")
-}
+pub use eav7::format_eav7;
 
 #[cfg(test)]
 mod tests {

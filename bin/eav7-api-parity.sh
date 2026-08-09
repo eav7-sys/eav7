@@ -13,10 +13,14 @@ fi
 ROTAS=(
   "/status"
   "/blocks?limit=5"
+  "/blocks/latest"
   "/validators"
   "/stats"
   "/tokens"
   "/txs?limit=5"
+  "/mempool"
+  "/names"
+  "/nfts"
 )
 
 # Remove campos voláteis e ordena chaves (JS preserva inserção; Rust serde

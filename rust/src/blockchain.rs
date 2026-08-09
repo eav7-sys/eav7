@@ -26,22 +26,17 @@
 //!    Divergência de raiz é bloco rejeitado — é a única checagem que pega
 //!    divergência de ESTADO entre nós.
 //!
-//! # Persistência: o que existe e o que falta
+//! # Persistência
 //!
-//! O `BlockStore` (append incremental, `pread`, truncamento de rabo, replay
-//! tolerante a arquivo rasgado) ESTÁ portado — `crate::blockstore`, e
-//! [`Blockchain::load_from_disk`] é o caminho-fonte-de-verdade. Sem store, a
-//! janela em RAM é a cadeia inteira (ver [`Blockchain::slide_tail`]).
-//!
-//! O que NÃO está: o SNAPSHOT DE BOOT (`#writeSnapshot`/`#loadFromSnapshot` da
-//! referência, blockchain.js:607-660, com o HMAC que sela o arquivo). Este
-//! cliente sempre reexecuta a cadeia inteira ao subir. É correto e é lento: a
-//! um bloco por segundo, o tempo de boot cresce sem teto junto com a cadeia — foi
-//! exatamente o que motivou o snapshot na referência.
-//!
-//! O texto anterior aqui dizia que a persistência inteira "ficou de fora". Metade
-//! disso deixou de ser verdade quando o `blockstore` foi portado, e a metade que
-//! sobrou é justamente a que importa para operar.
+//! * [`crate::blockstore`] — append JSONL, sidecars G7 (`blocks.idx` /
+//!   `hashes.bin`), truncamento de rabo, replay tolerante a rasgo.
+//! * Snapshot de boot (`crate::snapshot` + [`Blockchain::load_from_snapshot`] /
+//!   [`Blockchain::talvez_snapshot`]) — estado provado contra `stateRoot` do
+//!   header; encode+write fora do caminho quente (G8). Reorg abaixo da altura
+//!   gravada invalida o arquivo (epoch).
+//! * Sem store, a janela em RAM é a cadeia inteira (ver [`Blockchain::slide_tail`]).
+//!   Sem snapshot válido, o boot cai em [`Blockchain::load_from_disk`] (fonte de
+//!   verdade).
 
 use std::collections::{BTreeMap, BTreeSet};
 

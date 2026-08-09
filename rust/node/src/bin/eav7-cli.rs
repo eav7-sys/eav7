@@ -42,7 +42,7 @@ use eav7::block::BlockSigner;
 use eav7::signature::{HybridPublicKey, SIGNATURE_SCHEME};
 use eav7::state::contracts::eavm_to_e7;
 use eav7::transaction::{build_transaction, verify_transaction, JsonValue, Tx, TxSpec};
-use eav7::{config, is_valid_address};
+use eav7::{config, format_eav7, is_valid_address};
 
 use eav7_node::ai::bridge::tx_to_json;
 use eav7_node::p2p::{make_client, HttpClient};
@@ -217,21 +217,6 @@ fn parse_units(text: &str, decimals: u32, campo: &str) -> Result<u128, String> {
         valor = valor.checked_add(frac_val).ok_or("valor grande demais")?;
     }
     Ok(valor)
-}
-
-/// `formatEav7` (src/config.js:572-578): e7 -> texto legível, sem zeros à direita.
-fn format_eav7(e7: u128) -> String {
-    let unit = config::UNIT;
-    let whole = e7 / unit;
-    let frac = e7 % unit;
-    if frac == 0 {
-        return whole.to_string();
-    }
-    let mut casas = format!("{frac:06}");
-    while casas.ends_with('0') {
-        casas.pop();
-    }
-    format!("{whole}.{casas}")
 }
 
 // ---------------------------------------------------------------- HTTP do cliente

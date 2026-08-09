@@ -25,12 +25,14 @@ use axum::Router;
 use serde_json::json;
 
 use eav7::block::{block_from_json, block_to_json, tx_from_json, tx_to_json};
-use eav7::config::{MAX_CHAIN_PAGE, MIN_VALIDATOR_STAKE, UNIT};
+use eav7::config::{MAX_CHAIN_PAGE, MIN_VALIDATOR_STAKE};
+#[cfg(test)]
+use eav7::config::UNIT;
 use eav7::state::contracts::eavm_to_e7;
 use eav7::state::Account;
 use eav7::stateroot::{account_leaf, merkle_path, sort_leaves};
 use eav7::transaction::{parse_json, JsonValue};
-use eav7::is_valid_address;
+use eav7::{format_eav7, is_valid_address};
 
 use super::{bad_request, int_param, into_response, reply, ApiReply, AppState};
 use crate::node::Node;
@@ -63,18 +65,6 @@ fn jv(v: &JsonValue) -> serde_json::Value {
             serde_json::Value::Object(m.iter().map(|(k, val)| (k.clone(), jv(val))).collect())
         }
     }
-}
-
-/// `formatEav7` de config.js:572 — apresentação de um `Amount` em EAV7:
-/// parte inteira + fração de até 6 casas SEM zeros à direita.
-fn format_eav7(v: u128) -> String {
-    let inteiro = v / UNIT;
-    let frac = v % UNIT;
-    if frac == 0 {
-        return inteiro.to_string();
-    }
-    let f = format!("{frac:06}");
-    format!("{inteiro}.{}", f.trim_end_matches('0'))
 }
 
 /// A forma `stable()` de stateroot.js:21 para UMA conta: BigInt vira `"B<dec>"`

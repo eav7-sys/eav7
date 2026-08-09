@@ -114,20 +114,7 @@ pub fn anthropic_extract_text(body: &serde_json::Value) -> String {
 // Utilidades compartilhadas pelos três submódulos
 // ---------------------------------------------------------------------------
 
-/// e7 (u128) → string humana em EAV7 — `formatEav7` de `src/config.js:572-578`.
-/// Duplicado do `format_eav7` privado de `producer.rs` DE PROPÓSITO: a regra
-/// deste porte é não tocar módulos de outros donos, e são dez linhas de
-/// formatação de apresentação (nunca consenso).
-pub(crate) fn format_eav7(e7: u128) -> String {
-    let unit = eav7::config::UNIT;
-    let inteiro = e7 / unit;
-    let fracao = e7 % unit;
-    if fracao == 0 {
-        return inteiro.to_string();
-    }
-    let frac = format!("{fracao:06}");
-    format!("{inteiro}.{}", frac.trim_end_matches('0'))
-}
+pub(crate) use eav7::format_eav7;
 
 /// Milissegundos desde a época Unix — o `Date.now()` dos timers do JS. Só o
 /// TRANSPORTE o chama; a lógica pura recebe `now` como parâmetro.

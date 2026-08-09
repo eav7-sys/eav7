@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
  *
  * Em CI, o job web-next pode passar a subir o server após o build.
  */
-const rotas = ["/", "/blocks", "/txs", "/validators", "/tokens"];
+const rotas = ["/", "/blocks", "/txs", "/validators", "/tokens", "/wallet"];
 
 for (const rota of rotas) {
   test(`smoke ${rota}`, async ({ page }) => {

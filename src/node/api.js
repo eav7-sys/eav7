@@ -1,4 +1,4 @@
-import { createServer, request as httpRequest } from 'node:http';
+import { createServer } from 'node:http';
 import { CHAIN, toJson, formatEav7 } from '../config.js';
 import { isValidAddress } from '../crypto/keys.js';
 import { tokenView, tokenBalanceOf, EAV20_STANDARD } from '../token/eav20.js';
@@ -7,165 +7,14 @@ import { createRateLimiter, clientIp } from './ratelimit.js';
 import { accountProof as stateProof } from '../core/stateroot.js';
 import { scoreValidators } from './validator-score.js';
 import { adviseGovernance } from './governance-advisor.js';
+import { computeStats, searchIndex, lowerBound, SEARCH_SUBSTR_SCAN_CAP } from './api/stats.js';
+import { isWebRequest, proxyToWeb, proxyToBuy, proxyToPeer } from './api/proxy.js';
 
 const rateLimit = createRateLimiter();
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 
-// Caches invalidados por ALTURA de bloco: o estado só muda quando entra um bloco,
-// então /stats e /search recomputam no máximo UMA vez por bloco em vez de varrer
-// todas as contas a cada request. Sob 240 req/s todas reusam o mesmo resultado —
-// fecha o DoS assimético de varredura full-state por request (achado M2).
-let statsCache = { height: -1, value: null };
-let searchIndexCache = { height: -1, sorted: null };
 let eligibleCache = { height: -1, value: 0 }; // contagem de validadores elegíveis (conselheiro de governança)
-
-const NATIVE_VOLUME_TYPES = new Set(['TRANSFER', 'EAVM_TRANSFER']);
-const STATS_BUCKETS = 24; // séries horárias (24h)
-const STATS_SCAN_CAP = 5_000; // teto de blocos-com-tx varridos por recálculo (anti-DoS)
-
-function computeStats(blockchain, state) {
-  if (statsCache.value && statsCache.height === blockchain.height) return statsCache.value;
-  const accs = Object.keys(state.accounts);
-  let staked = 0n;
-  for (const a of accs) staked += (state.accounts[a].staked ?? 0n);
-
-  // Janela de 24h: volume nativo transferido, contagem de txs e séries horárias REAIS
-  // (para os sparklines). Usa o índice ESPARSO de blocos-com-tx (não varre a cadeia
-  // inteira) + teto anti-DoS; tudo cacheado por altura.
-  const now = blockchain.head?.timestamp ?? 0;
-  const dayMs = 86_400_000;
-  const from = now - dayMs;
-  const bucketMs = dayMs / STATS_BUCKETS;
-  const txSeries = new Array(STATS_BUCKETS).fill(0);
-  const volSeries = new Array(STATS_BUCKETS).fill(0n);
-  let volume24h = 0n;
-  let txCount24h = 0;
-  // Extremo mais antigo REALMENTE varrido: o TPS sai daqui, não de `dayMs`. Numa
-  // cadeia com 3 horas de vida, dividir por 24h daria um TPS 8x menor que o real.
-  let oldest = null;
-  const bwt = blockchain.blocksWithTxs ?? [];
-  let scanned = 0;
-  for (let i = bwt.length - 1; i >= 0 && scanned < STATS_SCAN_CAP; i--) {
-    const b = blockchain.getBlock(bwt[i]);
-    if (!b) continue;
-    scanned++;
-    if (b.timestamp < from) break; // saímos da janela de 24h
-    const bucket = Math.min(STATS_BUCKETS - 1, Math.max(0, Math.floor((b.timestamp - from) / bucketMs)));
-    oldest = b.timestamp;
-    for (const t of (b.transactions ?? [])) {
-      txCount24h++;
-      txSeries[bucket]++;
-      if (NATIVE_VOLUME_TYPES.has(t.type)) {
-        const amt = BigInt(t.amount ?? '0');
-        volume24h += amt;
-        // e7 CRU. Somar `amt / UNIT` por transação jogava fora a fração de CADA
-        // uma: mil transferências de 0,9 EAV7 apareciam como zero na série.
-        volSeries[bucket] += amt;
-      }
-    }
-  }
-
-  const value = {
-    accounts: accs.length,
-    staked,
-    transactions: blockchain.txIndex.size,
-    volume24h,
-    txCount24h,
-    tps: oldest !== null && now > oldest ? txCount24h / ((now - oldest) / 1000) : 0,
-    txSeries,
-    volSeries,
-  };
-  statsCache = { height: blockchain.height, value };
-  return value;
-}
-
-// Índice de busca ordenado por endereço minúsculo (candidatos = contas nativas +
-// holders de token). Reconstruído no máximo uma vez por bloco; buscas por prefixo
-// usam busca binária (O(log n + k)) e a varredura por substring é limitada.
-const SEARCH_SUBSTR_SCAN_CAP = 50_000;
-function searchIndex(blockchain, state) {
-  if (searchIndexCache.sorted && searchIndexCache.height === blockchain.height) return searchIndexCache.sorted;
-  const cand = new Set(Object.keys(state.accounts));
-  for (const tok of Object.values(state.tokens)) for (const h of Object.keys(tok.balances ?? {})) cand.add(h);
-  const sorted = [...cand].map((a) => [a.toLowerCase(), a]).sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
-  searchIndexCache = { height: blockchain.height, sorted };
-  return sorted;
-}
-function lowerBound(sorted, ql) {
-  let lo = 0, hi = sorted.length;
-  while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid][0] < ql) lo = mid + 1; else hi = mid; }
-  return lo;
-}
-
-// ---- Frontend Next.js (serviço eav7-web em 127.0.0.1:3000) --------------------
-// G10: único frontend. `public/*.html` e `web/dist` foram aposentados — o nó só
-// faz proxy. A API (accept: application/json), o P2P e o RPC seguem locais.
-const WEB_HOST = '127.0.0.1';
-// Porta do frontend Next para o reverse-proxy. Sobrescrevível por env para
-// rodar uma segunda instância (ex.: testnet em 3001) no mesmo servidor.
-const WEB_PORT = Number(process.env.EAV7_WEB_PORT) || 3000;
-// Prefixos de diretório do app (proxy por startsWith — inclui /_next/image, sem extensão).
-const WEB_PREFIXES = ['/_next/', '/bg/', '/brand/'];
-const WEB_FILES_RE = /^\/(?:favicon\.ico|icon\.svg|icon\.png|apple-icon|opengraph-image|twitter-image|robots\.txt|sitemap\.xml|manifest|sw\.js)/i;
-const WEB_EXT_RE = /\.(?:js|mjs|css|map|png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|eot|mp4|webm|ogg|wasm)$/i;
-function isWebRequest(req, pathname) {
-  const accept = req.headers.accept ?? '';
-  if (accept.includes('text/html') || accept.includes('text/x-component')) return true;
-  if ('rsc' in req.headers || 'next-router-prefetch' in req.headers || 'next-router-state-tree' in req.headers) return true;
-  if (WEB_PREFIXES.some((p) => pathname.startsWith(p))) return true;
-  return WEB_FILES_RE.test(pathname) || WEB_EXT_RE.test(pathname);
-}
-function proxyToWeb(req, res, node) {
-  const upstream = httpRequest({ host: WEB_HOST, port: WEB_PORT, method: req.method, path: req.url, headers: req.headers }, (up) => {
-    res.writeHead(up.statusCode ?? 502, up.headers);
-    up.pipe(res);
-  });
-  upstream.on('error', (e) => {
-    node.log?.(`[web] proxy indisponível: ${e.message}`);
-    if (!res.headersSent) { res.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' }); res.end('EAV7 Web temporariamente indisponível'); }
-  });
-  req.pipe(upstream);
-}
-
-// Proxy /buy/* -> serviço de fulfillment "Comprar EAV7" (instância única; ver server/buy-fulfillment.mjs).
-// EAV7_BUY_HOST aponta para o nó que roda o serviço (127.0.0.1 se for local; IP privado do node1 nos demais).
-const BUY_HOST = process.env.EAV7_BUY_HOST || '127.0.0.1';
-const BUY_PORT = Number(process.env.EAV7_BUY_PORT || 8790);
-function proxyToBuy(req, res, node) {
-  const upstream = httpRequest({ host: BUY_HOST, port: BUY_PORT, method: req.method, path: req.url, headers: { ...req.headers, host: `${BUY_HOST}:${BUY_PORT}` } }, (up) => {
-    res.writeHead(up.statusCode ?? 502, up.headers);
-    up.pipe(res);
-  });
-  upstream.on('error', (e) => {
-    node.log?.(`[buy] proxy indisponível: ${e.message}`);
-    if (!res.headersSent) { res.writeHead(502, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify({ error: 'serviço de compra indisponível' })); }
-  });
-  req.pipe(upstream);
-}
-
-// Failover de gateway: encaminha uma LEITURA (GET) ao peer mais saudável quando este nó
-// está stale. Marca x-eav7-proxied para não formar loop. Retorna true se serviu, false
-// se falhou (o chamador cai no atendimento local).
-async function proxyToPeer(req, res, target, node) {
-  try {
-    const up = await fetch(target + req.url, {
-      headers: { accept: 'application/json', 'x-eav7-proxied': '1' },
-      signal: AbortSignal.timeout(8000),
-    });
-    const body = Buffer.from(await up.arrayBuffer());
-    res.writeHead(up.status, {
-      'content-type': up.headers.get('content-type') || 'application/json; charset=utf-8',
-      'access-control-allow-origin': '*',
-      'x-eav7-served-by': target,
-    });
-    res.end(body);
-    return true;
-  } catch (e) {
-    node.log?.(`[gateway] proxy de leitura falhou (${target}): ${e.message}`);
-    return false;
-  }
-}
 
 export function createApiServer(node) {
   return createServer((req, res) => {

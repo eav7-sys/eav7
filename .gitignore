@@ -18,6 +18,8 @@ rust/target/
 # inventário de nós de produção (IPs) — use deploy/nodes.example
 deploy/nodes.env
 deploy/inventory.env
+# checksums gerados no deploy (G13)
+deploy/checksums/
 
 # arquivo de build do frontend (12 MB) — o fonte está em web-next/
 eav7-frontend-web.rar

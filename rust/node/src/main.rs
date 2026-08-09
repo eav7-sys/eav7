@@ -14,9 +14,6 @@ use std::sync::{Arc, RwLock};
 
 use eav7::blockchain::Blockchain;
 use eav7::blockstore::BlockStore;
-use eav7::mempool::Mempool;
-
-use eav7_node::guard::{AbuseGuard, GuardConfig};
 use eav7_node::node::Node;
 
 struct Args {
@@ -342,40 +339,16 @@ async fn executa() -> Result<(), String> {
     let url_propria =
         args.self_url.clone().unwrap_or_else(|| format!("http://127.0.0.1:{}", args.port));
 
-    let node = Node {
-        blockchain,
-        mempool: Mempool::new(),
-        validator_address: validator_address.clone(),
-        peers: Vec::new(),
-        security_alerts: Vec::new(),
-        // Placeholder: o handle REAL (o mesmo do middleware) é injetado logo
-        // após a construção da admissão, abaixo.
-        guard: std::sync::Arc::new(std::sync::Mutex::new(AbuseGuard::new(GuardConfig::default()))),
-        gateway_target: None,
-        gateway_snapshot: Default::default(),
-        eavm_enabled,
-        eavm_port,
-        // `opts['public-rpc'] ?? process.env.EAV7_PUBLIC_RPC_URL ?? null`
-        // (bin/eav7.js:233). Ficava `None` fixo: em produção o `/status` do nó JS
-        // anunciava a URL do RPC e o do Rust anunciava `null`, deixando o fluxo
-        // "adicionar rede ao MetaMask" do frontend sem para onde apontar.
-        public_rpc_url: args
-            .public_rpc_url
-            .clone()
-            .or_else(|| std::env::var("EAV7_PUBLIC_RPC_URL").ok())
-            .filter(|u| !u.is_empty()),
-        self_url: Some(url_propria.clone()),
-        // Sem token configurado os endpoints de admin ficam DESABILITADOS — o
-        // padrão seguro do JS, preservado.
-        admin_token: std::env::var("EAV7_ADMIN_TOKEN").ok().filter(|t| !t.is_empty()),
-        // Registro de contratos verificados começa vazio (#8) — metadado
-        // NÃO-consensual, preenchido em runtime por POST /contract/{addr}/verify.
-        verified_contracts: Default::default(),
-            eavm_index: std::sync::Arc::new(std::sync::Mutex::new(eav7_node::node::EavmIndex::novo())),
-            relay_bloco: None,
-            pedir_sync: None,
-            gossip_tx: None,
-    };
+    // G16: construtor único + patches de env/CLI (evita literal ×N a derivar).
+    let mut node = Node::novo(blockchain, validator_address.clone(), Some(url_propria.clone()));
+    node.eavm_enabled = eavm_enabled;
+    node.eavm_port = eavm_port;
+    node.public_rpc_url = args
+        .public_rpc_url
+        .clone()
+        .or_else(|| std::env::var("EAV7_PUBLIC_RPC_URL").ok())
+        .filter(|u| !u.is_empty());
+    node.admin_token = std::env::var("EAV7_ADMIN_TOKEN").ok().filter(|t| !t.is_empty());
     let estado: Arc<RwLock<Node>> = Arc::new(RwLock::new(node));
 
     // P2P: registro nos seeds + sync periódico. `self_url` default espelha o JS

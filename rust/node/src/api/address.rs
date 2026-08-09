@@ -38,7 +38,7 @@ use eav7::config as c;
 use eav7::state::gov::{Nivel, Permission};
 use eav7::state::State as ChainState;
 use eav7::transaction::{Tx, EAVM_SCHEME};
-use eav7::{canonical_json, derive_address_from, is_valid_address, JsonValue};
+use eav7::{canonical_json, derive_address_from, format_eav7, is_valid_address, JsonValue};
 
 use super::{bad_request, int_param, into_response, reply, ApiReply, AppState};
 use crate::node::Node;
@@ -56,18 +56,6 @@ fn is_eavm_address(v: &str) -> bool {
 /// além da concatenação.
 fn eavm_to_e7(eavm: &str) -> String {
     derive_address_from(format!("EAV7-EAVM:{}", eavm.to_lowercase()))
-}
-
-/// `formatEav7` (`config.js:572`): e7 → texto humano ("16", "12.5"). Fração de 6
-/// casas com zeros à direita removidos.
-fn format_eav7(v: u128) -> String {
-    let whole = v / c::UNIT;
-    let frac = v % c::UNIT;
-    if frac == 0 {
-        return whole.to_string();
-    }
-    let f = format!("{frac:06}");
-    format!("{whole}.{}", f.trim_end_matches('0'))
 }
 
 /// `BigInt(t.amount ?? 0)` do JS: os valores vêm como string decimal na Tx;

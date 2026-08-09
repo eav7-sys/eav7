@@ -35,7 +35,8 @@ use std::time::Duration;
 
 use eav7::block::Block;
 use eav7::block::BlockSigner;
-use eav7::config::{BLOCK_REWARD, MAX_TXS_PER_BLOCK, SYMBOL, UNIT};
+use eav7::config::{BLOCK_REWARD, MAX_TXS_PER_BLOCK, SYMBOL};
+use eav7::format_eav7;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::api::AppState;
@@ -240,18 +241,6 @@ fn agora_ms() -> i64 {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| i64::try_from(d.as_millis()).unwrap_or(i64::MAX))
         .unwrap_or(0)
-}
-
-/// `formatEav7` de config.js:572 — mesma cópia local que `api/chain.rs:84` usa
-/// (a fn de lá é privada do módulo; oito linhas não justificam re-exportar).
-fn format_eav7(v: u128) -> String {
-    let inteiro = v / UNIT;
-    let frac = v % UNIT;
-    if frac == 0 {
-        return inteiro.to_string();
-    }
-    let f = format!("{frac:06}");
-    format!("{inteiro}.{}", f.trim_end_matches('0'))
 }
 
 #[cfg(test)]

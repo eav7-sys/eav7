@@ -79,6 +79,26 @@ done
 node bin/eav7-config-rs.js >/dev/null
 unset EAV7_REPLAY_DIR
 
+secao "Vetores de conformidade regeneráveis (G19)"
+VEC_TMP=$(mktemp -d /tmp/eav7-vectors-XXXXXX)
+if node bin/eav7-vectors.js "$VEC_TMP" >/tmp/eav7-vec-gen.log 2>&1 \
+   && node bin/eav7-vectors-state.js "$VEC_TMP" >/tmp/eav7-vec-state.log 2>&1 \
+   && node bin/eav7-vectors-eavm.js "$VEC_TMP" >/tmp/eav7-vec-eavm.log 2>&1 \
+   && node bin/eav7-vectors-lifecycle.js "$VEC_TMP" >/tmp/eav7-vec-life.log 2>&1; then
+  vec_drift=0
+  for f in canonical.json crypto.json evm.json meta.json stateroot.json transaction.json \
+           eavm-envelope.json state.json eavm-state.json lifecycle.json; do
+    if ! cmp -s "vectors/$f" "$VEC_TMP/$f" 2>/dev/null; then
+      erro "vectors/$f diverge do gerador — regenere e commite"
+      vec_drift=1
+    fi
+  done
+  [ "$vec_drift" -eq 0 ] && ok "vetores batem com os geradores"
+else
+  erro "geradores de vetores falharam — ver /tmp/eav7-vec-*.log"
+fi
+rm -rf "$VEC_TMP"
+
 secao "Resultado"
 if [ "$falhas" -eq 0 ]; then
   printf '  \033[32mTUDO VERDE\033[0m — os dois clientes, nos dois modos de fork.\n\n'

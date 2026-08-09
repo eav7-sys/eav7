@@ -28,22 +28,35 @@ sem tocar a rede — úteis para assinar offline, testar e enfileirar.
 
 | Rota | Descrição |
 |------|-----------|
+| `/` | Índice JSON da API (`Accept: application/json`): `chain` (= `CHAIN.NAME`), `protocol`, `miningPlatform` (`/mining`), lista `endpoints`. HTML na raiz vai ao Next. |
 | `/status` | Estado da cadeia: `height`, `finalizedHeight` (#2), `headHash`, `supply`, `minted`, `burned`, `treasury`, `validators`, `blockReward`, energia. |
 | `/proof/:end` | **Prova de conta** (Merkle) contra o `stateRoot` (#1) — light client confere saldo/nonce sem baixar o estado. |
 | `/address/:end` | Conta (E7… ou 0x… EAVM): `balance`, `staked`, `nonce`, `nextNonce` (ciente do mempool), `energy`, `feeExempt`, `isValidator`, `tokens`. |
 | `/address/:end/txs?limit&before` | Transações da carteira, mais novas primeiro (via índice por endereço). |
+| `/address/:end/analysis` | Agregados da conta (gráficos): `txCount`, `sent`/`received`, `byType`, etc. |
 | `/chain?from&limit` | Faixa de blocos (limite `MAX_CHAIN_PAGE`). |
-| `/block/:ref` | Bloco por altura ou hash. |
+| `/blocks?limit&from` | Lista de blocos (paginação). |
+| `/blocks/latest` | Cabeça da cadeia. |
+| `/blocks/:ref` | Bloco por altura ou hash. Cada bloco inclui `size` — comprimento em bytes do JSON UTF-8 da linha do bloco (igual nos dois clientes). |
+| `/txs?limit` | Feed global de transações (índice esparso). |
 | `/tx/:id` | Transação por id (confirmada ou no mempool). |
 | `/validators` | Conjunto ativo: `current` (top por peso = stake + votos, #4), `maxValidators`, `slotProducer`. |
 | `/tokens` | Tokens EAV20 emitidos. |
+| `/tokens/:id` | Detalhe de um token. |
+| `/tokens/:id/holders` | Holders (paginado). |
+| `/tokens/:id/transfers?limit&before` | Transferências do token (cursor `before`; teto de varredura). |
+| `/nfts` · `/nfts/:id` | Coleções / item EAV721. |
+| `/names` | Lista de nomes EAV-NS registrados. |
 | `/mempool` | Transações pendentes. |
 | `/search?q=` | Busca por endereço/token/bloco/tx (índice por prefixo, #M2). |
-| `/stats` | Agregados do explorer (cacheados por altura). |
+| `/stats` | Agregados do explorer (cache por altura): `accounts`, `staked`, `transactions`, `volume24h` (e7 string), `txCount24h`, **`tps`** (tx/s na janela varrida), `txSeries`, `volSeries`. |
+| `/governance` · `/governance/proposals` · `/treasury` | Governança on-chain e tesouraria. |
 | `/contract/:addr` | Metadados de verificação de um contrato EAVM (#8), ou 404. |
 | `/logs` | Eventos EAVM recentes (índice node-local, ring buffer). |
 | `/name/:nome` | Resolução do serviço de nomes EAV-NS → endereço E7, ou 404. |
-| `/bridge/transfers` | Transferências de ponte. |
+| `/ai/tasks` · `/ai/oracles` | Oráculos de IA. |
+| `/bridge/transfers` · `/bridge/transfers/:id` | Transferências de ponte. |
+| `/gateway` · `/guard` | Observabilidade de gateway / auto-mitigação (JSON). |
 
 ## Endpoints de escrita (POST)
 
