@@ -303,7 +303,7 @@ export class Eav7Node {
     }
     const shown = this.host === '0.0.0.0' ? '127.0.0.1' : this.host;
     this.log(`[nó] ${CHAIN.NAME} (protocolo ${CHAIN.PROTOCOL}) escutando em ${this.host}:${this.port} (bind ${this.host})`);
-    this.log(`[nó] plataforma de mineração: http://${shown}:${this.port}/app`);
+    this.log(`[nó] plataforma de mineração: http://${shown}:${this.port}/mining`);
     if (this.eavmServer) {
       this.log(`[nó] RPC EAVM (MetaMask/Trust Wallet): http://${shown}:${this.eavmPort} — Chain ID ${CHAIN.EAVM_CHAIN_ID}, símbolo ${CHAIN.SYMBOL}`);
     }

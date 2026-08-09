@@ -27,7 +27,7 @@ Nó / mineração
              [--allow-private-peers] [--genesis-hash E7...] [--eavm-port 7070] [--no-eavm]
   mine       atalho de "node start" (cria/reusa carteira de minerador automaticamente)
   status [--node url]                   status da rede
-  Plataforma de mineração: http://127.0.0.1:<porta>/app
+  Plataforma de mineração: http://127.0.0.1:<porta>/mining
   RPC EAVM (MetaMask/Trust Wallet): http://127.0.0.1:<porta+1000> (Chain ID 72020)
 
 Protocolo EAVM (MetaMask / Trust Wallet)

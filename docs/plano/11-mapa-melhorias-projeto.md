@@ -16,7 +16,7 @@ este arquivo é o **inventário completo** de alavancas.
 | `rust/wasm` | Cripto da carteira no browser | **Pronto e ocioso** — web-next não usa |
 | `src/` | Referência JS + nó de produção atual | 378 testes; `api.js` monólito; 3 frontends |
 | `web-next/` | Explorador + wallet Next | Fase 4; scan solto; 0 e2e |
-| `web/` + `public/` | Frontends legados | Ainda servidos pelo nó |
+| `web/` + `public/` | Frontends legados | **Aposentados (G10)** — só `web-next` |
 | `vectors/` | Conformidade JS→Rust | Folhas/tx/EAVM; **sem** ciclo âncora/reorg |
 | `bin/eav7-verificar.sh` | Suíte completa local | Excelente; **sem CI** |
 | `docs/plano/` | Planos oficiais | 01–10 |
@@ -143,4 +143,4 @@ Depois: G6–G9, G13, trilha B/C/D do 08, aposentar JS (fase 6).
 | G6 harness multi-nó in-process | feito (`eav7_node::boot` + `tests/multi_node.rs`; G16 `Node::novo`) |
 | G7 índices em disco (`blocks.idx` + `hashes.bin`) | feito (JS+Rust; dual-client; eviction da janela) |
 | G8 snapshot async (fora de `add_block`) | feito (JS `setImmediate` + Rust thread; epoch anti-reorg) |
-| G10 aposentar fronts | ainda não |
+| G10 um frontend só (`web-next`) | feito (redirects + strip static JS/Rust + delete `public/`/`web/`) |

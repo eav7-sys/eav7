@@ -334,12 +334,10 @@ pub fn submit_tx(node: &mut Node, corpo: &str) -> ApiReply {
 /// Envia uma transação EAVM assinada (o `raw` da carteira web / MetaMask) SEM
 /// passar pelo JSON-RPC: embrulha em envelope eav20 e submete.
 ///
-/// A rota não existia neste cliente, e o efeito era pior que uma lacuna comum: o
-/// próprio nó Rust SERVE `/wallet` (`static_files.rs`), e a página que ele serve
-/// faz `POST /eavm/tx` — que caía no `fallback` dos estáticos e voltava como
-/// "arquivo não encontrado". O usuário via a carteira abrir e nenhuma transação
-/// sair. `eth_sendRawTransaction` faz o mesmo trabalho, mas vive em OUTRA PORTA
-/// (`port+1000`) e a carteira web não fala com ela.
+/// A rota não existia neste cliente, e o efeito era pior que uma lacuna comum: a
+/// carteira (hoje Next em `/wallet`) faz `POST /eavm/tx` — que caía no fallback
+/// e voltava "não encontrado". `eth_sendRawTransaction` faz o mesmo trabalho,
+/// mas vive em OUTRA PORTA (`port+1000`) e a carteira web não fala com ela.
 pub fn submit_eavm_tx(node: &mut Node, corpo: &str) -> ApiReply {
     let raw = match parse_json(corpo) {
         Ok(JsonValue::Map(m)) => match m.get("raw") {

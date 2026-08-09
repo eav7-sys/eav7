@@ -18,7 +18,7 @@ e vários apps consomem essa lista.
    ```
 
 3. **Ícone** (opcional, mas é o que faz aparecer a imagem):
-   1. Suba o `public/icon.png` (256×256) para o IPFS. Sem instalar nada, use um pin
+   1. Suba o `web-next/public/icon.png` (256×256) para o IPFS. Sem instalar nada, use um pin
       público, por exemplo:
       ```bash
       # com a CLI da web3.storage, ou pelo site pinata.cloud / nft.storage

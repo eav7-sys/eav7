@@ -18,6 +18,15 @@ const nextConfig: NextConfig = {
     if (!API_ORIGIN) return base;
     return [...base, { source: "/api/:path*", destination: `${API_ORIGIN}/:path*` }];
   },
+
+  // G10: aliases dos fronts legados (`public/app.html`, `/explorer`, SPA Vite).
+  async redirects() {
+    return [
+      { source: "/app", destination: "/mining", permanent: true },
+      { source: "/explorer", destination: "/", permanent: true },
+      { source: "/scan", destination: "/", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

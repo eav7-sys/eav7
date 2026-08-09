@@ -1,6 +1,4 @@
 import { createServer, request as httpRequest } from 'node:http';
-import { readFileSync, statSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { CHAIN, toJson, formatEav7 } from '../config.js';
 import { isValidAddress } from '../crypto/keys.js';
 import { tokenView, tokenBalanceOf, EAV20_STANDARD } from '../token/eav20.js';
@@ -100,54 +98,9 @@ function lowerBound(sorted, ql) {
   return lo;
 }
 
-// Estáticos servidos do disco com cache por mtime: relê o arquivo só quando ele muda.
-// Assim uma atualização de frontend (rsync do public/) é servida SEM reiniciar o nó,
-// mantendo o custo de uma stat por requisição (desprezível). `bin=true` para binários.
-const P = (rel) => fileURLToPath(new URL('../../public/' + rel, import.meta.url));
-const staticCache = new Map();
-function staticFile(rel, bin = false) {
-  const path = P(rel);
-  let mtime = 0;
-  try { mtime = statSync(path).mtimeMs; } catch { /* usa cache se existir */ }
-  const hit = staticCache.get(rel);
-  if (hit && hit.mtime === mtime) return hit.content;
-  const content = readFileSync(path, bin ? undefined : 'utf8');
-  staticCache.set(rel, { mtime, content });
-  return content;
-}
-const APP_HTML = () => staticFile('app.html');
-const EXPLORER_HTML = () => staticFile('explorer.html');
-const WALLET_HTML = () => staticFile('wallet.html');
-const WALLET_JS = () => staticFile('eav7-wallet.js');
-const THEME_CSS = () => staticFile('eav7-theme.css');
-const ICON_PNG = () => staticFile('icon.png', true);
-const ICON_SVG = () => staticFile('icon.svg');
-
-// ---- SPA React (build Vite em web/dist) — servido do disco com cache por mtime ----
-const DIST = (rel) => fileURLToPath(new URL('../../web/dist/' + rel, import.meta.url));
-const distCache = new Map();
-function distFile(rel, bin = false) {
-  const path = DIST(rel);
-  const mtime = statSync(path).mtimeMs; // lança se não existir → tratado pelo chamador
-  const hit = distCache.get(rel);
-  if (hit && hit.mtime === mtime) return hit.content;
-  const content = readFileSync(path, bin ? undefined : 'utf8');
-  distCache.set(rel, { mtime, content });
-  return content;
-}
-function spaAvailable() { try { statSync(DIST('index.html')); return true; } catch { return false; } }
-const MIME = { '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json', '.map': 'application/json' };
-// rotas do frontend (React Router) — navegação do browser cai no index.html do SPA
-const wantsHtml = (req) => (req.headers.accept ?? '').includes('text/html');
-function isFrontendRoute(parts) {
-  if (parts.length === 0) return true;
-  return ['explorer', 'blocks', 'block', 'tx', 'address', 'wallet', 'app', 'scan', 'mining'].includes(parts[0]);
-}
-
 // ---- Frontend Next.js (serviço eav7-web em 127.0.0.1:3000) --------------------
-// O nó continua na frente do domínio; navegação do browser, payloads RSC e assets
-// do app são encaminhados ao Next. A API (accept: application/json), o P2P (sem
-// accept text/html) e o RPC seguem sendo servidos pelo próprio nó.
+// G10: único frontend. `public/*.html` e `web/dist` foram aposentados — o nó só
+// faz proxy. A API (accept: application/json), o P2P e o RPC seguem locais.
 const WEB_HOST = '127.0.0.1';
 // Porta do frontend Next para o reverse-proxy. Sobrescrevível por env para
 // rodar uma segunda instância (ex.: testnet em 3001) no mesmo servidor.
@@ -303,35 +256,8 @@ async function handle(node, req, res) {
     if (await proxyToPeer(req, res, node.gateway.target, node)) return;
   }
 
-  // ---- SPA React (web/dist) — legado (fallback quando o Next está fora) -----
-  // Assets do build (hash no nome → cache longo).
-  if (GET && parts[0] === 'assets') {
-    try {
-      const rel = 'assets/' + parts.slice(1).join('/').replace(/\.\./g, '');
-      const ext = rel.slice(rel.lastIndexOf('.'));
-      const bin = ext === '.png' || ext === '.woff2';
-      res.writeHead(200, { 'content-type': MIME[ext] ?? 'application/octet-stream', 'cache-control': 'public, max-age=31536000, immutable' });
-      res.end(distFile(rel, bin));
-    } catch { send(res, 404, { error: 'asset não encontrado' }); }
-    return;
-  }
-  // Navegação do browser (Accept text/html) numa rota do frontend → serve o app React.
-  // Chamadas fetch da API mandam Accept: application/json e caem nos handlers abaixo.
-  if (GET && wantsHtml(req) && isFrontendRoute(parts) && spaAvailable()) {
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(distFile('index.html'));
-    return;
-  }
-
-  // ---- informações gerais / plataforma -------------------------------------
+  // ---- índice da API (JSON) — HTML na raiz já foi ao Next via isWebRequest -----
   if (GET && parts.length === 0) {
-    // Navegador na raiz do domínio (ex.: eavscan.com) abre o explorador; clientes
-    // de API (Accept: application/json) recebem o índice de endpoints.
-    if ((req.headers.accept ?? '').includes('text/html')) {
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(EXPLORER_HTML());
-      return;
-    }
     send(res, 200, {
       chain: CHAIN.NAME,
       protocol: CHAIN.PROTOCOL,
@@ -339,7 +265,7 @@ async function handle(node, req, res) {
       symbol: CHAIN.SYMBOL,
       decimals: CHAIN.DECIMALS,
       tokenStandard: EAV20_STANDARD.name,
-      miningPlatform: '/app',
+      miningPlatform: '/mining',
       endpoints: [
         'GET /status', 'GET /blocks', 'GET /blocks/latest', 'GET /blocks/:alturaOuHash',
         'GET /chain', 'POST /blocks', 'GET /tx/:id', 'POST /tx', 'GET /address/:endereco',
@@ -356,47 +282,6 @@ async function handle(node, req, res) {
         'GET /peers', 'POST /peers',
       ],
     });
-    return;
-  }
-
-  if (GET && parts[0] === 'app') {
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(APP_HTML());
-    return;
-  }
-
-  // Explorador de blocos (estilo TronScan) — SPA que consome a própria API.
-  if (GET && (parts[0] === 'explorer' || parts[0] === 'scan')) {
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(EXPLORER_HTML());
-    return;
-  }
-
-  // Carteira web própria da EAV7 (self-custodial, assina no navegador).
-  if (GET && parts[0] === 'wallet' && parts.length === 1) {
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(WALLET_HTML());
-    return;
-  }
-  if (GET && parts[0] === 'js' && parts[1] === 'eav7-wallet.js') {
-    res.writeHead(200, { 'content-type': 'application/javascript; charset=utf-8', 'cache-control': 'public, max-age=3600' });
-    res.end(WALLET_JS());
-    return;
-  }
-  if (GET && parts[0] === 'css' && parts[1] === 'eav7.css') {
-    res.writeHead(200, { 'content-type': 'text/css; charset=utf-8', 'cache-control': 'public, max-age=3600' });
-    res.end(THEME_CSS());
-    return;
-  }
-  // Ícone do EAV7 (para o favicon das páginas e o iconUrls do add-network).
-  if (GET && parts[0] === 'icon.png') {
-    res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'public, max-age=86400' });
-    res.end(ICON_PNG());
-    return;
-  }
-  if (GET && parts[0] === 'icon.svg') {
-    res.writeHead(200, { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' });
-    res.end(ICON_SVG());
     return;
   }
 

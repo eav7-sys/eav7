@@ -98,7 +98,7 @@ sudo cloudflared service install
 ```
 
 Config da rede na MetaMask/Trust: **RPC** `https://rpc.SEUDOMINIO.com` · **Chain ID**
-`72020` · **símbolo** `EAV7`. O explorador fica em `https://scan.SEUDOMINIO.com/explorer`.
+`72020` · **símbolo** `EAV7`. O explorador fica em `https://scan.SEUDOMINIO.com/` (Next).
 
 ## 5. Checklist de produção
 

@@ -59,13 +59,11 @@ rm -rf "$TMP"
 
 deploy_one(){
   local n="$1"
-  say "2) Deploy em $n (rsync src/ bin/ public/ → restart → aguarda replay)"
+  say "2) Deploy em $n (rsync src/ bin/ → restart → aguarda replay)"
   rsync -az --delete --exclude='.DS_Store' -e "$RSYNC_SSH" \
     "$REPO/src/" "${EAV7_SSH_USER}@${n}:${EAV7_REMOTE_NODE_DIR}/src/"
   rsync -az --delete --exclude='.DS_Store' -e "$RSYNC_SSH" \
     "$REPO/bin/" "${EAV7_SSH_USER}@${n}:${EAV7_REMOTE_NODE_DIR}/bin/"
-  rsync -az --delete --exclude='.DS_Store' -e "$RSYNC_SSH" \
-    "$REPO/public/" "${EAV7_SSH_USER}@${n}:${EAV7_REMOTE_NODE_DIR}/public/"
   $SSH "${EAV7_SSH_USER}@$n" 'sudo systemctl restart eav7'
   echo "  aguardando o serviço voltar e a cabeça avançar…"
   for i in $(seq 1 60); do

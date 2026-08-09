@@ -158,10 +158,8 @@ async fn status_route(State(state): State<AppState>) -> Response {
 
 /// Monta o roteador completo da API.
 ///
-/// `static_files` é mesclado por ÚLTIMO DE PROPÓSITO: as rotas de API acima têm
-/// precedência e o estático entra como *fallback* (é ele quem serve o SPA e as
-/// páginas do `public/`). O `fallback` do roteador estático vira o *fallback*
-/// global — a API não define nenhum, então não há conflito de rota.
+/// `static_files` é mesclado por ÚLTIMO: só o fallback 404/502 (G10 — Next é o
+/// único frontend, via `proxy_upstream`).
 /// Resposta ao PREFLIGHT do navegador (`OPTIONS`) — 204 com os headers de CORS.
 ///
 /// O JS responde isto para QUALQUER rota (api.js:255-259). No axum, uma rota que
@@ -208,12 +206,10 @@ pub fn recibo_json(node: &Node, tx_id: Option<&str>) -> json_value::Value {
     })
 }
 
-/// Índice de endpoints na RAIZ, para clientes de API (`api.js:328-352`).
+/// Índice de endpoints na RAIZ, para clientes de API.
 ///
-/// Um browser nunca chega aqui: `Accept: text/html` é desviado para o frontend
-/// antes do roteamento (ver [`proxy_upstream`]), e sem frontend o `fallback` dos
-/// estáticos serve o explorer. Quem chega é `curl`/SDK — e o que estes recebiam
-/// era o 404 do fallback, ou seja, "a API não existe" na porta de entrada dela.
+/// Um browser nunca chega aqui: `Accept: text/html` é desviado ao Next
+/// (`proxy_upstream`). Sem Next, o fallback devolve 502. Quem chega é curl/SDK.
 ///
 /// A lista é DECLARADA, não derivada do roteador: ela é contrato público (o SDK
 /// e a documentação a citam), e derivá-la faria uma rota interna nova aparecer
@@ -226,7 +222,7 @@ pub fn indice() -> ApiReply {
         "symbol": eav7::config::SYMBOL,
         "decimals": eav7::config::DECIMALS,
         "tokenStandard": "EAV20",
-        "miningPlatform": "/app",
+        "miningPlatform": "/mining",
         "endpoints": [
             "GET /status", "GET /blocks", "GET /blocks/latest", "GET /blocks/:alturaOuHash",
             "GET /chain", "POST /blocks", "GET /tx/:id", "POST /tx", "GET /address/:endereco",
@@ -253,12 +249,9 @@ async fn rota_desconhecida(metodo: axum::http::Method, uri: axum::http::Uri) -> 
     ))
 }
 
-/// `GET /` — índice para cliente de API; navegação do browser cai no frontend.
+/// `GET /` — índice para cliente de API; navegação do browser cai no Next.
 async fn raiz_route(headers: axum::http::HeaderMap) -> Response {
-    // Se o pedido é de HTML, o frontend é quem responde. Chegar aqui com HTML
-    // significa que o proxy do Next não atendeu (serviço fora): devolver o índice
-    // JSON no lugar da página seria pior que o 404 do fallback dos estáticos, que
-    // ao menos tenta o explorer legado.
+    // HTML aqui = Next fora (proxy não atendeu) → 502, não JSON disfarçado.
     if static_files::wants_html(&headers) {
         return static_files::spa_raiz().await;
     }

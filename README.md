@@ -21,7 +21,7 @@ npm run dev:local
 # ou só o nó minerador
 node bin/eav7.js mine
 
-# plataforma de mineração:  http://127.0.0.1:6070/app
+# plataforma de mineração:  http://127.0.0.1:6070/mining
 # testes:                   npm test
 # paridade API JS↔Rust:     npm run parity
 # Core (Rust):              cd rust && cargo build -p eav7-core -p eav7-node
@@ -205,9 +205,9 @@ nascem ativas no gênese-ativo.
 
 ## Plataforma de mineração
 
-Servida pelo próprio nó em **`/app`**: estatísticas em tempo real, últimos blocos,
-mineradores e stakes, alertas da sentinela, tokens EAV20, ponte e **gerador de
-carteira pós-quântica**.
+Servida pelo frontend Next (`web-next`) em **`/mining`** (proxy do nó): estatísticas
+em tempo real, últimos blocos, mineradores e stakes, alertas da sentinela, tokens
+EAV20, ponte e **gerador de carteira pós-quântica**.
 
 ```bash
 # nó semente
@@ -272,7 +272,7 @@ src/eavm/rpc.js        RPC compatível com MetaMask/Trust Wallet (Chain ID 72020
 src/node/{node,api,p2p}.js  nó completo: produção, REST, gossip e sync
 src/sdk/eav7.js        SDK cliente (assina localmente, fala com a API)
 bin/eav7.js            CLI
-public/app.html        plataforma de mineração (dashboard web)
+web-next/              frontend único (Next.js — explorador, carteira, mining)
 test/                  213 testes em 47 arquivos (node:test)
 ```
 
