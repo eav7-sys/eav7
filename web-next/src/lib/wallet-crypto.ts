@@ -29,13 +29,14 @@ export interface EncryptedVault {
 }
 
 type Eav7Wasm = typeof import("./eav7-wasm/eav7_wasm");
+type Conta = import("./eav7-wasm/eav7_wasm").Conta;
 
 let wasmPromise: Promise<Eav7Wasm> | null = null;
 const eav7Wasm = (): Promise<Eav7Wasm> =>
   (wasmPromise ??= import("./eav7-wasm/eav7_wasm"));
 
 /** Copia a `Conta` wasm para um objeto JS puro e libera a memória linear. */
-function toAccount(conta: InstanceType<Eav7Wasm["Conta"]>): Account {
+function toAccount(conta: Conta): Account {
   try {
     return { privateKey: conta.privateKey, evm: conta.eavm, eav7: conta.e7 };
   } finally {
