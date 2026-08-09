@@ -582,6 +582,10 @@ pub struct Blockchain {
     /// NÃO é consenso e não é persistido: um nó que reinicie grava o próximo
     /// snapshot mais cedo, o que é inofensivo.
     pub ultimo_snapshot: u64,
+    /// G8: writers async abandonam se a epoch mudou (reorg / invalidar).
+    pub snapshot_epoch: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    /// Job de gravação em voo (testes chamam [`Blockchain::flush_snapshot`]).
+    snapshot_job: Option<std::thread::JoinHandle<()>>,
     /// Janela recente de blocos em RAM. `tail[i]` é a altura `tail_start + i`.
     pub tail: Vec<Block>,
     /// Altura de `tail[0]`.
@@ -641,8 +645,13 @@ impl Blockchain {
         !self.tail.is_empty()
     }
 
-    pub fn hash_at(&self, height: u64) -> Option<&str> {
-        self.hashes.get(&height).map(|s| s.as_str())
+    /// Hash na altura. G7: cache em RAM; fora da janela lê `hashes.bin`.
+    pub fn hash_at(&self, height: u64) -> Option<String> {
+        if let Some(s) = self.hashes.get(&height) {
+            return Some(s.clone());
+        }
+        let h = usize::try_from(height).ok()?;
+        self.store.as_ref()?.hash_at(h)
     }
 
     /// O slot a que um instante pertence.
@@ -1272,6 +1281,8 @@ impl Blockchain {
                 return self.ancora_corrompida(&format!("alocações da gênese não aplicam: {e}"));
             }
             self.base_state = Some(genese);
+            // G7: libera o hex da altura expulsa — hash_at_owned cai no hashes.bin.
+            self.hashes.remove(&saindo.height);
             self.tail_start += 1;
             return true;
         };
@@ -1300,6 +1311,8 @@ impl Blockchain {
             return self.ancora_corrompida(&format!("{onde} não reaplica: {e}"));
         }
         self.base_state = Some(base);
+        // G7: libera o hex da altura expulsa — hash_at_owned cai no hashes.bin.
+        self.hashes.remove(&saindo.height);
         self.tail_start += 1;
         true
     }
@@ -1506,6 +1519,16 @@ impl Blockchain {
             store
                 .truncate_from(manter)
                 .map_err(|err| format!("falha ao truncar rabo inválido ({e}): {err}"))?;
+        }
+        // G7: garante sidecars após boot (cadeia antiga sem .idx/.bin).
+        if self.height() >= 0 {
+            let n = (self.height() + 1) as u64;
+            let hashes: Vec<Option<&str>> = (0..n)
+                .map(|h| self.hashes.get(&h).map(|s| s.as_str()))
+                .collect();
+            if let Err(e) = store.persist_sidecars(&hashes) {
+                eprintln!("[cadeia] sidecars não gravados após boot: {e}");
+            }
         }
         self.store = Some(store);
         Ok(descartados)
@@ -1780,9 +1803,10 @@ impl Blockchain {
     /// Chamado após cada bloco aceito. O intervalo é `SNAPSHOT_INTERVAL_BLOCKS` —
     /// a constante existia no config e não tinha nenhum uso.
     ///
-    /// Falha de escrita é REGISTRADA e engolida: o snapshot é otimização, e um
-    /// disco cheio não pode derrubar um validador que está produzindo blocos. O
-    /// pior desfecho é o boot seguinte ser lento.
+    /// G8: encode+write correm numa thread dedicada — o caminho quente de
+    /// `add_block` só clona o estado e agenda o job. Falha de escrita é
+    /// REGISTRADA e engolida: o snapshot é otimização, e um disco cheio não pode
+    /// derrubar um validador que está produzindo blocos.
     pub fn talvez_snapshot(&mut self, caminho: &std::path::Path) {
         let altura = self.height();
         if altura < 0 {
@@ -1792,33 +1816,64 @@ impl Blockchain {
         if altura.saturating_sub(self.ultimo_snapshot) < crate::config::SNAPSHOT_INTERVAL_BLOCKS {
             return;
         }
+        // Um job ainda em voo: não empilhar (o intervalo já foi reservado).
+        if self.snapshot_job.as_ref().is_some_and(|j| !j.is_finished()) {
+            return;
+        }
+        if let Some(j) = self.snapshot_job.take() {
+            let _ = j.join();
+        }
         let Some(cabeca) = self.head() else { return };
         // Sem `stateRoot` no header não há como provar o arquivo no boot — gravar
         // seria produzir algo que sempre será recusado.
         if cabeca.state_root.is_none() {
             return;
         }
-        // Os dois passos falham por motivos diferentes — codificação e E/S — e
-        // cada um reporta o seu. Espremê-los num tipo só perderia justamente a
-        // informação que o operador precisa para agir (disco cheio é uma coisa,
-        // estado não codificável é outra, e a segunda é bug nosso).
-        let snap = match crate::snapshot::Snapshot::montar(
-            cabeca.height,
-            &cabeca.hash,
-            self.tail_start,
-            0,
-            &self.state,
-            self.base_state.as_ref(),
-        ) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("[cadeia] estado não codificável na altura {altura}: {e}");
+        let file_bytes = self.store.as_ref().map(|s| s.file_bytes()).unwrap_or(0);
+        let estado = self.state.clone();
+        let base = self.base_state.clone();
+        let head_hash = cabeca.hash.clone();
+        let block_height = cabeca.height;
+        let tail_start = self.tail_start;
+        let path = caminho.to_path_buf();
+        let epoch = self.snapshot_epoch.load(std::sync::atomic::Ordering::SeqCst);
+        let epoch_arc = std::sync::Arc::clone(&self.snapshot_epoch);
+        // Reserva o intervalo no caminho quente — o write é best-effort.
+        self.ultimo_snapshot = altura;
+
+        self.snapshot_job = Some(std::thread::spawn(move || {
+            let snap = match crate::snapshot::Snapshot::montar(
+                block_height,
+                head_hash,
+                tail_start,
+                file_bytes,
+                &estado,
+                base.as_ref(),
+            ) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("[cadeia] estado não codificável na altura {altura}: {e}");
+                    return;
+                }
+            };
+            if epoch_arc.load(std::sync::atomic::Ordering::SeqCst) != epoch {
+                return; // reorg invalidou enquanto montávamos
+            }
+            if let Err(e) = snap.gravar(&path) {
+                eprintln!("[cadeia] snapshot não gravado na altura {altura}: {e}");
                 return;
             }
-        };
-        match snap.gravar(caminho) {
-            Ok(()) => self.ultimo_snapshot = altura,
-            Err(e) => eprintln!("[cadeia] snapshot não gravado na altura {altura}: {e}"),
+            // Corrida: invalidate pode ter corrido entre o check e o rename.
+            if epoch_arc.load(std::sync::atomic::Ordering::SeqCst) != epoch {
+                crate::snapshot::remover(&path);
+            }
+        }));
+    }
+
+    /// Espera o writer G8 (testes / shutdown limpo).
+    pub fn flush_snapshot(&mut self) {
+        if let Some(j) = self.snapshot_job.take() {
+            let _ = j.join();
         }
     }
 
@@ -1829,7 +1884,9 @@ impl Blockchain {
     /// abandonou é PIOR que arquivo nenhum: ele bate com a raiz de um bloco que
     /// existiu, então o boot seguinte o aceitaria e o nó seguiria de um passado.
     pub fn invalidar_snapshot(&mut self, caminho: &std::path::Path) {
-        crate::snapshot::remover(caminho);
+        self.snapshot_epoch
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        crate::snapshot::remover(caminho); // apaga arquivo + .tmp
         self.ultimo_snapshot = 0;
     }
 
@@ -2175,13 +2232,13 @@ impl Blockchain {
         if blocos.len() as i64 - 1 <= self.height() {
             return Ok(Reorg::Manteve);
         }
-        if Some(blocos[0].hash.as_str()) != self.hash_at(0) {
+        if Some(blocos[0].hash.clone()) != self.hash_at(0) {
             return Err("gênese divergente: a cadeia recebida pertence a outra rede".into());
         }
         let mut common: i64 = -1;
         let topo = self.height().min(blocos.len() as i64 - 1);
         for h in (0..=topo).rev() {
-            if Some(blocos[h as usize].hash.as_str()) == self.hash_at(h as u64) {
+            if Some(blocos[h as usize].hash.clone()) == self.hash_at(h as u64) {
                 common = h;
                 break;
             }
@@ -2696,7 +2753,7 @@ mod tests {
         // Os hashes dos blocos abandonados saem do índice — senão uma consulta por
         // hash devolveria um bloco que não está mais na cadeia.
         assert!(!chain.hash_index.contains_key(&ultimo_corrente));
-        assert_eq!(chain.hash_at(comum as u64 + 3), Some(esperado.as_str()));
+        assert_eq!(chain.hash_at(comum as u64 + 3), Some(esperado));
     }
 
     /// Uma cópia de `chain` truncada no ponto de fork — o ponto de partida de quem
@@ -3956,6 +4013,9 @@ mod tests {
 
         let mut chain = cadeia_saldo(&cs, ALTURA, 100, 1_000 * crate::config::UNIT);
         chain.snapshot_path = Some(arquivo.clone());
+        // Altura já é >> INTERVAL — sem isto o add_block agenda writer G8 e
+        // corre com o gravar síncrono / remove_dir do teste.
+        chain.ultimo_snapshot = chain.height() as u64;
         let b = proximo(&chain, &cs, 101);
         chain.add_block(b, agora(101)).expect("bloco");
 
@@ -3984,6 +4044,7 @@ mod tests {
 
         let r = chain.reorg(ALTURA as i64, vec![b1, b2], agora(102)).expect("reorg");
         assert!(matches!(r, Reorg::Adotou(_)), "o ramo mais longo vence: {r:?}");
+        chain.flush_snapshot();
         assert!(
             !arquivo.exists(),
             "o snapshot descrevia uma altura abandonada — tinha de ter sido apagado"
@@ -4021,6 +4082,7 @@ mod tests {
         chain.ultimo_snapshot = 0;
         let b = proximo(&chain, &cs, 104);
         chain.add_block(b, agora(104)).expect("bloco");
+        chain.flush_snapshot(); // G8: encode+write são async
         assert!(arquivo.exists(), "passado o intervalo, o snapshot tem de ser gravado");
 
         let _ = std::fs::remove_dir_all(&dir);

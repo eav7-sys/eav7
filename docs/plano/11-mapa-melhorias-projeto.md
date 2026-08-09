@@ -141,4 +141,6 @@ Depois: G6–G9, G13, trilha B/C/D do 08, aposentar JS (fase 6).
 | Core Fase B candidatura | feito B1–B5 na CLI (`stake`/`score`/`set-mode`/`health`) |
 | Testnet local 3 nós + faucet + demo Core | feito (`bin/eav7-testnet-up.sh --with-core --demo`) |
 | G6 harness multi-nó in-process | feito (`eav7_node::boot` + `tests/multi_node.rs`; G16 `Node::novo`) |
-| G7 RAM / G10 aposentar fronts | ainda não |
+| G7 índices em disco (`blocks.idx` + `hashes.bin`) | feito (JS+Rust; dual-client; eviction da janela) |
+| G8 snapshot async (fora de `add_block`) | feito (JS `setImmediate` + Rust thread; epoch anti-reorg) |
+| G10 aposentar fronts | ainda não |

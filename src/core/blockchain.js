@@ -51,6 +51,9 @@ const tailLimit = () => CHAIN.TAIL_BLOCKS ?? CHAIN.REORG_WINDOW + 100;
 export class Blockchain {
   #loading = false;
   #lastSnapshotHeight = -1;
+  /** G8: invalida writers async em voo (reorg / nova gênese). */
+  #snapshotEpoch = 0;
+  #snapshotScheduled = false;
 
   constructor({ dataDir = null, expectedGenesisHash = null } = {}) {
     this.dataDir = dataDir;
@@ -107,7 +110,10 @@ export class Blockchain {
   }
 
   hashAt(height) {
-    return this.hashes[height] ?? null;
+    // G7: preferir hashes.bin (O(1) em disco) — this.hashes fica como cache quente
+    // da janela / snapshot; sidecars cobrem a cadeia inteira sem ~70B×altura em RAM.
+    if (this.hashes[height] != null) return this.hashes[height];
+    return this.store?.hashAt(height) ?? null;
   }
 
   createGenesis({ address, timestamp = Date.now() }) {
@@ -143,8 +149,7 @@ export class Blockchain {
     this.blocksWithTxs = [];
     if (this.store && !this.#loading) {
       this.store.reset([block]);
-      if (this.snapshotFile) rmSync(this.snapshotFile, { force: true }); // snapshot antigo é de outra cadeia
-      this.#lastSnapshotHeight = -1;
+      this.#invalidateSnapshotFile(); // snapshot antigo é de outra cadeia
     }
   }
 
@@ -341,6 +346,8 @@ export class Blockchain {
         this.#applyBlockTo(this.baseState, evicted);
       }
       this.tailStart = evicted.height + 1;
+      // G7: libera o hex da altura expulsa — hashAt cai no hashes.bin.
+      this.hashes[evicted.height] = undefined;
     }
   }
 
@@ -522,9 +529,8 @@ export class Blockchain {
         try { this.store.truncateFrom(common + 1); } catch { /* melhor esforço */ }
         throw err;
       }
-      if (this.#lastSnapshotHeight > common && this.snapshotFile) {
-        rmSync(this.snapshotFile, { force: true }); // snapshot além do fork ficou inválido
-        this.#lastSnapshotHeight = -1;
+      if (this.#lastSnapshotHeight > common) {
+        this.#invalidateSnapshotFile(); // snapshot além do fork ficou inválido
       }
     }
     this.state = candidate.state;
@@ -575,7 +581,7 @@ export class Blockchain {
     }
     let common = -1;
     for (let h = Math.min(this.height, rawBlocks.length - 1); h >= 0; h--) {
-      if (rawBlocks[h]?.hash === this.hashes[h]) { common = h; break; }
+      if (rawBlocks[h]?.hash === this.hashAt(h)) { common = h; break; }
     }
     return this.reorg(common, rawBlocks.slice(common + 1), { now });
   }
@@ -585,6 +591,9 @@ export class Blockchain {
     let migrated = false;
     try {
       if (existsSync(this.store.file)) {
+        // G7: sidecars dão offsets + digests sem varrer o jsonl (só validação leve).
+        // Snapshot / replay completo ainda são a fonte do ESTADO.
+        this.store.tryLoadSidecars();
         if (!this.#loadFromSnapshot()) this.#fullReplay();
       } else if (existsSync(this.chainFile)) {
         // migração do formato legado (array único) para incremental
@@ -600,6 +609,11 @@ export class Blockchain {
     }
     if (migrated) {
       try { renameSync(this.chainFile, this.chainFile + '.legacy'); } catch { /* ok */ }
+    }
+    // G7: garante sidecars após boot (replay ou migração). Appends já atualizam
+    // incrementalmente; isto cobre o caso "cadeia antiga sem .idx/.bin".
+    if (this.store && this.hasGenesis()) {
+      try { this.store.persistSidecars(this.hashes); } catch { /* melhor esforço */ }
     }
     // Snapshot fresco após um replay completo (ou se o rabo replayado foi longo):
     // o PRÓXIMO boot parte daqui em segundos, sem replay desde a gênese.
@@ -647,7 +661,9 @@ export class Blockchain {
 
       this.hashes = snap.hashes;
       this.hashIndex = new Map();
-      for (let h = 0; h < this.hashes.length; h++) this.hashIndex.set(this.hashes[h], h);
+      for (let h = 0; h < this.hashes.length; h++) {
+        if (this.hashes[h]) this.hashIndex.set(this.hashes[h], h);
+      }
       this.state = reviveState(snap.state);
       this.baseState = reviveState(snap.baseState);
       this.txIndex = new Map(snap.txIndex);
@@ -657,9 +673,11 @@ export class Blockchain {
       this.tail = [];
       for (let h = snap.tailStart; h <= snap.height; h++) {
         const b = this.store.get(h);
-        if (!b || b.hash !== this.hashes[h]) throw new Error('janela do snapshot não bate com o arquivo de blocos');
+        if (!b || b.hash !== this.hashAt(h)) throw new Error('janela do snapshot não bate com o arquivo de blocos');
         this.tail.push(b);
       }
+      // G7: após validar a janela, libera hexes antigos (hashes.bin cobre o resto).
+      for (let h = 0; h < this.tailStart; h++) this.hashes[h] = undefined;
       this.#lastSnapshotHeight = snap.height;
       // replay do rabo: blocos appendados ao arquivo depois do snapshot
       let bad = null;
@@ -682,12 +700,36 @@ export class Blockchain {
   #fullReplay() {
     let first = true;
     let bad = null;
-    this.store.scan((block) => {
-      if (bad) return;
-      try {
-        if (first) { this.adoptGenesis(block); first = false; } else this.addBlock(block);
-      } catch (err) { bad = err; }
-    });
+    // Snapshot falho zera offsets (#resetMemory) — tenta sidecars de novo.
+    if (this.store.count === 0) this.store.tryLoadSidecars();
+    if (this.store.count > 0) {
+      // G7: offsets prontos → replay por get (sem reindexar o prefixo).
+      const n = this.store.count;
+      for (let h = 0; h < n; h++) {
+        if (bad) break;
+        try {
+          const block = this.store.get(h);
+          if (first) { this.adoptGenesis(block); first = false; } else this.addBlock(block);
+        } catch (err) { bad = err; }
+      }
+      // Bytes além do índice: append sem sidecar, ou rasgo de crash — scan do rabo.
+      if (!bad) {
+        const from = this.store.fileBytes;
+        this.store.scan((block) => {
+          if (bad) return;
+          try {
+            if (first) { this.adoptGenesis(block); first = false; } else this.addBlock(block);
+          } catch (err) { bad = err; }
+        }, from);
+      }
+    } else {
+      this.store.scan((block) => {
+        if (bad) return;
+        try {
+          if (first) { this.adoptGenesis(block); first = false; } else this.addBlock(block);
+        } catch (err) { bad = err; }
+      });
+    }
     if (bad) this.#discardInvalidTail(bad);
   }
 
@@ -729,15 +771,59 @@ export class Blockchain {
 
   // Snapshot periódico do estado + índices (tmp + rename: um crash no meio deixa
   // o snapshot anterior válido). O boot seguinte parte daqui.
+  //
+  // G8: encode+write saem do caminho quente de addBlock via setImmediate — o
+  // slot de 1 s não paga stringify/fs sync a cada N blocos.
   #maybeSnapshot() {
     if (this.#loading || !this.store || !this.hasGenesis()) return;
     if (this.height - this.#lastSnapshotHeight < CHAIN.SNAPSHOT_INTERVAL_BLOCKS) return;
-    this.#writeSnapshot();
+    if (this.#snapshotScheduled) return;
+    this.#snapshotScheduled = true;
+    const epoch = this.#snapshotEpoch;
+    const reserved = this.height;
+    // Reserva o intervalo para não enfileirar um job por bloco enquanto o
+    // anterior ainda não rodou.
+    this.#lastSnapshotHeight = reserved;
+    setImmediate(() => {
+      try {
+        if (epoch !== this.#snapshotEpoch) return;
+        this.#writeSnapshot();
+      } catch (err) {
+        console.warn(`[cadeia] snapshot async falhou na altura ${reserved}: ${err.message}`);
+        if (epoch === this.#snapshotEpoch) {
+          // Permite nova tentativa no próximo bloco aceito.
+          this.#lastSnapshotHeight = Math.max(-1, reserved - CHAIN.SNAPSHOT_INTERVAL_BLOCKS);
+        }
+      } finally {
+        this.#snapshotScheduled = false;
+      }
+    });
+  }
+
+  #invalidateSnapshotFile() {
+    this.#snapshotEpoch += 1;
+    if (this.snapshotFile) {
+      try { rmSync(this.snapshotFile, { force: true }); } catch { /* ok */ }
+      try { rmSync(this.snapshotFile + '.mac', { force: true }); } catch { /* ok */ }
+      try { rmSync(this.snapshotFile + '.tmp', { force: true }); } catch { /* ok */ }
+    }
+    this.#lastSnapshotHeight = -1;
+  }
+
+  /** Espera o job G8 (testes / shutdown). */
+  async flushSnapshot() {
+    for (let i = 0; i < 20 && this.#snapshotScheduled; i++) {
+      await new Promise((r) => setImmediate(r));
+    }
+    // Um tick a mais: o callback pode ter marcado scheduled=false no finally
+    // antes do write terminar (write é sync dentro do callback).
+    await new Promise((r) => setImmediate(r));
   }
 
   #writeSnapshot() {
     const file = this.snapshotFile;
     if (!file || !this.hasGenesis()) return;
+    const epoch = this.#snapshotEpoch;
     const snap = {
       version: 1,
       height: this.height,
@@ -745,7 +831,8 @@ export class Blockchain {
       fileBytes: this.store.fileBytes,
       tailStart: this.tailStart,
       offsets: this.store.offsets,
-      hashes: this.hashes,
+      // Dense: hashAt cobre holes da janela (G7) + hashes.bin.
+      hashes: Array.from({ length: this.height + 1 }, (_, h) => this.hashAt(h)),
       state: this.state,
       baseState: this.baseState,
       txIndex: [...this.txIndex],
@@ -753,14 +840,24 @@ export class Blockchain {
       blocksWithTxs: this.blocksWithTxs,
     };
     const body = JSON.stringify(snap, bigReplacer);
+    if (epoch !== this.#snapshotEpoch) return; // reorg durante o encode
     const tmp = file + '.tmp';
     writeFileSync(tmp, body);
+    if (epoch !== this.#snapshotEpoch) {
+      try { rmSync(tmp, { force: true }); } catch { /* ok */ }
+      return;
+    }
     renameSync(tmp, file);
     // Sela o snapshot com HMAC quando há chave (mac primeiro, depois o arquivo já
     // foi renomeado; no boot exigimos ambos consistentes). Achado C2.
     if (SNAPSHOT_KEY) {
       const macTmp = file + '.mac.tmp';
       writeFileSync(macTmp, snapshotMac(body));
+      if (epoch !== this.#snapshotEpoch) {
+        try { rmSync(macTmp, { force: true }); } catch { /* ok */ }
+        try { rmSync(file, { force: true }); } catch { /* ok */ }
+        return;
+      }
       renameSync(macTmp, file + '.mac');
     }
     this.#lastSnapshotHeight = this.height;

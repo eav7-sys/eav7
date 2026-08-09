@@ -268,6 +268,7 @@ async fn executa() -> Result<(), String> {
             // daqui em segundos. É o momento em que ele vale mais — a cadeia
             // acabou de ser inteiramente revalidada.
             blockchain.talvez_snapshot(&snap);
+            blockchain.flush_snapshot(); // G8: garante o fresco antes de servir
         }
     } else {
         println!("[nó] sem --data: cadeia em memória (nada persiste)");

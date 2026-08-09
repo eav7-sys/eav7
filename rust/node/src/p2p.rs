@@ -792,7 +792,7 @@ async fn sync_with_peer(
                 if altura_atual >= 0 {
                     for h in de..=(altura_atual as u64) {
                         if let Some(hh) = node.blockchain.hash_at(h) {
-                            local.insert(h, hh.to_string());
+                            local.insert(h, hh);
                         }
                     }
                 }

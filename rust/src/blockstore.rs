@@ -55,6 +55,16 @@ pub const CHUNK_BYTES: usize = 64 * 1024 * 1024;
 /// `src/core/blockchain.js:80` (`join(dataDir, 'blocks.jsonl')`).
 pub const BLOCKS_FILE: &str = "blocks.jsonl";
 
+/// Sidecar de offsets — `src/core/blockstore.js` (`blocks.idx`).
+pub const IDX_FILE: &str = "blocks.idx";
+/// Sidecar de digests — `src/core/blockstore.js` (`hashes.bin`).
+pub const HASHES_FILE: &str = "hashes.bin";
+
+/// Registro do índice: offset u64 LE ‖ len u64 LE (sem o `\n`).
+const IDX_REC: usize = 16;
+/// Digest SHA3-256 cru (32 B) por altura — `hashAt` devolve hex.
+const HASH_REC: usize = 32;
+
 const NL: u8 = b'\n';
 
 // --------------------------------------------------------------------- erros
@@ -110,6 +120,8 @@ pub struct ScanReport {
 /// Armazém append-only de linhas, com índice de offsets por altura.
 pub struct BlockStore {
     file: PathBuf,
+    idx_file: PathBuf,
+    hashes_file: PathBuf,
     /// altura → `(offset em bytes, comprimento SEM o `\n`)`.
     offsets: Vec<(u64, u64)>,
     /// Descritor de leitura, aberto sob demanda e reaproveitado. Ler um bloco
@@ -121,6 +133,8 @@ pub struct BlockStore {
     /// leituras da API podem correr em paralelo sob lock compartilhado. O estado
     /// mutável que existia aqui era só o `seek`, e o `seek` era desnecessário.
     leitura: std::sync::OnceLock<File>,
+    /// Sidecars alinhados a `offsets` (G7). `false` → próximo boot reconstrói.
+    sidecars_ok: bool,
 }
 
 impl std::fmt::Debug for BlockStore {
@@ -134,11 +148,193 @@ impl std::fmt::Debug for BlockStore {
 
 impl BlockStore {
     pub fn new(file: impl AsRef<Path>) -> Self {
-        BlockStore { file: file.as_ref().to_path_buf(), offsets: Vec::new(), leitura: std::sync::OnceLock::new() }
+        let file = file.as_ref().to_path_buf();
+        let dir = file.parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
+        BlockStore {
+            file,
+            idx_file: dir.join(IDX_FILE),
+            hashes_file: dir.join(HASHES_FILE),
+            offsets: Vec::new(),
+            leitura: std::sync::OnceLock::new(),
+            sidecars_ok: false,
+        }
     }
 
     pub fn path(&self) -> &Path {
         &self.file
+    }
+
+    pub fn sidecars_ok(&self) -> bool {
+        self.sidecars_ok
+    }
+
+    /// Digest hex (64) da altura via `hashes.bin` — O(1), sem array em RAM.
+    pub fn hash_at(&self, height: usize) -> Option<String> {
+        if height >= self.offsets.len() || !self.hashes_file.exists() {
+            return None;
+        }
+        let mut fd = File::open(&self.hashes_file).ok()?;
+        fd.seek(SeekFrom::Start((height * HASH_REC) as u64)).ok()?;
+        let mut dig = [0u8; HASH_REC];
+        fd.read_exact(&mut dig).ok()?;
+        Some(hex::encode(dig))
+    }
+
+    /// Carrega `blocks.idx` + `hashes.bin` se alinhados ao `blocks.jsonl`.
+    /// Espelha `tryLoadSidecars` do JS. `true` = `offsets` prontos.
+    pub fn try_load_sidecars(&mut self) -> bool {
+        if !self.file.exists() || !self.idx_file.exists() || !self.hashes_file.exists() {
+            return false;
+        }
+        let idx = match std::fs::read(&self.idx_file) {
+            Ok(b) => b,
+            Err(_) => return false,
+        };
+        let hashes = match std::fs::read(&self.hashes_file) {
+            Ok(b) => b,
+            Err(_) => return false,
+        };
+        if idx.len() % IDX_REC != 0 || hashes.len() % HASH_REC != 0 {
+            return false;
+        }
+        let n = idx.len() / IDX_REC;
+        if n != hashes.len() / HASH_REC {
+            return false;
+        }
+        if n == 0 {
+            self.offsets.clear();
+            self.sidecars_ok = true;
+            return true;
+        }
+        let mut offsets = Vec::with_capacity(n);
+        for i in 0..n {
+            let base = i * IDX_REC;
+            let off = u64::from_le_bytes(idx[base..base + 8].try_into().unwrap());
+            let len = u64::from_le_bytes(idx[base + 8..base + 16].try_into().unwrap());
+            offsets.push((off, len));
+        }
+        let (lo, ll) = offsets[n - 1];
+        let expected_end = lo + ll + 1;
+        let size = match std::fs::metadata(&self.file) {
+            Ok(m) => m.len(),
+            Err(_) => return false,
+        };
+        if size < expected_end {
+            return false;
+        }
+        self.offsets = offsets;
+        self.solta_fd();
+        // Confere gênese: hash do bloco 0 bate com hashes.bin[0]
+        let h0 = hex::encode(&hashes[..HASH_REC]);
+        match self.get_json(0) {
+            Ok(Some(v)) => {
+                let ok = match &v {
+                    JsonValue::Map(m) => matches!(
+                        m.get("hash"),
+                        Some(JsonValue::Str(s)) if s == &h0
+                    ),
+                    _ => false,
+                };
+                if !ok {
+                    self.offsets.clear();
+                    return false;
+                }
+            }
+            _ => {
+                self.offsets.clear();
+                return false;
+            }
+        }
+        self.sidecars_ok = true;
+        true
+    }
+
+    /// Reconstrói sidecars a partir dos offsets atuais + hashes hex (ou do disco).
+    pub fn persist_sidecars(&mut self, hash_list: &[Option<&str>]) -> R<()> {
+        let n = self.offsets.len();
+        let mut idx = vec![0u8; n * IDX_REC];
+        let mut hashes = vec![0u8; n * HASH_REC];
+        for i in 0..n {
+            let (o, len) = self.offsets[i];
+            idx[i * IDX_REC..i * IDX_REC + 8].copy_from_slice(&o.to_le_bytes());
+            idx[i * IDX_REC + 8..i * IDX_REC + 16].copy_from_slice(&len.to_le_bytes());
+            let dig = hash_list
+                .get(i)
+                .and_then(|h| h.and_then(digest_from_hash))
+                .or_else(|| {
+                    self.get_json(i).ok().flatten().and_then(|v| match v {
+                        JsonValue::Map(m) => match m.get("hash") {
+                            Some(JsonValue::Str(s)) => digest_from_hash(s),
+                            _ => None,
+                        },
+                        _ => None,
+                    })
+                })
+                .ok_or_else(|| {
+                    Error::Io(std::io::Error::other(format!(
+                        "blockstore: hash inválido na altura {i}"
+                    )))
+                })?;
+            hashes[i * HASH_REC..(i + 1) * HASH_REC].copy_from_slice(&dig);
+        }
+        if let Some(parent) = self.idx_file.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let tmp_idx = self.idx_file.with_extension("idx.tmp");
+        let tmp_h = self.hashes_file.with_extension("bin.tmp");
+        std::fs::write(&tmp_idx, &idx)?;
+        std::fs::write(&tmp_h, &hashes)?;
+        std::fs::rename(&tmp_idx, &self.idx_file)?;
+        std::fs::rename(&tmp_h, &self.hashes_file)?;
+        self.sidecars_ok = true;
+        Ok(())
+    }
+
+    fn append_sidecar(&mut self, off: u64, len: u64, hash_hex: &str) {
+        let Some(dig) = digest_from_hash(hash_hex) else {
+            return;
+        };
+        let mut idx_rec = [0u8; IDX_REC];
+        idx_rec[0..8].copy_from_slice(&off.to_le_bytes());
+        idx_rec[8..16].copy_from_slice(&len.to_le_bytes());
+        if let Err(_) = (|| -> std::io::Result<()> {
+            let mut f = OpenOptions::new().create(true).append(true).open(&self.idx_file)?;
+            f.write_all(&idx_rec)?;
+            let mut f = OpenOptions::new().create(true).append(true).open(&self.hashes_file)?;
+            f.write_all(&dig)?;
+            Ok(())
+        })() {
+            let _ = std::fs::remove_file(&self.idx_file);
+            let _ = std::fs::remove_file(&self.hashes_file);
+            self.sidecars_ok = false;
+            return;
+        }
+        self.sidecars_ok = true;
+    }
+
+    fn truncate_sidecars(&mut self, height: usize) {
+        let trunc = || -> std::io::Result<()> {
+            if self.idx_file.exists() {
+                let f = OpenOptions::new().write(true).open(&self.idx_file)?;
+                f.set_len((height * IDX_REC) as u64)?;
+            }
+            if self.hashes_file.exists() {
+                let f = OpenOptions::new().write(true).open(&self.hashes_file)?;
+                f.set_len((height * HASH_REC) as u64)?;
+            }
+            Ok(())
+        };
+        if trunc().is_err() {
+            let _ = std::fs::remove_file(&self.idx_file);
+            let _ = std::fs::remove_file(&self.hashes_file);
+            self.sidecars_ok = false;
+        }
+    }
+
+    fn drop_sidecars(&mut self) {
+        let _ = std::fs::remove_file(&self.idx_file);
+        let _ = std::fs::remove_file(&self.hashes_file);
+        self.sidecars_ok = false;
     }
 
     /// Quantidade de linhas indexadas.
@@ -395,15 +591,24 @@ impl BlockStore {
             let _ = OpenOptions::new().write(true).open(&self.file).map(|f| f.set_len(off));
             return Err(Error::Io(e));
         }
-        self.offsets.push((off, line.len() as u64));
+        let len = line.len() as u64;
+        self.offsets.push((off, len));
+        // G7: sidecar incremental (hash do JSON se presente).
+        if let Some(h) = hash_hex_from_line(line) {
+            self.append_sidecar(off, len, &h);
+        } else {
+            self.sidecars_ok = false;
+        }
         Ok(())
     }
 
     /// Trunca exatamente no fim da última linha INDEXADA, descartando o que houver
     /// além. Usado quando o replay conclui que o rabo do arquivo é inválido.
-    pub fn truncate_to_indexed_end(&self) -> R<()> {
+    pub fn truncate_to_indexed_end(&mut self) -> R<()> {
         let fd = OpenOptions::new().write(true).open(&self.file)?;
         fd.set_len(self.file_bytes())?;
+        let n = self.offsets.len();
+        self.truncate_sidecars(n);
         Ok(())
     }
 
@@ -417,6 +622,7 @@ impl BlockStore {
         let fd = OpenOptions::new().write(true).open(&self.file)?;
         fd.set_len(off)?;
         self.offsets.truncate(height);
+        self.truncate_sidecars(height);
         Ok(())
     }
 
@@ -453,11 +659,36 @@ impl BlockStore {
         // arquivo VELHO (que continua vivo enquanto houver fd aberto). Mantê-lo
         // faria toda leitura seguinte devolver o conteúdo anterior — silenciosamente.
         self.solta_fd();
+        if self.offsets.is_empty() {
+            self.drop_sidecars();
+        } else {
+            // Melhor esforço: rebuild a partir das linhas em disco.
+            let _ = self.persist_sidecars(&[]);
+        }
         Ok(())
     }
 
     pub fn close(&mut self) {
         self.solta_fd();
+    }
+}
+
+fn digest_from_hash(hash: &str) -> Option<[u8; HASH_REC]> {
+    if hash.len() != 64 {
+        return None;
+    }
+    let mut out = [0u8; HASH_REC];
+    hex::decode_to_slice(hash, &mut out).ok()?;
+    Some(out)
+}
+
+fn hash_hex_from_line(line: &str) -> Option<String> {
+    match parse_json(line).ok()? {
+        JsonValue::Map(m) => match m.get("hash") {
+            Some(JsonValue::Str(s)) if s.len() == 64 => Some(s.clone()),
+            _ => None,
+        },
+        _ => None,
     }
 }
 
@@ -701,6 +932,44 @@ mod tests {
         ));
         assert_eq!(s.count(), 0);
         assert!(s.reset(["ok", "com\nquebra"]).is_err());
+    }
+
+    fn hash64(n: u64) -> String {
+        format!("{n:064x}")
+    }
+
+    fn linha_com_hash(h: usize, hash: &str) -> String {
+        format!("{{\"height\":{h},\"hash\":\"{hash}\"}}")
+    }
+
+    #[test]
+    fn sidecars_sobrevivem_ao_reopen() {
+        let mut s = store("sidecar");
+        let h0 = hash64(0xa);
+        let h1 = hash64(0xb);
+        s.append(&linha_com_hash(0, &h0)).expect("append");
+        s.append(&linha_com_hash(1, &h1)).expect("append");
+        assert!(s.sidecars_ok());
+        assert_eq!(s.hash_at(0).as_deref(), Some(h0.as_str()));
+        assert_eq!(s.hash_at(1).as_deref(), Some(h1.as_str()));
+
+        let mut s2 = BlockStore::new(s.path());
+        assert!(s2.try_load_sidecars());
+        assert_eq!(s2.count(), 2);
+        assert_eq!(s2.hash_at(0).as_deref(), Some(h0.as_str()));
+        assert_eq!(s2.get(1).expect("get").as_deref(), Some(linha_com_hash(1, &h1).as_str()));
+    }
+
+    #[test]
+    fn sidecar_invalido_e_recusado() {
+        let mut s = store("sidecar-bad");
+        let h0 = hash64(1);
+        s.append(&linha_com_hash(0, &h0)).expect("append");
+        // Adulterar hashes.bin
+        std::fs::write(s.path().parent().unwrap().join(HASHES_FILE), [0u8; 32]).unwrap();
+        let mut s2 = BlockStore::new(s.path());
+        assert!(!s2.try_load_sidecars());
+        assert_eq!(s2.count(), 0);
     }
 
     #[test]

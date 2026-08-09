@@ -59,7 +59,7 @@ test('janela: blocos antigos saem da RAM e são lidos do disco', () => {
   }
 });
 
-test('snapshot: boot parte do snapshot e replaya só o rabo', () => {
+test('snapshot: boot parte do snapshot e replaya só o rabo', async () => {
   CHAIN.TAIL_BLOCKS = 6;
   const intervalo = CHAIN.SNAPSHOT_INTERVAL_BLOCKS;
   CHAIN.SNAPSHOT_INTERVAL_BLOCKS = 5;
@@ -71,6 +71,7 @@ test('snapshot: boot parte do snapshot e replaya só o rabo', () => {
     const t0 = chain.head.timestamp;
     chain.produceBlock(wallet, [tx], { timestamp: t0 + CHAIN.BLOCK_TIME_MS });
     for (let n = 2; n <= 12; n++) chain.produceBlock(wallet, [], { timestamp: t0 + n * CHAIN.BLOCK_TIME_MS });
+    await chain.flushSnapshot();
     assert.ok(existsSync(join(dataDir, 'snapshot.json')), 'snapshot periódico foi gravado');
 
     const relida = new Blockchain({ dataDir });
@@ -89,12 +90,13 @@ test('snapshot: boot parte do snapshot e replaya só o rabo', () => {
   }
 });
 
-test('snapshot inválido (arquivo de blocos truncado) cai no replay completo', () => {
+test('snapshot inválido (arquivo de blocos truncado) cai no replay completo', async () => {
   const intervalo = CHAIN.SNAPSHOT_INTERVAL_BLOCKS;
   CHAIN.SNAPSHOT_INTERVAL_BLOCKS = 5;
   try {
     const dataDir = mkdtempSync(join(tmpdir(), 'eav7-snapbad-'));
     const { chain } = buildChain(dataDir, 8);
+    await chain.flushSnapshot();
     assert.ok(existsSync(join(dataDir, 'snapshot.json')));
     // simula perda de dados: o arquivo de blocos encolheu (menos bytes que o snapshot espera)
     const file = join(dataDir, 'blocks.jsonl');
@@ -153,6 +155,37 @@ test('lacuna no arquivo (blocos perdidos): mantém o prefixo válido e trunca o 
   const denovo = new Blockchain({ dataDir });
   assert.equal(denovo.height, 3);
   assert.equal(denovo.head.hash, chain.hashAt(3));
+});
+
+test('G7 sidecars: hashes.bin + blocks.idx sobrevivem ao reboot e cobrem altura expulsa', () => {
+  CHAIN.TAIL_BLOCKS = 4;
+  try {
+    const dataDir = mkdtempSync(join(tmpdir(), 'eav7-g7-'));
+    const { chain } = buildChain(dataDir, 12);
+    const idx = join(dataDir, 'blocks.idx');
+    const hashes = join(dataDir, 'hashes.bin');
+    assert.ok(existsSync(idx), 'blocks.idx gravado');
+    assert.ok(existsSync(hashes), 'hashes.bin gravado');
+    assert.equal(statSync(hashes).size, (chain.height + 1) * 32);
+    // altura 1 já saiu da janela — hashAt lê o sidecar
+    assert.ok(chain.tailStart > 1);
+    assert.equal(chain.hashes[1], undefined);
+    const h1 = chain.hashAt(1);
+    assert.equal(typeof h1, 'string');
+    assert.equal(h1.length, 64);
+    assert.equal(chain.getBlock(1).hash, h1);
+
+    rmSync(join(dataDir, 'snapshot.json'), { force: true });
+    const relida = new Blockchain({ dataDir });
+    assert.equal(relida.height, chain.height);
+    assert.equal(relida.hashAt(1), h1);
+    assert.equal(relida.head.hash, chain.head.hash);
+    // segundo boot usa sidecars (offsets) sem perder consenso
+    assert.ok(existsSync(idx));
+    assert.equal(relida.hashAt(0), chain.hashAt(0));
+  } finally {
+    delete CHAIN.TAIL_BLOCKS;
+  }
 });
 
 test('append rasgado por crash: a linha parcial final é truncada no boot', () => {
