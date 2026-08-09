@@ -120,7 +120,7 @@ pub fn blocks(node: &Node, params: &HashMap<String, String>) -> ApiReply {
     // o BlockStore). Corrupção de disco sobe como 500, nunca vira página vazia.
     let paginar = |from: u64, inverter: bool| -> Result<serde_json::Value, String> {
         let mut v: Vec<serde_json::Value> =
-            bc.range_at(from, limit)?.iter().map(|b| jv(&block_to_json(b))).collect();
+            bc.range_at(from, limit)?.iter().map(bloco_com_size).collect();
         if inverter {
             v.reverse();
         }
@@ -144,7 +144,7 @@ pub fn blocks(node: &Node, params: &HashMap<String, String>) -> ApiReply {
 /// de `blockchain.head` — aqui a ausência é `null` explícito).
 pub fn block_latest(node: &Node) -> ApiReply {
     match node.blockchain.head() {
-        Some(b) => reply(200, jv(&block_to_json(b))),
+        Some(b) => reply(200, bloco_com_size(b)),
         None => reply(200, serde_json::Value::Null),
     }
 }
@@ -166,10 +166,31 @@ pub fn block_by_ref(node: &Node, referencia: &str) -> ApiReply {
         }
     };
     match bloco {
-        Ok(Some(b)) => reply(200, jv(&block_to_json(&b))),
+        Ok(Some(b)) => reply(200, bloco_com_size(&b)),
         Ok(None) => reply(404, json!({ "error": "bloco não encontrado" })),
         Err(e) => reply(500, json!({ "error": e })),
     }
+}
+
+/// Bloco projetado com `size`: os BYTES da serialização canônica do bloco —
+/// exatamente a linha que o `blockstore` grava e que trafega entre peers.
+///
+/// A definição importa. "Tamanho do bloco" calculado com um serializador
+/// qualquer daria um número por implementação: espaçamento, ordem de chave e
+/// escape mudam o comprimento sem mudar o bloco. `block_to_json_line` é a MESMA
+/// escrita que produz o payload assinado, então o número é o mesmo nos dois nós.
+///
+/// UTF-8, não caracteres: um nome de token fora do ASCII ocupa mais bytes do que
+/// letras, e é byte que se paga em disco e em rede.
+fn bloco_com_size(b: &eav7::Block) -> serde_json::Value {
+    let mut v = jv(&block_to_json(b));
+    // Um bloco que não serializa não deveria estar na cadeia; se estiver, o
+    // tamanho sai `null` em vez de derrubar a consulta ao bloco inteiro.
+    let size = eav7::block::block_to_json_line(b).ok().map(|l| l.len());
+    if let Some(m) = v.as_object_mut() {
+        m.insert("size".into(), json!(size));
+    }
+    v
 }
 
 // -------------------------------------------------------- GET /chain (js:520)
@@ -186,7 +207,7 @@ pub fn chain_page(node: &Node, params: &HashMap<String, String>) -> ApiReply {
         .unwrap_or(MAX_CHAIN_PAGE)
         .clamp(1, MAX_CHAIN_PAGE) as usize;
     let blocos: Vec<serde_json::Value> = match bc.range_at(from, limit) {
-        Ok(bs) => bs.iter().map(|b| jv(&block_to_json(b))).collect(),
+        Ok(bs) => bs.iter().map(bloco_com_size).collect(),
         Err(e) => return reply(500, json!({ "error": e })),
     };
     reply(200, json!({ "height": bc.height(), "from": from, "blocks": blocos }))
@@ -754,10 +775,15 @@ pub fn search(node: &Node, q_cru: &str, index: &[(String, String)]) -> ApiReply 
 /// contagem e séries horárias para os sparklines), varrendo só o índice esparso
 /// de blocos-com-tx, com teto `STATS_SCAN_CAP`.
 ///
-/// ATENÇÃO ao formato: aqui os montantes saem como NUMBER já dividido por UNIT
-/// (EAV7 inteiros) — é o que o JS emite (`Number(s.volume24h / CHAIN.UNIT)`) e o
-/// que os gráficos do eavscan consomem. É a exceção documentada à regra
-/// "Amount sempre string": nada aqui é um Amount cru em e7.
+/// FORMATO — divergência DELIBERADA da referência. O JS emite os montantes já
+/// divididos por UNIT (`Number(s.volume24h / CHAIN.UNIT)`), abrindo uma exceção à
+/// regra "Amount sempre string, sempre em e7" que vale em TODO o resto da API.
+/// A exceção custou caro: o cliente formata montante dividindo por UNIT, então
+/// `staked` chegava dividido duas vezes e 7.900 EAV7 aparecia como 0,0079 na tela.
+/// Um endpoint que fala uma unidade diferente dos outros é uma armadilha armada
+/// para o próximo a integrar. Aqui e7 em string, como no resto — e `Number` sobre
+/// e7 estoura o inteiro seguro do JS aos 900 milhões de EAV7, o que sozinho já
+/// condena o formato antigo.
 pub fn compute_stats(node: &Node) -> Result<serde_json::Value, String> {
     let bc = &node.blockchain;
     let st = &bc.state;
@@ -768,10 +794,14 @@ pub fn compute_stats(node: &Node) -> Result<serde_json::Value, String> {
     let from = now - day_ms;
     let bucket_ms = day_ms / STATS_BUCKETS as i64;
     let mut tx_series = [0u64; STATS_BUCKETS];
-    let mut vol_series = [0u64; STATS_BUCKETS];
+    let mut vol_series = [0u128; STATS_BUCKETS];
     let mut volume24h: u128 = 0;
     let mut tx_count_24h: u64 = 0;
     let mut scanned = 0usize;
+    // Extremos REAIS da janela varrida: o TPS sai daqui, não de `day_ms`. Numa
+    // cadeia com 3 horas de vida, dividir por 24h daria um TPS 8x menor que o
+    // verdadeiro — e no primeiro bloco daria divisão por uma janela vazia.
+    let mut mais_antigo: Option<i64> = None;
     for &h in bc.blocks_with_txs.iter().rev() {
         if scanned >= STATS_SCAN_CAP {
             break;
@@ -790,6 +820,7 @@ pub fn compute_stats(node: &Node) -> Result<serde_json::Value, String> {
         // js:53 — bucket horário, saturado nas pontas (o do instante `now` cai
         // exatamente em 24 e é puxado para 23).
         let bucket = ((b.timestamp - from) / bucket_ms).clamp(0, STATS_BUCKETS as i64 - 1) as usize;
+        mais_antigo = Some(b.timestamp);
         for t in &b.transactions {
             tx_count_24h += 1;
             tx_series[bucket] += 1;
@@ -797,24 +828,35 @@ pub fn compute_stats(node: &Node) -> Result<serde_json::Value, String> {
             if t.tx_type == "TRANSFER" || t.tx_type == "EAVM_TRANSFER" {
                 let amt: u128 = t.amount.parse().unwrap_or(0);
                 volume24h = volume24h.saturating_add(amt);
-                // js:60 — a série acumula a divisão POR TRANSAÇÃO (piso), não o
-                // total dividido no fim; reproduzir muda centavos, mas muda.
-                vol_series[bucket] += (amt / UNIT) as u64;
+                // Acumula em e7 CRU. O JS somava `amt / UNIT` por transação, ou
+                // seja, jogava fora a parte fracionária de CADA uma: mil
+                // transferências de 0,9 EAV7 apareciam como zero na série.
+                vol_series[bucket] = vol_series[bucket].saturating_add(amt);
             }
         }
     }
+
+    // TPS medido sobre o intervalo que os blocos varridos de fato cobrem. O
+    // cliente calculava isto dividindo o ÚLTIMO balde por 3600 — e o último
+    // balde é o da hora corrente, sempre parcial: logo após virar a hora ele
+    // mostrava um TPS perto de zero numa rede em uso normal.
+    let tps = match mais_antigo {
+        Some(t0) if now > t0 => tx_count_24h as f64 / ((now - t0) as f64 / 1000.0),
+        _ => 0.0,
+    };
 
     Ok(json!({
         "accounts": st.accounts.len(),
         "accountsDelta": 0,                       // js:718 — sem histórico de estado
         "transactions": bc.tx_index.len(),
         "transactionsDelta": tx_count_24h,        // js:720 — txs REAIS em 24h
-        "volume": (volume24h / UNIT) as u64,      // js:721 — EAV7 inteiros (Number no JS)
-        "volumeDelta": (volume24h / UNIT) as u64,
-        "staked": (staked / UNIT) as u64,
-        "stakedDelta": 0,                         // js:724 — sem histórico
+        "volume": volume24h.to_string(),          // e7, como todo Amount da API
+        "volumeDelta": volume24h.to_string(),
+        "staked": staked.to_string(),
+        "stakedDelta": "0",                       // js:724 — sem histórico
+        "tps": tps,
         "txSeries": tx_series.to_vec(),
-        "volSeries": vol_series.to_vec(),
+        "volSeries": vol_series.iter().map(|v| v.to_string()).collect::<Vec<_>>(),
     }))
 }
 
@@ -1295,6 +1337,30 @@ mod tests {
         assert_eq!(r["detail"], json!("7 EAV7"));
     }
 
+    /// `size` = bytes da serialização canônica do bloco — a MESMA linha que o
+    /// blockstore grava. Vale em `/blocks`, `/blocks/latest`, `/blocks/{h}` e
+    /// `/chain`: o número tem de ser um só, venha de onde vier.
+    #[test]
+    fn blocos_trazem_size_em_bytes_da_linha_canonica() {
+        let n = node_com_cadeia();
+        let b = n.blockchain.get_block(2).unwrap();
+        let esperado = eav7::block::block_to_json_line(b).unwrap().len();
+        assert!(esperado > 0);
+
+        let (_, detalhe) = block_by_ref(&n, "2");
+        assert_eq!(detalhe["size"], json!(esperado));
+
+        let (_, lista) = blocks(&n, &q(&[("from", "2"), ("limit", "1")]));
+        assert_eq!(lista[0]["size"], json!(esperado));
+
+        let (_, pagina) = chain_page(&n, &q(&[("from", "2"), ("limit", "1")]));
+        assert_eq!(pagina["blocks"][0]["size"], json!(esperado));
+
+        let (_, cabeca) = block_latest(&n);
+        let ultimo = n.blockchain.head().unwrap();
+        assert_eq!(cabeca["size"], json!(eav7::block::block_to_json_line(ultimo).unwrap().len()));
+    }
+
     // --------------------------------------------------------------- /stats
 
     #[test]
@@ -1305,8 +1371,9 @@ mod tests {
         assert_eq!(body["accounts"], json!(0));
         assert_eq!(body["transactions"], json!(0));
         assert_eq!(body["transactionsDelta"], json!(0));
-        assert_eq!(body["volume"], json!(0));
-        assert_eq!(body["staked"], json!(0));
+        assert_eq!(body["volume"], json!("0"));
+        assert_eq!(body["staked"], json!("0"));
+        assert_eq!(body["tps"], json!(0.0));
         assert_eq!(body["txSeries"].as_array().unwrap().len(), STATS_BUCKETS);
         assert!(body["txSeries"].as_array().unwrap().iter().all(|v| v == &json!(0)));
         assert_eq!(body["volSeries"].as_array().unwrap().len(), STATS_BUCKETS);
@@ -1318,12 +1385,12 @@ mod tests {
         let (_, body) = stats(&n);
         assert_eq!(body["transactions"], json!(2));
         assert_eq!(body["transactionsDelta"], json!(2));
-        assert_eq!(body["volume"], json!(6)); // 2 × 3_000_000 / UNIT
+        assert_eq!(body["volume"], json!("6000000")); // 2 × 3 EAV7, em e7 cru
         // as duas txs caem no último bucket (timestamps colados na cabeça)
         let serie = body["txSeries"].as_array().unwrap();
         assert_eq!(serie[STATS_BUCKETS - 1], json!(2));
         let vol = body["volSeries"].as_array().unwrap();
-        assert_eq!(vol[STATS_BUCKETS - 1], json!(6));
+        assert_eq!(vol[STATS_BUCKETS - 1], json!("6000000"));
     }
 
     #[test]
@@ -1337,7 +1404,41 @@ mod tests {
         adiciona(&mut n.blockchain, bloco_fake(0, base, txs));
         let (_, body) = stats(&n);
         assert_eq!(body["transactionsDelta"], json!(2)); // contagem inclui as duas
-        assert_eq!(body["volume"], json!(1)); // volume só a nativa
+        assert_eq!(body["volume"], json!("1000000")); // volume só a nativa
+    }
+
+    /// O formato antigo somava `amount / UNIT` POR TRANSAÇÃO. Qualquer valor
+    /// abaixo de 1 EAV7 virava zero antes de entrar na conta, e a rede aparecia
+    /// parada no gráfico com volume real circulando. Aqui: três transferências
+    /// de 0,4 EAV7 somam 1,2 EAV7 — no formato antigo, `0 + 0 + 0`.
+    #[test]
+    fn stats_nao_perde_volume_abaixo_de_um_eav7() {
+        let mut n = node();
+        let base = 1_700_000_000_000i64;
+        let quatro_decimos = (UNIT / 10 * 4).to_string();
+        let txs = (0..3)
+            .map(|i| tx_fake(&format!("{i}").repeat(40), "TRANSFER", &quatro_decimos, base))
+            .collect();
+        adiciona(&mut n.blockchain, bloco_fake(0, base, txs));
+        let (_, body) = stats(&n);
+        assert_eq!(body["volume"], json!("1200000"));
+        let vol = body["volSeries"].as_array().unwrap();
+        assert_eq!(vol[STATS_BUCKETS - 1], json!("1200000"));
+    }
+
+    /// TPS medido sobre o intervalo REAL varrido. Dois blocos separados por 4 s,
+    /// uma tx em cada: 2 txs / 4 s = 0,5 — e não `2 / 86400` nem "último balde
+    /// dividido por 3600", que era a conta do cliente.
+    #[test]
+    fn stats_mede_tps_sobre_o_intervalo_real_dos_blocos() {
+        let mut n = node();
+        let base = 1_700_000_000_000i64;
+        for (i, dt) in [0i64, 4_000].iter().enumerate() {
+            let txs = vec![tx_fake(&"c".repeat(40), "TRANSFER", "1", base + dt)];
+            adiciona(&mut n.blockchain, bloco_fake(i as u64, base + dt, txs));
+        }
+        let (_, body) = stats(&n);
+        assert_eq!(body["tps"].as_f64().unwrap(), 0.5);
     }
 
     // --------------------------------------------------------------- /proof

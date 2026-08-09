@@ -427,6 +427,13 @@ pub fn token_transfers(node: &Node, id: &str, q: &HashMap<String, String>) -> Ap
         }
     }
 
+    // Cap atingido sem encher `limit`: ainda há história — não mentir "fim".
+    if next_before.is_none() && scanned >= SCAN_CAP {
+        if let Some(last) = txs.last().and_then(|t| t.get("blockHeight").and_then(|v| v.as_u64())) {
+            next_before = Some(last);
+        }
+    }
+
     reply(200, json!({
         "token": token.id,
         "txs": txs,

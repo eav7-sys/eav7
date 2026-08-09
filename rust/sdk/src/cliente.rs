@@ -35,6 +35,10 @@ pub enum ErroCliente {
     /// A PROVA não fecha contra a raiz — o nó respondeu algo que não consegue
     /// provar. Distinto de `Api`: aqui o nó respondeu "com sucesso".
     ProvaInvalida(String),
+    /// O prazo de espera venceu sem o desfecho pedido (ver
+    /// [`Eav7Client::aguardar_confirmacao`]). Não é falha do nó nem da
+    /// transação: ela pode confirmar depois — o chamador decide se espera mais.
+    TempoEsgotado(String),
 }
 
 impl std::fmt::Display for ErroCliente {
@@ -45,6 +49,7 @@ impl std::fmt::Display for ErroCliente {
             ErroCliente::Resposta(m) => write!(f, "resposta inesperada do nó: {m}"),
             ErroCliente::Transacao(m) => write!(f, "transação inválida: {m}"),
             ErroCliente::ProvaInvalida(m) => write!(f, "prova de estado não confere: {m}"),
+            ErroCliente::TempoEsgotado(m) => write!(f, "prazo esgotado: {m}"),
         }
     }
 }
@@ -61,6 +66,86 @@ pub struct Conta {
     /// Próximo nonce a usar — já considera as transações no mempool.
     pub next_nonce: i64,
     pub fee_exempt: bool,
+    /// Parcelas de UNSTAKE aguardando maturação (`/address` → `unbonding`).
+    pub unbonding: Vec<Unbonding>,
+    /// Recompensa de eleitor ainda não resgatada — o que
+    /// [`Eav7Client::reivindicar_recompensa`] credita.
+    pub claimable_voter_reward: u128,
+}
+
+/// Parcela em unbonding.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Unbonding {
+    pub amount: u128,
+    /// Altura em que a parcela LIBERA.
+    pub mature_at: u64,
+    /// A API já entrega `max(0, matureAt − altura)` calculado.
+    pub blocks_left: u64,
+}
+
+/// Desempenho recente de um validador — a entrada de `performance` de
+/// `/validators` (mesmo objeto de `/validators/performance`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Desempenho {
+    /// 0–100. Janela sem blocos dá 100 a todos — ausência de prova não é culpa.
+    pub score: f64,
+    /// `healthy` / `lagging` / `degraded`, como a API emite.
+    pub status: String,
+    pub degraded: bool,
+    pub productivity_pct: f64,
+    pub expected: u64,
+    pub produced: u64,
+    pub in_turn: u64,
+    pub missed: u64,
+    pub out_of_turn: u64,
+    /// `None` quando o validador não produziu nada na janela.
+    pub avg_latency_ms: Option<f64>,
+    pub last_produced_height: Option<u64>,
+    pub last_produced_at: Option<i64>,
+}
+
+/// Validador tipado a partir de `/validators`: a lista `current` casada com a
+/// entrada de `performance` do mesmo endereço.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Validador {
+    pub address: String,
+    pub staked: u128,
+    /// Votos RECEBIDOS como candidato.
+    pub votes: u128,
+    /// Nome EAV-NS apontando para o validador, quando existe.
+    pub name: Option<String>,
+    /// `None` só se a API não trouxer a entrada de performance deste endereço.
+    pub performance: Option<Desempenho>,
+}
+
+/// Linha de histórico de `/address/{addr}/txs`: os campos da transação mais os
+/// do bloco, achatados pelo nó no mesmo objeto.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TxResumida {
+    pub id: String,
+    pub tx_type: String,
+    pub from: String,
+    pub to: Option<String>,
+    pub amount: u128,
+    pub fee: u128,
+    pub nonce: i64,
+    pub block_height: u64,
+    pub block_time: i64,
+}
+
+/// Página de histórico.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Historico {
+    pub txs: Vec<TxResumida>,
+    /// Cursor da PRÓXIMA página — passe de volta em `before`. `None` = acabou.
+    pub next_before: Option<u64>,
+}
+
+/// Desfecho de [`Eav7Client::aguardar_confirmacao`]: a transação ENTROU em bloco.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Confirmacao {
+    pub block_height: u64,
+    pub block_hash: String,
 }
 
 /// Desfecho de uma submissão.
@@ -90,25 +175,63 @@ impl std::fmt::Debug for Eav7Client {
     }
 }
 
-impl Eav7Client {
-    /// Cliente somente-leitura.
-    pub fn novo(url: impl Into<String>) -> Self {
-        let url = url.into().trim_end_matches('/').to_string();
+/// Construtor de [`Eav7Client`] — para quando os padrões não servem.
+///
+/// O timeout fixo de 30s é bom para script e ruim no celular (que quer mais) e
+/// no Core (que quer menos). O builder deixa cada consumidor escolher sem
+/// multiplicar variantes de construtor.
+pub struct Eav7ClientBuilder {
+    url: String,
+    timeout: Duration,
+    carteira: Option<Box<dyn BlockSigner>>,
+}
+
+impl Eav7ClientBuilder {
+    /// Timeout de CADA chamada HTTP (padrão: 30s).
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    /// Carteira para ASSINAR. Sem ela, métodos de escrita falham antes da rede.
+    pub fn carteira(mut self, carteira: Box<dyn BlockSigner>) -> Self {
+        self.carteira = Some(carteira);
+        self
+    }
+
+    pub fn construir(self) -> Eav7Client {
         Eav7Client {
-            url,
-            agente: ureq::AgentBuilder::new()
-                .timeout(Duration::from_secs(30))
-                .build(),
+            url: self.url,
+            agente: ureq::AgentBuilder::new().timeout(self.timeout).build(),
+            carteira: self.carteira,
+        }
+    }
+}
+
+impl Eav7Client {
+    /// Começa um cliente configurável — ver [`Eav7ClientBuilder`].
+    pub fn construtor(url: impl Into<String>) -> Eav7ClientBuilder {
+        Eav7ClientBuilder {
+            url: url.into().trim_end_matches('/').to_string(),
+            timeout: Duration::from_secs(30),
             carteira: None,
         }
+    }
+
+    /// Cliente somente-leitura (timeout padrão 30s).
+    pub fn novo(url: impl Into<String>) -> Self {
+        Self::construtor(url).construir()
     }
 
     /// Cliente que também ASSINA. Sem carteira, os métodos de escrita falham
     /// antes de tocar a rede — como no JS (`'client sem wallet'`).
     pub fn com_carteira(url: impl Into<String>, carteira: Box<dyn BlockSigner>) -> Self {
-        let mut c = Self::novo(url);
-        c.carteira = Some(carteira);
-        c
+        Self::construtor(url).carteira(carteira).construir()
+    }
+
+    /// Remetente com reserva de nonce — use para rajadas (stake+voto+claim).
+    pub fn remetente(&self) -> Remetente<'_> {
+        Remetente { cliente: self, proximo_nonce: None }
     }
 
     /// Endereço da carteira, quando há uma.
@@ -153,6 +276,102 @@ impl Eav7Client {
         self.get("/validators")
     }
 
+    /// `/validators` tipado: a lista `current` casada com a entrada de
+    /// `performance` do mesmo endereço. Nenhum `serde_json::Value` escapa.
+    pub fn validadores_tipados(&self) -> R<Vec<Validador>> {
+        let v = self.validadores()?;
+        let atuais = v
+            .get("current")
+            .and_then(|x| x.as_array())
+            .ok_or_else(|| ErroCliente::Resposta("validators sem `current`".into()))?;
+        let desempenhos: std::collections::HashMap<String, Desempenho> = v
+            .get("performance")
+            .and_then(|x| x.as_array())
+            .map(|a| a.iter().filter_map(desempenho_de).collect())
+            .unwrap_or_default();
+        Ok(atuais
+            .iter()
+            .filter_map(|item| {
+                let address = item.get("address")?.as_str()?.to_string();
+                Some(Validador {
+                    staked: texto_ou_numero_u128(item.get("staked")),
+                    votes: texto_ou_numero_u128(item.get("votes")),
+                    name: item.get("name").and_then(|x| x.as_str()).map(str::to_string),
+                    performance: desempenhos.get(&address).cloned(),
+                    address,
+                })
+            })
+            .collect())
+    }
+
+    /// Histórico paginado de um endereço (`GET /address/{addr}/txs`).
+    ///
+    /// `before` é o cursor devolvido em [`Historico::next_before`]: `None` pede a
+    /// primeira página (as transações mais recentes).
+    pub fn historico(&self, endereco: &str, before: Option<u64>) -> R<Historico> {
+        self.historico_com_limite(endereco, before, 25)
+    }
+
+    /// [`Eav7Client::historico`] com o tamanho de página explícito (a API
+    /// aceita até 2000).
+    pub fn historico_com_limite(&self, endereco: &str, before: Option<u64>, limit: u32) -> R<Historico> {
+        let mut caminho = format!("/address/{endereco}/txs?limit={limit}");
+        if let Some(b) = before {
+            caminho.push_str(&format!("&before={b}"));
+        }
+        let v = self.get(&caminho)?;
+        let txs = v
+            .get("txs")
+            .and_then(|x| x.as_array())
+            .map(|a| a.iter().filter_map(tx_resumida_de).collect())
+            .unwrap_or_default();
+        Ok(Historico {
+            txs,
+            next_before: v.get("nextBefore").and_then(serde_json::Value::as_u64),
+        })
+    }
+
+    /// Espera a transação ENTRAR EM BLOCO: poll em `/tx/{id}` até a resposta
+    /// trazer `blockHeight` ou o prazo vencer.
+    ///
+    /// Submeter só prova que o mempool aceitou; é este método que fecha a
+    /// diferença entre "aceitou" e "aconteceu". 404 NÃO aborta a espera: entre a
+    /// submissão e a propagação a transação pode ainda não ser visível neste nó.
+    /// [`ErroCliente::TempoEsgotado`] também não é veredito — a transação pode
+    /// confirmar depois do prazo.
+    pub fn aguardar_confirmacao(&self, id: &str, timeout: Duration) -> R<Confirmacao> {
+        let inicio = std::time::Instant::now();
+        let passo = Duration::from_millis(200);
+        loop {
+            match self.transacao(id) {
+                Ok(v) => {
+                    if let Some(altura) = v.get("blockHeight").and_then(serde_json::Value::as_u64) {
+                        return Ok(Confirmacao {
+                            block_height: altura,
+                            block_hash: v
+                                .get("blockHash")
+                                .and_then(|x| x.as_str())
+                                .unwrap_or_default()
+                                .to_string(),
+                        });
+                    }
+                    // PENDING: segue esperando.
+                }
+                // Ainda não propagou até este nó — não é desfecho.
+                Err(ErroCliente::Api { status: 404, .. }) => {}
+                Err(e) => return Err(e),
+            }
+            let decorrido = inicio.elapsed();
+            if decorrido >= timeout {
+                return Err(ErroCliente::TempoEsgotado(format!(
+                    "transação {id} não confirmou em {timeout:?}"
+                )));
+            }
+            // Nunca dorme além do prazo: a última consulta acontece NO limite.
+            std::thread::sleep(passo.min(timeout - decorrido));
+        }
+    }
+
     pub fn transacao(&self, id: &str) -> R<serde_json::Value> {
         self.get(&format!("/tx/{id}"))
     }
@@ -170,12 +389,27 @@ impl Eav7Client {
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(0)
         };
+        let unbonding = v
+            .get("unbonding")
+            .and_then(|x| x.as_array())
+            .map(|a| {
+                a.iter()
+                    .map(|u| Unbonding {
+                        amount: texto_ou_numero_u128(u.get("amount")),
+                        mature_at: u.get("matureAt").and_then(serde_json::Value::as_u64).unwrap_or(0),
+                        blocks_left: u.get("blocksLeft").and_then(serde_json::Value::as_u64).unwrap_or(0),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
         Ok(Conta {
             address: v.get("address").and_then(|x| x.as_str()).unwrap_or(endereco).to_string(),
             balance: texto_u128("balance"),
             staked: texto_u128("staked"),
             next_nonce: v.get("nextNonce").and_then(serde_json::Value::as_i64).unwrap_or(1),
             fee_exempt: v.get("feeExempt").and_then(serde_json::Value::as_bool).unwrap_or(false),
+            unbonding,
+            claimable_voter_reward: texto_u128("claimableVoterReward"),
         })
     }
 
@@ -312,6 +546,93 @@ impl Eav7Client {
         self.executar("VOTE", 0, move |s| {
             s.com_dados(JsonValue::map([("votes".to_string(), mapa)]))
         })
+    }
+
+    /// Resgata a recompensa de eleitor acumulada num validador
+    /// (`CLAIM_VOTER_REWARD`).
+    ///
+    /// O validador é OBRIGATÓRIO: a recompensa é por-validador-votado, e o
+    /// consenso rejeita a transação sem `data.validator` (value.rs:638).
+    pub fn reivindicar_recompensa(&self, validador: &str) -> R<Submissao> {
+        let dados = dados_de_claim(validador);
+        self.executar("CLAIM_VOTER_REWARD", 0, move |s| s.com_dados(dados))
+    }
+}
+
+/// `data` de um `CLAIM_VOTER_REWARD` — compartilhado entre cliente e remetente.
+fn dados_de_claim(validador: &str) -> JsonValue {
+    JsonValue::map([("validator".to_string(), JsonValue::str(validador))])
+}
+
+/// Envio com nonce reservado localmente — evita colisão em rajadas.
+///
+/// Extraído da lógica do [`crate::bridge::Relayer`]: reserva `n`, incrementa se
+/// aceito, ressincroniza se recusado/timeout.
+pub struct Remetente<'a> {
+    cliente: &'a Eav7Client,
+    proximo_nonce: Option<i64>,
+}
+
+impl Remetente<'_> {
+    pub fn executar(
+        &mut self,
+        tipo: &str,
+        amount: u128,
+        monta: impl FnOnce(TxSpec) -> TxSpec,
+    ) -> R<Submissao> {
+        let de = self
+            .cliente
+            .endereco()
+            .ok_or_else(|| ErroCliente::Transacao("cliente sem carteira".into()))?;
+        let nonce = match self.proximo_nonce {
+            Some(n) => n,
+            None => self.cliente.proximo_nonce(&de)?,
+        };
+        let spec = monta(TxSpec::nova(tipo, amount, nonce, agora_ms()));
+        let tx = self.cliente.montar(spec)?;
+        match self.cliente.enviar(&tx) {
+            Ok(r) if r.accepted => {
+                self.proximo_nonce = Some(nonce + 1);
+                Ok(r)
+            }
+            Ok(r) => {
+                self.proximo_nonce = None;
+                Err(ErroCliente::Api {
+                    status: 400,
+                    mensagem: r.reason.unwrap_or_else(|| "transação recusada".into()),
+                })
+            }
+            Err(e) => {
+                self.proximo_nonce = None;
+                Err(e)
+            }
+        }
+    }
+
+    pub fn transferir(&mut self, para: &str, amount: u128) -> R<Submissao> {
+        let para = para.to_string();
+        self.executar("TRANSFER", amount, move |s| s.para(para))
+    }
+
+    pub fn stake(&mut self, amount: u128) -> R<Submissao> {
+        self.executar("STAKE", amount, |s| s)
+    }
+
+    pub fn unstake(&mut self, amount: u128) -> R<Submissao> {
+        self.executar("UNSTAKE", amount, |s| s)
+    }
+
+    pub fn votar(&mut self, votos: Vec<(String, u128)>) -> R<Submissao> {
+        let mapa = JsonValue::map(
+            votos.into_iter().map(|(k, v)| (k, JsonValue::str(v.to_string()))),
+        );
+        self.executar("VOTE", 0, move |s| {
+            s.com_dados(JsonValue::map([("votes".to_string(), mapa)]))
+        })
+    }
+
+    pub fn reivindicar_recompensa(&mut self) -> R<Submissao> {
+        self.executar("CLAIM_VOTER_REWARD", 0, |s| s)
     }
 }
 

@@ -40,9 +40,12 @@ function computeStats(blockchain, state) {
   const from = now - dayMs;
   const bucketMs = dayMs / STATS_BUCKETS;
   const txSeries = new Array(STATS_BUCKETS).fill(0);
-  const volSeries = new Array(STATS_BUCKETS).fill(0);
+  const volSeries = new Array(STATS_BUCKETS).fill(0n);
   let volume24h = 0n;
   let txCount24h = 0;
+  // Extremo mais antigo REALMENTE varrido: o TPS sai daqui, não de `dayMs`. Numa
+  // cadeia com 3 horas de vida, dividir por 24h daria um TPS 8x menor que o real.
+  let oldest = null;
   const bwt = blockchain.blocksWithTxs ?? [];
   let scanned = 0;
   for (let i = bwt.length - 1; i >= 0 && scanned < STATS_SCAN_CAP; i--) {
@@ -51,13 +54,16 @@ function computeStats(blockchain, state) {
     scanned++;
     if (b.timestamp < from) break; // saímos da janela de 24h
     const bucket = Math.min(STATS_BUCKETS - 1, Math.max(0, Math.floor((b.timestamp - from) / bucketMs)));
+    oldest = b.timestamp;
     for (const t of (b.transactions ?? [])) {
       txCount24h++;
       txSeries[bucket]++;
       if (NATIVE_VOLUME_TYPES.has(t.type)) {
         const amt = BigInt(t.amount ?? '0');
         volume24h += amt;
-        volSeries[bucket] += Number(amt / CHAIN.UNIT);
+        // e7 CRU. Somar `amt / UNIT` por transação jogava fora a fração de CADA
+        // uma: mil transferências de 0,9 EAV7 apareciam como zero na série.
+        volSeries[bucket] += amt;
       }
     }
   }
@@ -68,6 +74,7 @@ function computeStats(blockchain, state) {
     transactions: blockchain.txIndex.size,
     volume24h,
     txCount24h,
+    tps: oldest !== null && now > oldest ? txCount24h / ((now - oldest) / 1000) : 0,
     txSeries,
     volSeries,
   };
@@ -492,27 +499,39 @@ async function handle(node, req, res) {
   }
 
   // ---- blocos e cadeia ------------------------------------------------------
+  // `size`: BYTES da serialização do bloco — a mesma linha que o blockstore
+  // grava (blockstore.js:112) e que trafega entre peers.
+  //
+  // `Buffer.byteLength`, não `.length`: `String.length` conta unidades UTF-16, e
+  // um nome de token fora do ASCII ocupa mais bytes do que caracteres. É byte
+  // que se paga em disco e em rede.
+  //
+  // O nó em Rust escreve a linha com `canonicalJson` (chaves ordenadas) e este
+  // com `JSON.stringify` (ordem de inserção). A ORDEM difere; o COMPRIMENTO não —
+  // mesmas chaves, mesmos valores, mesma tabela de escape.
+  const comSize = (b) => (b ? { ...b, size: Buffer.byteLength(JSON.stringify(b), 'utf8') } : b);
+
   if (GET && parts[0] === 'blocks' && parts.length === 1) {
     const limit = Math.min(Math.max(Number(url.searchParams.get('limit') ?? 20), 1), 200);
     const fromParam = url.searchParams.get('from');
     if (fromParam !== null) {
       const from = Math.max(Number(fromParam), 0);
-      send(res, 200, blockchain.getRange(from, limit));
+      send(res, 200, blockchain.getRange(from, limit).map(comSize));
     } else {
-      send(res, 200, blockchain.getRange(Math.max(0, blockchain.height - limit + 1), limit).reverse());
+      send(res, 200, blockchain.getRange(Math.max(0, blockchain.height - limit + 1), limit).reverse().map(comSize));
     }
     return;
   }
 
   if (GET && parts[0] === 'blocks' && parts[1] === 'latest') {
-    send(res, 200, blockchain.head);
+    send(res, 200, comSize(blockchain.head));
     return;
   }
 
   if (GET && parts[0] === 'blocks' && parts.length === 2) {
     const block = blockchain.getBlock(parts[1]);
     if (!block) return send(res, 404, { error: 'bloco não encontrado' });
-    send(res, 200, block);
+    send(res, 200, comSize(block));
     return;
   }
 
@@ -523,7 +542,7 @@ async function handle(node, req, res) {
     send(res, 200, {
       height: blockchain.height,
       from,
-      blocks: blockchain.getRange(from, limit),
+      blocks: blockchain.getRange(from, limit).map(comSize),
     });
     return;
   }
@@ -718,12 +737,18 @@ async function handle(node, req, res) {
       accountsDelta: 0, // sem histórico de estado → não há delta real (front oculta)
       transactions: s.transactions,
       transactionsDelta: s.txCount24h, // REAL: transações nas últimas 24h
-      volume: Number(s.volume24h / CHAIN.UNIT), // REAL: volume nativo transferido em 24h (EAV7)
-      volumeDelta: Number(s.volume24h / CHAIN.UNIT),
-      staked: Number(s.staked / CHAIN.UNIT),
-      stakedDelta: 0, // sem histórico → sem delta real (front oculta)
+      // Montantes em e7 CRU, string decimal — a MESMA regra do resto da API.
+      // Antes saíam divididos por UNIT, abrindo uma exceção só nesta rota: o
+      // cliente formata montante dividindo por UNIT, então dividia duas vezes e
+      // 7.900 EAV7 aparecia como 0,0079 na tela. Fora isso, `Number` sobre e7
+      // estoura o inteiro seguro do JS aos 900 milhões de EAV7.
+      volume: String(s.volume24h), // REAL: volume nativo transferido em 24h
+      volumeDelta: String(s.volume24h),
+      staked: String(s.staked),
+      stakedDelta: '0', // sem histórico → sem delta real (front oculta)
+      tps: s.tps, // medido sobre o intervalo real dos blocos varridos
       txSeries: s.txSeries, // série horária real (24 buckets) p/ o sparkline de transações
-      volSeries: s.volSeries, // série horária real de volume
+      volSeries: s.volSeries.map(String), // série horária real de volume, em e7
     });
     return;
   }
@@ -1058,7 +1083,22 @@ async function handle(node, req, res) {
       maxValidators: CHAIN.MAX_VALIDATORS,
       minStake: CHAIN.MIN_VALIDATOR_STAKE,
       blockReward: blockchain.blockReward(Math.max(blockchain.height + 1, 0)),
-      current: state.validators(),
+      // `name`: nome EAV-NS que aponta para o validador, quando existe. O cliente
+      // montava isto sozinho baixando `/names` — que corta em 200 registros por
+      // padrão, deixando anônimo quem tivesse nome fora dessa fatia.
+      //
+      // Ordem alfabética EXPLÍCITA: vários nomes podem mirar o mesmo endereço, e
+      // vence o primeiro do alfabeto. Sem o sort, o objeto `state.names` itera na
+      // ordem de INSERÇÃO (quem registrou antes) e o rótulo divergiria do nó em
+      // Rust, cujo BTreeMap já entrega ordenado.
+      // Sort UMA vez — não dentro do map por validador (custo O(V·N log N) no poll).
+      current: (() => {
+        const nomesOrdenados = Object.keys(state.names).sort();
+        return state.validators().map((v) => ({
+          ...v,
+          name: nomesOrdenados.find((n) => state.names[n].target === v.address) ?? null,
+        }));
+      })(),
       slotProducer: blockchain.expectedProducer(Date.now()),
       performance: perf.validators,        // score/status por validador (desempenho recente)
       performanceSummary: perf.summary,    // agregado: saudáveis, degradados, pior score
@@ -1138,6 +1178,10 @@ async function handle(node, req, res) {
         txs.push({ ...t, blockHeight: h, blockTime: b.timestamp, receipt: blockchain.receipts.get(t.id) ?? null, asset });
       }
       if (txs.length >= limit && i > 0) nextBefore = h;
+    }
+    // Cap atingido sem encher `limit`: ainda há história — não mentir "fim".
+    if (nextBefore == null && scanned >= SCAN_CAP && txs.length > 0) {
+      nextBefore = txs[txs.length - 1].blockHeight;
     }
     send(res, 200, { token: token.id, txs, nextBefore, scanned });
     return;

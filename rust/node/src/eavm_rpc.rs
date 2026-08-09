@@ -10,11 +10,17 @@
 //!
 //! A LÓGICA é uma função pura despachante — [`dispatch`] / [`dispatch_read`] —
 //! `(&Node|&mut Node, method, params) -> Result<Value, RpcError>`, testável sem
-//! abrir socket. A CASCA axum lê o lock (write SÓ nos métodos que executam/submem
-//! — `eth_call`, `eth_estimateGas`, `eth_sendRawTransaction`; read nos demais),
-//! chama o despachante e embrulha em JSON-RPC 2.0. O lock NUNCA atravessa um
-//! `await`: cada `handle_one` pega o guard, despacha (síncrono, CPU-curto) e o
-//! solta antes de a resposta ser serializada.
+//! abrir socket. A CASCA axum lê o lock (write SÓ no método que submete —
+//! `eth_sendRawTransaction`; read nos demais), chama o despachante e embrulha em
+//! JSON-RPC 2.0. O lock NUNCA atravessa um `await`: cada `handle_one` pega o
+//! guard, despacha (síncrono, CPU-curto) e o solta antes de a resposta ser
+//! serializada.
+//!
+//! `eth_call`/`eth_estimateGas` simulam a VM, que pode rodar até o teto de gas —
+//! longo demais para segurar QUALQUER lock exclusivo (o produtor de blocos usa o
+//! write lock a cada slot). A casca pega o READ lock só o bastante para CLONAR o
+//! estado (o mesmo `state.clone()` barato que a produção de bloco e o reorg
+//! fazem) e roda a simulação no clone, sem lock nenhum.
 //!
 //! # JSON de APRESENTAÇÃO, nunca de consenso
 //!
@@ -707,11 +713,13 @@ pub fn dispatch_read(node: &Node, method: &str, params: &Value) -> Result<Value,
 // Despacho COMPLETO — métodos que executam/submetem precisam de `&mut Node`
 // ---------------------------------------------------------------------------
 
-/// Os três métodos que precisam de WRITE lock: executam a VM (que muta e depois
-/// reverte pelo journal) ou submetem tx ao mempool. A casca usa isto para decidir
-/// entre read e write lock.
+/// Só `eth_sendRawTransaction` precisa do WRITE lock no `Node` inteiro.
+///
+/// `eth_call` / `eth_estimateGas` clonam o `State` sob READ lock e executam fora
+/// do lock — a VM ainda usa journal/`&mut`, mas no clone. Antes eles competiam
+/// com o produtor (write a cada ~200 ms) e um lote RPC podia travar a API.
 pub fn needs_write(method: &str) -> bool {
-    matches!(method, "eth_call" | "eth_estimateGas" | "eth_sendRawTransaction")
+    matches!(method, "eth_sendRawTransaction")
 }
 
 /// Despacho completo: os métodos de escrita direto, o resto delegado a
@@ -719,41 +727,14 @@ pub fn needs_write(method: &str) -> bool {
 pub fn dispatch(node: &mut Node, method: &str, params: &Value) -> Result<Value, RpcError> {
     let param = |i: usize| params.get(i);
     match method {
-        // `eth_call` — `rpc.js:176-187`: executa de verdade contra o estado atual
-        // e DESFAZ tudo (`State::call_eavm`). Revert propaga o `returnData` como
-        // erro, que é o que faz o ethers.js decodificar a razão.
-        "eth_call" => {
-            let call = param(0);
-            let out = executa_call(node, call, None)?;
-            if !out.success {
-                return Err(RpcError::revert("execução revertida", out.return_data));
-            }
-            Ok(json!(out.return_data))
-        }
-        // `eth_estimateGas` — `rpc.js:189-201`. Sem `to` é DEPLOY: custo fixo de
-        // config. Com `to`, executa e devolve `ceil(gasUsed × 1.25) + 21000` — a
-        // margem de 25% que a referência aplica (o custo real depende do estado no
-        // momento da inclusão; subestimar reverte a tx).
-        "eth_estimateGas" => {
-            let call = param(0);
-            let tem_to = call.and_then(|c| c.get("to")).and_then(Value::as_str).is_some();
-            if !tem_to {
-                // `CHAIN.ENERGY.COST.EAVM_DEPLOY * CHAIN.GAS_PER_ENERGY` (`rpc.js:191`).
-                // O custo BASE de energia do deploy (10, `config.js:344` — distinto
-                // do FEE de 200000) sai da tabela da lib, `eav7::config::energy_cost`
-                // (o porte de `CHAIN.ENERGY.COST`); era um literal aqui, sob um
-                // comentário que dizia que o config Rust não expunha a tabela.
-                // 10 × 100 = 1000 (0x3e8).
-                return Ok(json!(to_hex(c::energy_cost("EAVM_DEPLOY") as u128 * c::GAS_PER_ENERGY as u128)));
-            }
-            let out = executa_call(node, call, None)?;
-            if !out.success {
-                return Err(RpcError::revert("execução revertida", out.return_data));
-            }
-            // `Math.ceil(gasUsed * 1.25) + 21000` em f64, para reproduzir o
-            // arredondamento do JS ao byte.
-            let estimado = ((out.gas_used as f64) * 1.25).ceil() as u128 + 21000;
-            Ok(json!(to_hex(estimado)))
+        // As simulações rodam direto no estado do `Node` aqui (o journal da VM
+        // desfaz tudo) — este caminho é o dos testes/chamadas diretas. A casca
+        // HTTP NÃO passa por aqui: ela clona o estado e chama [`dispatch_sim`]
+        // sem segurar lock nenhum.
+        "eth_call" | "eth_estimateGas" => {
+            let height = node.blockchain.height().max(0) as u64;
+            let block_ts = node.blockchain.head().map(|b| b.timestamp.max(0) as u64).unwrap_or(0);
+            dispatch_sim(&mut node.blockchain.state, height, block_ts, method, params)
         }
         // `eth_sendRawTransaction` — `rpc.js:236-245`: constrói o envelope a
         // partir do raw assinado e o submete. Retorna o `data.eavmHash` (keccak256
@@ -794,11 +775,63 @@ pub fn dispatch(node: &mut Node, method: &str, params: &Value) -> Result<Value, 
     }
 }
 
+/// Miolo de `eth_call`/`eth_estimateGas` sobre um `State` qualquer — o próprio
+/// do `Node` (em [`dispatch`], sob lock) ou um CLONE (na casca HTTP, sem lock).
+/// Um corpo só para os dois caminhos: a margem de gas e a propagação do revert
+/// não podem divergir entre eles.
+fn dispatch_sim(
+    state: &mut eav7::state::State,
+    height: u64,
+    block_ts: u64,
+    method: &str,
+    params: &Value,
+) -> Result<Value, RpcError> {
+    let call = params.get(0);
+    match method {
+        // `eth_call` — `rpc.js:176-187`: executa de verdade contra o estado atual
+        // e DESFAZ tudo (`State::call_eavm`). Revert propaga o `returnData` como
+        // erro, que é o que faz o ethers.js decodificar a razão.
+        "eth_call" => {
+            let out = executa_call_em(state, height, block_ts, call, None)?;
+            if !out.success {
+                return Err(RpcError::revert("execução revertida", out.return_data));
+            }
+            Ok(json!(out.return_data))
+        }
+        // `eth_estimateGas` — `rpc.js:189-201`. Sem `to` é DEPLOY: custo fixo de
+        // config. Com `to`, executa e devolve `ceil(gasUsed × 1.25) + 21000` — a
+        // margem de 25% que a referência aplica (o custo real depende do estado no
+        // momento da inclusão; subestimar reverte a tx).
+        "eth_estimateGas" => {
+            let tem_to = call.and_then(|c| c.get("to")).and_then(Value::as_str).is_some();
+            if !tem_to {
+                // `CHAIN.ENERGY.COST.EAVM_DEPLOY * CHAIN.GAS_PER_ENERGY` (`rpc.js:191`).
+                // O custo BASE de energia do deploy (10, `config.js:344` — distinto
+                // do FEE de 200000) sai da tabela da lib, `eav7::config::energy_cost`
+                // (o porte de `CHAIN.ENERGY.COST`). 10 × 100 = 1000 (0x3e8).
+                return Ok(json!(to_hex(c::energy_cost("EAVM_DEPLOY") as u128 * c::GAS_PER_ENERGY as u128)));
+            }
+            let out = executa_call_em(state, height, block_ts, call, None)?;
+            if !out.success {
+                return Err(RpcError::revert("execução revertida", out.return_data));
+            }
+            // `Math.ceil(gasUsed * 1.25) + 21000` em f64, para reproduzir o
+            // arredondamento do JS ao byte.
+            let estimado = ((out.gas_used as f64) * 1.25).ceil() as u128 + 21000;
+            Ok(json!(to_hex(estimado)))
+        }
+        _ => Err(RpcError::with_code(format!("método não suportado: {method}"), -32601)),
+    }
+}
+
 /// Extrai `{from,to,data,value}` de um objeto de chamada e roda `State::call_eavm`
-/// (execução read-only que reverte tudo). Fatorado porque `eth_call` e
-/// `eth_estimateGas` compartilham a montagem (`rpc.js:178-182` e `192-195`).
-fn executa_call(
-    node: &mut Node,
+/// (execução que a própria VM reverte pelo journal). Recebe o `State` e o contexto
+/// de bloco já separados do `Node`, para servir tanto o caminho sob lock quanto o
+/// clone sem lock.
+fn executa_call_em(
+    state: &mut eav7::state::State,
+    height: u64,
+    block_ts: u64,
     call: Option<&Value>,
     gas: Option<u64>,
 ) -> Result<eav7::state::contracts::EavmCallResult, RpcError> {
@@ -811,11 +844,7 @@ fn executa_call(
     let from = obj_str("from").map(str::to_string);
     // `call.value ? BigInt(call.value) : 0n` (`rpc.js:181`).
     let value: Amount = obj_str("value").and_then(parse_quantity).unwrap_or(0);
-    // `height: blockchain.height`, `blockTs: blockchain.head?.timestamp ?? 0`.
-    let height = node.blockchain.height().max(0) as u64;
-    let block_ts = node.blockchain.head().map(|b| b.timestamp.max(0) as u64).unwrap_or(0);
-    node.blockchain
-        .state
+    state
         .call_eavm(EavmCallParams {
             from: from.as_deref(),
             to: &to,
@@ -916,9 +945,25 @@ fn handle_one(state: &AppState, req: &Value) -> Value {
     let vazio = Value::Array(vec![]);
     let params = req.get("params").unwrap_or(&vazio);
 
-    // Read lock para leitura; write lock só nos métodos que executam/submetem.
+    // Read lock para leitura; write lock só em submissão ao mempool.
+    // `eth_call` / `eth_estimateGas`: clona o State sob read e executa FORA do lock.
     // Lock envenenado → -32603 (internal error).
-    let resultado = if needs_write(method) {
+    let resultado = if matches!(method, "eth_call" | "eth_estimateGas") {
+        // READ lock só para o snapshot (estado + contexto de bloco, capturados no
+        // MESMO guard — em guards separados o timestamp poderia ser de outra
+        // altura). O guard é solto ANTES da simulação: a VM pode rodar até o teto
+        // de gas, e segurar qualquer lock aqui bloquearia o produtor de blocos.
+        match state.read() {
+            Ok(node) => {
+                let mut st = node.blockchain.state.clone();
+                let height = node.blockchain.height().max(0) as u64;
+                let block_ts = node.blockchain.head().map(|b| b.timestamp.max(0) as u64).unwrap_or(0);
+                drop(node);
+                dispatch_sim(&mut st, height, block_ts, method, params)
+            }
+            Err(PoisonError { .. }) => Err(RpcError::with_code("estado envenenado", -32603)),
+        }
+    } else if needs_write(method) {
         match state.write() {
             Ok(mut node) => dispatch(&mut node, method, params),
             Err(PoisonError { .. }) => Err(RpcError::with_code("estado envenenado", -32603)),
@@ -1027,6 +1072,37 @@ mod tests {
         let porh = dispatch_read(&n, "eth_getTransactionByHash", &json!([RAW_EAVM_HASH])).unwrap();
         assert_eq!(porh["hash"], json!(RAW_EAVM_HASH));
         assert_eq!(porh["blockNumber"], Value::Null, "pendente não tem bloco");
+    }
+
+    /// G4: `eth_call`/`eth_estimateGas` NÃO seguram o write lock do `Node`
+    /// durante a simulação. O teste estaciona um READ guard e despacha as duas
+    /// chamadas em outra thread: na versão antiga (write lock pela simulação
+    /// inteira) elas ficariam bloqueadas atrás do leitor — exatamente como o
+    /// produtor de blocos ficava bloqueado atrás delas — e o teste estouraria o
+    /// timeout. Com o snapshot sob read lock, completam em paralelo.
+    #[test]
+    fn eth_call_e_estimate_gas_simulam_sem_write_lock() {
+        let estado: AppState = Arc::new(RwLock::new(node()));
+        let _leitor = estado.read().unwrap();
+
+        let (tx, rx) = std::sync::mpsc::channel();
+        let estado2 = estado.clone();
+        std::thread::spawn(move || {
+            let alvo = format!("0x{}", "77".repeat(20));
+            let call = json!({ "jsonrpc": "2.0", "id": 1, "method": "eth_call",
+                               "params": [{ "to": alvo, "data": "0x" }] });
+            let gas = json!({ "jsonrpc": "2.0", "id": 2, "method": "eth_estimateGas",
+                              "params": [{ "to": alvo, "data": "0x" }] });
+            let _ = tx.send((handle_one(&estado2, &call), handle_one(&estado2, &gas)));
+        });
+
+        let (r_call, r_gas) = rx
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("simulação não pode esperar write lock: bloquearia atrás de qualquer leitor");
+        // Destino sem código: execução vazia bem-sucedida, retorno "0x".
+        assert_eq!(r_call["result"], json!("0x"));
+        // gasUsed 0 → ceil(0 × 1.25) + 21000 = 21000 (0x5208).
+        assert_eq!(r_gas["result"], json!("0x5208"));
     }
 
     #[test]

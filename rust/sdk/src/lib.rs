@@ -32,7 +32,10 @@ pub mod faucet;
 pub mod wallet;
 
 pub use bridge::{AdaptadorDeCadeia, AdaptadorDeLaco, Deposito, Relayer, Transferencia};
-pub use cliente::{Eav7Client, ErroCliente};
+pub use cliente::{
+    Conta, ErroCliente, Eav7Client, Historico, Remetente, Submissao, TxResumida, Unbonding,
+    Validador,
+};
 pub use faucet::Faucet;
 pub use wallet::ProductionWallet;
 

@@ -680,15 +680,32 @@ pub async fn sync_once(
         Ok(node) => node.peers.clone(), // clona e SOLTA o lock antes dos fetches
         Err(_) => return,
     };
+    // Os /status saem em PARALELO (G9): com N peers e timeout de 3s, a fase 1
+    // serial custava até N×3s por ciclo; em paralelo o pior caso é ~3s. Clonar
+    // client/config é barato (pool compartilhado + struct pequena) e permite o
+    // `tokio::spawn` sem prender referências. Os resultados são colhidos na
+    // ordem original da lista — a fase 2 continua determinística.
+    let tarefas: Vec<_> = peers
+        .into_iter()
+        .map(|peer| {
+            let client = client.clone();
+            let config = config.clone();
+            tokio::spawn(async move {
+                let status =
+                    fetch_json_capped(&client, &config, &format!("{peer}/status"), 1_000_000, 3000)
+                        .await;
+                (peer, status)
+            })
+        })
+        .collect();
     let mut ativos: Vec<(String, i64)> = Vec::new();
-    for peer in peers {
-        if let Ok(status) =
-            fetch_json_capped(client, config, &format!("{peer}/status"), 1_000_000, 3000).await
+    for tarefa in tarefas {
+        // peer inacessível (ou task abortada): silêncio, como o catch de p2p.js:155
+        if let Ok((peer, Ok(status))) = tarefa.await
             && let Some(h) = status.get("height").and_then(|v| v.as_i64())
         {
             ativos.push((peer, h));
         }
-        // peer inacessível: silêncio, como o catch de p2p.js:155
     }
 
     // FASE 2 (lenta): sincroniza de cada peer que esteja à frente. Cada peer tem

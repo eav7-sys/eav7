@@ -633,10 +633,20 @@ pub fn validators_index(node: &Node, now_ms: i64) -> ApiReply {
         "minStake": c::MIN_VALIDATOR_STAKE.to_string(),
         "blockReward": reward.to_string(),
         // `state.validators()` → `[{address, staked, votes}]` (bigints → string).
+        // `name`: nome EAV-NS apontando para o validador, quando existe. O
+        // cliente montava isto sozinho, baixando `/names` e invertendo o mapa —
+        // e `/names` corta em 200 registros por padrão, então um validador com
+        // nome fora dessa fatia aparecia anônimo. Aqui o conjunto varrido é o
+        // dos validadores (no máximo MAX_VALIDATORS), não os 200 primeiros nomes.
+        //
+        // Vários nomes podem mirar o mesmo endereço; vence o primeiro em ordem
+        // alfabética (o `BTreeMap` já entrega assim), que é uma escolha ESTÁVEL —
+        // registrar um nome novo não troca o rótulo de quem já tinha um.
         "current": atuais.iter().map(|v| json!({
             "address": v.address,
             "staked": v.staked.to_string(),
             "votes": v.votes.to_string(),
+            "name": st.names.iter().find(|(_, r)| r.target == v.address).map(|(n, _)| n.clone()),
         })).collect::<Vec<_>>(),
         "slotProducer": slot_producer,
         "performance": perf.validators.iter().map(score_view).collect::<Vec<_>>(),
@@ -1301,6 +1311,35 @@ mod tests {
         assert_eq!(body["performanceSummary"]["count"], json!(2));
         assert_eq!(body["performance"][0]["score"], json!(100));
         assert_eq!(body["performance"][0]["status"], json!("healthy"));
+    }
+
+    /// `name` resolve o EAV-NS do validador NO NÓ. Antes o cliente baixava
+    /// `/names` (teto de 200) e invertia o mapa sozinho, então quem tivesse nome
+    /// fora dessa fatia aparecia anônimo. Com vários nomes no mesmo endereço,
+    /// vence o primeiro do alfabeto — escolha ESTÁVEL: registrar um nome novo não
+    /// troca o rótulo de quem já tinha um.
+    #[test]
+    fn validators_trazem_o_nome_eav_ns_e_o_alfabeticamente_menor_vence() {
+        let mut n = node_teste();
+        let st = &mut n.blockchain.state;
+        st.accounts.insert("E7AAA".into(), conta_com_stake(2 * c::MIN_VALIDATOR_STAKE));
+        st.accounts.insert("E7BBB".into(), conta_com_stake(c::MIN_VALIDATOR_STAKE));
+        let nome = |alvo: &str| eav7::state::nft::NameRecord {
+            owner: alvo.into(),
+            target: alvo.into(),
+            registered_at: 1,
+        };
+        // "zulu" foi registrado ANTES de "alfa" e os dois miram E7AAA.
+        st.names.insert("zulu".into(), nome("E7AAA"));
+        st.names.insert("alfa".into(), nome("E7AAA"));
+
+        let (_, body) = validators_index(&n, 0);
+        let atuais = body["current"].as_array().unwrap();
+        assert_eq!(atuais[0]["address"], json!("E7AAA"));
+        assert_eq!(atuais[0]["name"], json!("alfa"));
+        // Sem nome o campo existe e é null — não some da resposta.
+        assert_eq!(atuais[1]["address"], json!("E7BBB"));
+        assert_eq!(atuais[1]["name"], json!(null));
     }
 
     #[test]
