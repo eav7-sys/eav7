@@ -20,11 +20,13 @@ const DIR = join(RAIZ, 'vectors');
 const ler = (n) => JSON.parse(readFileSync(join(DIR, n), 'utf8'));
 
 function geraEm(destino) {
-  // Três geradores: funções puras, transição de estado e integração EAVM<->estado.
+  // Quatro geradores: funções puras, transição de estado, integração EAVM<->estado
+  // e ciclo de vida da cadeia (gênese → expulsão → âncora → reorg → replay).
   // Todos precisam ser determinísticos e são conferidos contra o que está versionado.
   execFileSync(process.execPath, [join(RAIZ, 'bin/eav7-vectors.js'), destino], { stdio: 'pipe' });
   execFileSync(process.execPath, [join(RAIZ, 'bin/eav7-vectors-state.js'), destino], { stdio: 'pipe' });
   execFileSync(process.execPath, [join(RAIZ, 'bin/eav7-vectors-eavm.js'), destino], { stdio: 'pipe' });
+  execFileSync(process.execPath, [join(RAIZ, 'bin/eav7-vectors-lifecycle.js'), destino], { stdio: 'pipe' });
   return Object.fromEntries(
     readdirSync(destino).sort().map((f) => [f, readFileSync(join(destino, f), 'utf8')]),
   );
@@ -42,7 +44,7 @@ test('os vetores versionados batem com o comportamento atual do nó', () => {
       assert.equal(
         gerado[nome], versionado[nome],
         `${nome} divergiu — se a mudança de consenso é intencional, regere os vetores:\n` +
-        `  node bin/eav7-vectors.js && node bin/eav7-vectors-state.js && node bin/eav7-vectors-eavm.js`,
+        `  node bin/eav7-vectors.js && node bin/eav7-vectors-state.js && node bin/eav7-vectors-eavm.js && node bin/eav7-vectors-lifecycle.js`,
       );
     }
   } finally {

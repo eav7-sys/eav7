@@ -3137,6 +3137,188 @@ mod tests {
         );
     }
 
+    /// G3: vetores de CICLO DE VIDA (`vectors/lifecycle.json`) — gênese → expulsão
+    /// → âncora → reorg → replay, contra o nó de REFERÊNCIA.
+    ///
+    /// O teste acima prova a invariante DENTRO deste cliente; este prova que os
+    /// DOIS clientes concordam nos números: o hash e a raiz da gênese, a raiz após
+    /// cada bloco da janela, a âncora após cada expulsão (a primeira é o caso do
+    /// bug), o estado reconstruído no ponto de fork, a raiz após o rabo rival e o
+    /// replay completo da cadeia adotada.
+    ///
+    /// Os blocos do vetor NÃO são blocos de consenso (assinatura e hash são
+    /// marcadores fixos — é o que torna o gerador determinístico). O que se
+    /// exercita aqui é `evict_oldest` e `apply_block_to` REAIS: exatamente o
+    /// código que a âncora do slide e o rebuild do reorg usam em produção, e que
+    /// ignora assinaturas por definição (blocos já validados).
+    ///
+    /// Regerar:  node bin/eav7-vectors-lifecycle.js
+    #[test]
+    fn vetores_de_ciclo_de_vida_batem_com_a_referencia() {
+        use crate::transaction::parse_json;
+
+        fn campo<'a>(v: &'a JsonValue, chave: &str) -> &'a JsonValue {
+            match v {
+                JsonValue::Map(m) => {
+                    m.get(chave).unwrap_or_else(|| panic!("campo {chave} ausente no vetor"))
+                }
+                _ => panic!("esperava um mapa com o campo {chave}"),
+            }
+        }
+        fn texto<'a>(v: &'a JsonValue, chave: &str) -> &'a str {
+            match campo(v, chave) {
+                JsonValue::Str(s) => s.as_str(),
+                _ => panic!("campo {chave} não é texto"),
+            }
+        }
+        fn lista<'a>(v: &'a JsonValue, chave: &str) -> &'a [JsonValue] {
+            match campo(v, chave) {
+                JsonValue::List(l) => l.as_slice(),
+                _ => panic!("campo {chave} não é lista"),
+            }
+        }
+        fn inteiro(v: &JsonValue, chave: &str) -> u64 {
+            match campo(v, chave) {
+                JsonValue::Int(n) => u64::try_from(*n).expect("inteiro do vetor"),
+                _ => panic!("campo {chave} não é inteiro"),
+            }
+        }
+
+        let caminho = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("raiz do repositório")
+            .join("vectors")
+            .join("lifecycle.json");
+        let bruto = std::fs::read_to_string(&caminho).unwrap_or_else(|e| {
+            panic!(
+                "não consegui ler {}: {e}\nrode: node bin/eav7-vectors-lifecycle.js",
+                caminho.display()
+            )
+        });
+        let v = parse_json(&bruto).expect("lifecycle.json é JSON válido");
+
+        // Como no replay: o modo de fork do binário TEM de casar com o do vetor —
+        // divergência é incompatibilidade de ambiente, não bug.
+        let genese_ativo = matches!(campo(&v, "genesisActive"), JsonValue::Bool(true));
+        if genese_ativo != crate::config::GENESIS_ACTIVE_BUILD {
+            eprintln!(
+                "PULADO: lifecycle.json foi gerado {} gênese-ativo e este binário foi compilado {}.\n         Regenere com o mesmo modo: node bin/eav7-vectors-lifecycle.js",
+                if genese_ativo { "COM" } else { "SEM" },
+                if crate::config::GENESIS_ACTIVE_BUILD { "COM" } else { "SEM" },
+            );
+            return;
+        }
+
+        let raiz = |s: &State| compute_state_root(&s.state_leaves().expect("folhas"));
+
+        // 1) GÊNESE pela porta real: valida integridade — logo, o próprio HASH do
+        // bloco gênese da referência — e aplica as alocações.
+        let genese = campo(&v, "genesis");
+        let bloco_genese =
+            crate::block::block_from_json(campo(genese, "block")).expect("gênese do vetor");
+        let mut chain = Blockchain::new();
+        chain.adopt_genesis(bloco_genese).expect("a gênese da referência tem de ser aceita");
+        assert_eq!(
+            raiz(&chain.state),
+            texto(genese, "stateRoot"),
+            "a raiz da ALOCAÇÃO da gênese diverge da referência"
+        );
+
+        // 2) JANELA: cada bloco entra pelo caminho da âncora/reorg
+        // (`apply_block_to`) e a raiz é conferida POR ALTURA — o primeiro bloco
+        // divergente é apontado, e `leavesAfter` no vetor diz o quê divergiu.
+        let mut todos = Vec::new(); // cópia para o replay final (a janela desliza)
+        for b_json in lista(&v, "blocks") {
+            let b = crate::block::block_from_json(b_json).expect("bloco do vetor");
+            let altura = b.height;
+            let mut st = chain.state.clone();
+            chain
+                .apply_block_to(&mut st, &b)
+                .unwrap_or_else(|e| panic!("bloco {altura} não aplica: {e}"));
+            chain.state = st;
+            todos.push(b.clone());
+            chain.tail.push(b);
+            assert_eq!(
+                raiz(&chain.state),
+                texto(b_json, "stateRootAfter"),
+                "raiz na altura {altura} diverge da referência (compare com `leavesAfter` no vetor)"
+            );
+        }
+        assert_eq!(raiz(&chain.state), texto(&v, "headRoot"), "raiz da cabeça diverge");
+
+        // 3) EXPULSÕES com o `evict_oldest` REAL. A primeira é o caso do bug: a
+        // âncora nasce da ALOCAÇÃO da gênese, nunca de "estado vazio + bloco 0".
+        for e in lista(&v, "evictions") {
+            assert!(chain.evict_oldest(), "expulsão do bloco mais velho");
+            assert_eq!(chain.tail_start, inteiro(e, "tailStart"));
+            let ancora = chain.base_state.as_ref().expect("âncora depois de expulsar");
+            assert_eq!(
+                raiz(ancora),
+                texto(e, "anchorRoot"),
+                "âncora com tail_start={} diverge da referência",
+                chain.tail_start,
+            );
+        }
+
+        // 4) A INVARIANTE central do G3: âncora + blocos da janela == raiz corrente.
+        let mut rebuild = chain.base_state.clone().expect("âncora");
+        for b in &chain.tail {
+            chain.apply_block_to(&mut rebuild, b).expect("reaplica bloco da janela");
+        }
+        assert_eq!(
+            raiz(&rebuild),
+            raiz(&chain.state),
+            "âncora + janela tem de dar a MESMA raiz do estado corrente"
+        );
+
+        // 5) REORG: reconstrói o estado no ponto de fork — âncora + janela até o
+        // comum, o MESMO caminho de `reorg` — e aplica o rabo rival por cima.
+        let reorg = campo(&v, "reorg");
+        let common = inteiro(reorg, "common");
+        let mut fork = chain.base_state.clone().expect("âncora");
+        let ate_o_comum = usize::try_from(common - chain.tail_start + 1).expect("fork na janela");
+        for b in &chain.tail[..ate_o_comum] {
+            chain.apply_block_to(&mut fork, b).expect("reconstrói até o comum");
+        }
+        assert_eq!(
+            raiz(&fork),
+            texto(reorg, "rootAtFork"),
+            "o estado no ponto de fork diverge da referência"
+        );
+        let mut rivais = Vec::new();
+        for b_json in lista(reorg, "rival") {
+            let b = crate::block::block_from_json(b_json).expect("bloco rival do vetor");
+            let altura = b.height;
+            chain
+                .apply_block_to(&mut fork, &b)
+                .unwrap_or_else(|e| panic!("bloco rival {altura} não aplica: {e}"));
+            assert_eq!(
+                raiz(&fork),
+                texto(b_json, "stateRootAfter"),
+                "raiz rival na altura {altura} diverge da referência"
+            );
+            rivais.push(b);
+        }
+        assert_eq!(raiz(&fork), texto(reorg, "rootAfterReorg"), "raiz pós-reorg diverge");
+
+        // 6) REPLAY da cadeia ADOTADA de um estado NOVO (gênese + 1..comum + rival):
+        // o caminho independente tem de chegar à mesma raiz do rebuild via âncora.
+        let mut replay = State::new();
+        apply_genesis(&mut replay, campo(campo(genese, "block"), "genesis"))
+            .expect("alocações da gênese");
+        for b in todos.iter().filter(|b| b.height <= common) {
+            chain.apply_block_to(&mut replay, b).expect("replay do prefixo comum");
+        }
+        for b in &rivais {
+            chain.apply_block_to(&mut replay, b).expect("replay do rabo rival");
+        }
+        assert_eq!(
+            raiz(&replay),
+            texto(reorg, "rootAfterReorg"),
+            "o replay completo da cadeia adotada tem de chegar à MESMA raiz do reorg"
+        );
+    }
+
     /// A classe de bug que o nó B expôs em rede real: cadeia adotada por
     /// reorg/sync existia SÓ em RAM — o disco ficava vazio e o reboot voltava
     /// do zero. O reorg agora persiste (trunca no fork + re-appenda o rabo,

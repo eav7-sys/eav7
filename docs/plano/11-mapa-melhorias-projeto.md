@@ -76,8 +76,8 @@ este arquivo é o **inventário completo** de alavancas.
 
 ## Divergências perigosas JS ↔ Rust ↔ web
 
-1. **Cripto no browser** ainda TS manual (G2).
-2. **Âncora** corrigida só no working tree Rust, sem vetor cruzado (G3 + commit 05.2).
+1. ~~**Cripto no browser** ainda TS manual (G2).~~ Feito (`eav7-wasm`).
+2. ~~**Âncora** sem vetor cruzado (G3).~~ Feito (`vectors/lifecycle.json` + testes JS/Rust).
 3. **Ordem de iteração** (JS inserção vs BTreeMap) — já mordeu `/names` e validators; sem golden (G5) volta.
 4. **`size` do bloco** — igualdade de comprimento afirmada em comentário, sem teste.
 5. **`/stats`** recém-alinhado a olho nos dois clientes — golden protege.
@@ -135,5 +135,5 @@ Depois: G6–G9, G13, trilha B/C/D do 08, aposentar JS (fase 6).
 | G4 eth_call sem write lock | feito (19 testes eavm_rpc ok) |
 | G9 sync peers em paralelo | feito |
 | SDK Fase S (S1–S4, Remetente, timeout) | feito (`cargo test -p eav7-sdk` 16 ok) |
-| G3 vetores ciclo âncora | parcial: prova Rust + `vectors/lifecycle-anchor.md`; JSON cruzado JS↔Rust ainda aberto |
+| G3 vetores ciclo âncora | feito: `vectors/lifecycle.json` + `bin/eav7-vectors-lifecycle.js`; Rust `vetores_de_ciclo_de_vida_batem_com_a_referencia`; JS `test/lifecycle.test.js` (vetor + caminho real assinado) |
 | Core Fase A multiplataforma / G6 harness / G7 RAM / G10 aposentar fronts | ainda não (escopo grande) |
