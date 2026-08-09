@@ -184,7 +184,7 @@ pub fn score(ctx: OpsCtx) -> Result<(), String> {
     Ok(())
 }
 
-pub fn set_mode(dir: PathBuf, mode: Modo) -> Result<(), String> {
+pub fn set_mode(dir: PathBuf, mode: Modo, url: Option<String>) -> Result<(), String> {
     let mut cfg = CoreConfig::carregar(&dir)?;
     let old = cfg.mode.as_str().to_string();
     if mode.usa_carteira() {
@@ -193,13 +193,23 @@ pub fn set_mode(dir: PathBuf, mode: Modo) -> Result<(), String> {
             return Err(format!("carteira ausente: {}", w.display()));
         }
         let wallet = ProductionWallet::from_file(&w)?;
-        let url = format!("http://127.0.0.1:{}", cfg.port);
-        if let Ok(conta) = Eav7Client::novo(&url).conta(wallet.address()) {
-            if conta.staked < MIN_VALIDATOR_STAKE && matches!(mode, Modo::Candidate | Modo::Validator)
-            {
+        // Preferir --url (nó da rede); a API local do Core pode ainda não ter syncado o stake.
+        let urls = [
+            url.map(|u| u.trim_end_matches('/').to_string()),
+            Some(format!("http://127.0.0.1:{}", cfg.port)),
+        ];
+        let mut staked = None;
+        for u in urls.into_iter().flatten() {
+            if let Ok(conta) = Eav7Client::novo(&u).conta(wallet.address()) {
+                staked = Some(conta.staked);
+                break;
+            }
+        }
+        if let Some(s) = staked {
+            if s < MIN_VALIDATOR_STAKE && matches!(mode, Modo::Candidate | Modo::Validator) {
                 eprintln!(
                     "aviso: stake {} < mínimo {} — modo gravado, mas a rede ainda não te elege",
-                    format_eav7(conta.staked),
+                    format_eav7(s),
                     format_eav7(MIN_VALIDATOR_STAKE)
                 );
             }

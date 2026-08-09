@@ -86,8 +86,8 @@ fn despacha() -> Result<(), String> {
                 .next()
                 .ok_or("uso: eav7-core set-mode <listen|candidate|validator>")?;
             let mode = Modo::parse(&modo)?;
-            let (dir, _) = parse_dir_url(args)?;
-            ops::set_mode(ops::dir_padrao(dir), mode)
+            let (dir, url) = parse_dir_url(args)?;
+            ops::set_mode(ops::dir_padrao(dir), mode, url)
         }
         "account" | "conta" => {
             let (dir, url) = parse_dir_url(args)?;

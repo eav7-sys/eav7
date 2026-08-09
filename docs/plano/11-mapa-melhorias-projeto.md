@@ -139,4 +139,5 @@ Depois: G6–G9, G13, trilha B/C/D do 08, aposentar JS (fase 6).
 | Local pronto → deploy depois | feito: `docs/local.md`, `npm run dev:local`, `.env.example`, deploy sem IPs (`deploy/nodes.env`) |
 | Core Fase A (MVP CLI) | feito A2–A7 (3 alvos no release); falta A4 instaladores + arm64 Linux |
 | Core Fase B candidatura | feito B1–B5 na CLI (`stake`/`score`/`set-mode`/`health`) |
+| Testnet local 3 nós + faucet + demo Core | feito (`bin/eav7-testnet-up.sh --with-core --demo`) |
 | G6 harness / G7 RAM / G10 aposentar fronts | ainda não |

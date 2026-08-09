@@ -13,6 +13,9 @@
   "scripts": {
     "start": "node bin/eav7.js node start",
     "dev:local": "bash bin/eav7-dev-up.sh",
+    "testnet:up": "bash bin/eav7-testnet-up.sh",
+    "testnet:down": "bash bin/eav7-testnet-down.sh",
+    "testnet:demo": "bash bin/eav7-testnet-demo.sh",
     "test": "node --test",
     "verificar": "bash bin/eav7-verificar.sh",
     "parity": "bash bin/eav7-api-parity-boot.sh"

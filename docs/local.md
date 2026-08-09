@@ -8,20 +8,13 @@ Deploy fica para quando o local estiver verde (ver `deploy/`).
 ```bash
 # Terminal 1 — nó JS + explorador Next apontando a ele
 bash bin/eav7-dev-up.sh
+
+# Ou testnet 3 nós + faucet + Core (stake demo):
+bash bin/eav7-testnet-up.sh --fresh --with-core --demo
+# docs/testnet.md · docs/core.md
 ```
 
-### Core Rust (operador / ouvinte)
-
-```bash
-cd rust && cargo build -p eav7-core -p eav7-node
-./target/debug/eav7-core init --dir ../data/core-dev --mode listen \
-  --port 6072 --allow-private-peers --peers http://127.0.0.1:6070
-./target/debug/eav7-core run --dir ../data/core-dev
-```
-
-Detalhe: [core.md](core.md).
-
-Abre:
+Abre (`dev-up`):
 
 | Serviço | URL |
 |---|---|

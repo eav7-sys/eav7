@@ -3,6 +3,30 @@
 Ambiente para ensaiar o gênese novo com **todas as features do bloco 0** antes do relaunch
 real. É o mesmo modo que a mainnet nova vai usar.
 
+## Atalho local (recomendado)
+
+```bash
+# 3 validadores JS + faucet (+ Core Rust opcional + demo stake)
+bash bin/eav7-testnet-up.sh --fresh
+bash bin/eav7-testnet-up.sh --fresh --with-core --demo
+
+bash bin/eav7-testnet-down.sh
+```
+
+| Serviço | URL padrão |
+|---|---|
+| Nós | http://127.0.0.1:6070 … 6072 |
+| Faucet | http://127.0.0.1:16090/ (`POST /faucet`) |
+| Core (com `--with-core`) | http://127.0.0.1:6073 |
+
+Dados em `data/testnet/` (gitignored). Endpoints gravados em `data/testnet/endpoints.env`.
+
+Com `--with-core`, o script compila o Rust em **gênese-ativo**, sobe o `eav7-core`
+em listen e restaura `rust/src/config.rs` ao modo padrão (o flag fica só no binário).
+`--demo` faz faucet → `stake 1000` → `set-mode candidate` e mostra `score`.
+
+npm: `npm run testnet:up` / `testnet:down` / `testnet:demo`.
+
 ## Gênese-ativo
 
 `EAV7_GENESIS_ACTIVE=1` zera todas as alturas de fork (`FORK_HEIGHTS` em `config.js`), então
@@ -11,43 +35,44 @@ recursos (#6), governança (#9), timelock+poda (a), slashing+unbonding (b) e rot
 comitê (d) ficam **ativos desde a altura 0**. Sem o flag, a cadeia usa as alturas de fork
 padrão (a cadeia atual segue intacta).
 
-## 1) Gerar a gênese
+No cliente **Rust** o mesmo flag é **build-time** (`GENESIS_ACTIVE_BUILD`): compile com
+`EAV7_GENESIS_ACTIVE=1 node bin/eav7-config-rs.js && cargo build`, rode com
+`EAV7_GENESIS_ACTIVE=1`, e restaure o `config.rs` depois se não quiser sujar o git.
+
+## Passo a passo manual
+
+### 1) Gerar a gênese
 
 ```
 EAV7_GENESIS_ACTIVE=1 node bin/eav7-genesis.js ./testnet-genesis 3
 ```
-Cria `genesis.json`, `treasury-wallet.json` e `validator-N-wallet.json`, e imprime o
-**hash da gênese** — fixe-o como `expectedGenesisHash` em todos os nós.
 
-## 2) Subir os nós (localmente ou nos servidores)
-
-Cada nó roda com o flag e adota a mesma `genesis.json` (mesmo hash fixado):
+### 2) Subir os nós
 
 ```
 EAV7_GENESIS_ACTIVE=1 node bin/eav7.js mine \
   --port 6070 --data ./data/node-A --genesis ./testnet-genesis/genesis.json \
+  --genesis-hash <hash> \
   --validator ./testnet-genesis/validator-0-wallet.json \
-  --peers http://127.0.0.1:6071,http://127.0.0.1:6072
+  --peers http://127.0.0.1:6071,http://127.0.0.1:6072 \
+  --allow-private-peers
 ```
-Repita nas portas 6071/6072 com `validator-1/2` e `--peers` apontando aos outros. Os 3
-convergem no mesmo head (finalidade BFT engaja com ≥3 validadores).
 
-## 3) Faucet (opcional)
+Repita nas portas 6071/6072.
+
+### 3) Faucet
 
 ```
 EAV7_FAUCET_ENABLED=1 EAV7_NODE_URL=http://127.0.0.1:6070 \
-  EAV7_FAUCET_KEY=./testnet-genesis/treasury-wallet.json PORT=6090 node bin/eav7-faucet.js
+  EAV7_FAUCET_KEY=./testnet-genesis/treasury-wallet.json PORT=16090 \
+  node bin/eav7-faucet.js
 ```
 
-## 4) Ensaiar as features
+### 4) Core candidato
 
-Com o SDK (`docs/api.md`) ou a CLI, exercite antes do relaunch: staking + votação de
-validador, uma proposta de governança (ver o timelock aplicar), delegação de recurso,
-uma conta multisig, e a ponte com prova de comitê + uma rotação de comitê. O teste
-`test/integration.test.js` já faz um passe automatizado disso in-process.
+Ver [core.md](core.md) — ou use `--with-core --demo` acima.
 
 ## Cobertura automatizada
 
-`node --test` roda toda a suíte, incluindo o teste de integração que dirige uma cadeia real
-multi-validador com stateRoot + votação + governança/timelock + finalidade + replay
-determinístico. Rode-o antes de qualquer deploy da rede nova.
+`node --test` inclui integração multi-validador in-process. Rode antes de qualquer
+deploy da rede nova.
