@@ -220,10 +220,14 @@ para 51 ou 101 via governança.
 | A2 modos listen/candidate/validator | feito (`eav7-core`) |
 | A3 `status` | feito |
 | A5 `init` + paths por SO | feito |
-| A6 guia | parcial (`docs/core.md` + unit systemd) |
-| A1 binários oficiais multi-alvo | aberto |
+| A6 guia | feito (`docs/core.md` + unit systemd) |
+| A7 CI de release por tag | feito (`.github/workflows/release-core.yml` — Linux x64, macOS arm64, Win x64) |
+| A1 binários oficiais multi-alvo | parcial (3 alvos no release; falta Linux arm64 / macOS Intel) |
 | A4 instaladores / launchd / Windows service | aberto (só exemplo systemd) |
-| A7 CI de release por tag | aberto |
-| Fase B candidatura | aberto (depende S — já entregue no SDK) |
+| B1 stake/unstake + unbonding na CLI | feito |
+| B2 set-mode candidate + checagem MIN stake | feito |
+| B3 health (peers/disco) | feito (mínimo) |
+| B4 chaves hot/cold | documentado em `docs/core.md` |
+| B5 score (`/validators` + performance) | feito |
 
 Binário: `cargo build -p eav7-core -p eav7-node`.

@@ -1,10 +1,12 @@
-//! EAV7 Core — CLI de operador (plano 08 Fase A).
+//! EAV7 Core — CLI de operador (plano 08 Fase A + B).
 //!
-//! Não reimplementa consenso: gera config/carteira, consulta status e sobe
-//! `eav7-node` nos modos listen | candidate | validator.
+//! Não reimplementa consenso: config/carteira, status, sobe `eav7-node`, e
+//! opera stake/score via `eav7-sdk`.
 
+mod amounts;
 mod config;
 mod init;
+mod ops;
 mod paths;
 mod run;
 mod status;
@@ -16,14 +18,23 @@ use std::process::ExitCode;
 const USO: &str = "\
 EAV7 Core — operador de nó (Win/Linux/macOS)
 
-uso:
+Nó:
   eav7-core init  [--dir PATH] [--mode listen|candidate|validator]
                   [--port N] [--host ADDR] [--peers url,url]
                   [--allow-private-peers] [--force]
                   [--genesis-hash H] [--genesis FILE]
   eav7-core status [--dir PATH] [--url URL]
+  eav7-core health [--dir PATH] [--url URL]
   eav7-core run    [--dir PATH] [--mode listen|candidate|validator]
   eav7-core listen | candidate | validator   (atalhos de run)
+  eav7-core set-mode <listen|candidate|validator> [--dir PATH]
+
+Carteira / candidatura (Fase B):
+  eav7-core account [--dir PATH] [--url URL]
+  eav7-core stake   --amount N [--dir PATH] [--url URL] [--wait] [--timeout S]
+  eav7-core unstake --amount N [--dir PATH] [--url URL] [--wait] [--timeout S]
+  eav7-core claim   --validator ADDR [--dir PATH] [--url URL] [--wait]
+  eav7-core score   [--dir PATH] [--url URL]
 
 padrão de --dir:
   Linux  ~/.eav7
@@ -55,29 +66,58 @@ fn despacha() -> Result<(), String> {
             print!("{USO}");
             Ok(())
         }
-        "init" => {
-            let a = parse_init(args)?;
-            init::executar(a)
+        "init" => init::executar(parse_init(args)?),
+        "status" => status::executar(parse_status(args)?),
+        "health" => {
+            let (dir, url) = parse_dir_url(args)?;
+            ops::health(ops::OpsCtx {
+                dir: ops::dir_padrao(dir),
+                url,
+                wait: false,
+                timeout_secs: 60,
+            })
         }
-        "status" => {
-            let a = parse_status(args)?;
-            status::executar(a)
+        "run" => run::executar(parse_run(args, None)?),
+        "listen" => run::executar(parse_run(args, Some(Modo::Listen))?),
+        "candidate" => run::executar(parse_run(args, Some(Modo::Candidate))?),
+        "validator" => run::executar(parse_run(args, Some(Modo::Validator))?),
+        "set-mode" => {
+            let modo = args
+                .next()
+                .ok_or("uso: eav7-core set-mode <listen|candidate|validator>")?;
+            let mode = Modo::parse(&modo)?;
+            let (dir, _) = parse_dir_url(args)?;
+            ops::set_mode(ops::dir_padrao(dir), mode)
         }
-        "run" => {
-            let a = parse_run(args, None)?;
-            run::executar(a)
+        "account" | "conta" => {
+            let (dir, url) = parse_dir_url(args)?;
+            ops::account(ops::OpsCtx {
+                dir: ops::dir_padrao(dir),
+                url,
+                wait: false,
+                timeout_secs: 60,
+            })
         }
-        "listen" => {
-            let a = parse_run(args, Some(Modo::Listen))?;
-            run::executar(a)
+        "stake" => {
+            let a = parse_amount_ops(args)?;
+            ops::stake(a.ctx, &a.amount)
         }
-        "candidate" => {
-            let a = parse_run(args, Some(Modo::Candidate))?;
-            run::executar(a)
+        "unstake" => {
+            let a = parse_amount_ops(args)?;
+            ops::unstake(a.ctx, &a.amount)
         }
-        "validator" => {
-            let a = parse_run(args, Some(Modo::Validator))?;
-            run::executar(a)
+        "claim" => {
+            let a = parse_claim(args)?;
+            ops::claim(a.ctx, &a.validator)
+        }
+        "score" => {
+            let (dir, url) = parse_dir_url(args)?;
+            ops::score(ops::OpsCtx {
+                dir: ops::dir_padrao(dir),
+                url,
+                wait: false,
+                timeout_secs: 60,
+            })
         }
         outro => Err(format!("comando desconhecido: {outro}\n\n{USO}")),
     }
@@ -165,5 +205,95 @@ fn parse_run(
     Ok(run::RunArgs {
         dir: dir.unwrap_or_else(paths::diretorio_padrao),
         mode,
+    })
+}
+
+fn parse_dir_url(
+    mut args: impl Iterator<Item = String>,
+) -> Result<(Option<PathBuf>, Option<String>), String> {
+    let mut dir = None;
+    let mut url = None;
+    while let Some(flag) = args.next() {
+        let mut valor = || args.next().ok_or_else(|| format!("{flag} exige valor"));
+        match flag.as_str() {
+            "--dir" => dir = Some(PathBuf::from(valor()?)),
+            "--url" => url = Some(valor()?),
+            outro => return Err(format!("flag desconhecida: {outro}")),
+        }
+    }
+    Ok((dir, url))
+}
+
+struct AmountOps {
+    ctx: ops::OpsCtx,
+    amount: String,
+}
+
+fn parse_amount_ops(mut args: impl Iterator<Item = String>) -> Result<AmountOps, String> {
+    let mut dir = None;
+    let mut url = None;
+    let mut amount = None;
+    let mut wait = false;
+    let mut timeout_secs = 90u64;
+    while let Some(flag) = args.next() {
+        let mut valor = || args.next().ok_or_else(|| format!("{flag} exige valor"));
+        match flag.as_str() {
+            "--dir" => dir = Some(PathBuf::from(valor()?)),
+            "--url" => url = Some(valor()?),
+            "--amount" => amount = Some(valor()?),
+            "--wait" => wait = true,
+            "--timeout" => {
+                timeout_secs = valor()?
+                    .parse()
+                    .map_err(|_| "--timeout inválido".to_string())?;
+            }
+            outro => return Err(format!("flag desconhecida: {outro}")),
+        }
+    }
+    Ok(AmountOps {
+        ctx: ops::OpsCtx {
+            dir: ops::dir_padrao(dir),
+            url,
+            wait,
+            timeout_secs,
+        },
+        amount: amount.ok_or("--amount é obrigatório")?,
+    })
+}
+
+struct ClaimOps {
+    ctx: ops::OpsCtx,
+    validator: String,
+}
+
+fn parse_claim(mut args: impl Iterator<Item = String>) -> Result<ClaimOps, String> {
+    let mut dir = None;
+    let mut url = None;
+    let mut validator = None;
+    let mut wait = false;
+    let mut timeout_secs = 90u64;
+    while let Some(flag) = args.next() {
+        let mut valor = || args.next().ok_or_else(|| format!("{flag} exige valor"));
+        match flag.as_str() {
+            "--dir" => dir = Some(PathBuf::from(valor()?)),
+            "--url" => url = Some(valor()?),
+            "--validator" => validator = Some(valor()?),
+            "--wait" => wait = true,
+            "--timeout" => {
+                timeout_secs = valor()?
+                    .parse()
+                    .map_err(|_| "--timeout inválido".to_string())?;
+            }
+            outro => return Err(format!("flag desconhecida: {outro}")),
+        }
+    }
+    Ok(ClaimOps {
+        ctx: ops::OpsCtx {
+            dir: ops::dir_padrao(dir),
+            url,
+            wait,
+            timeout_secs,
+        },
+        validator: validator.ok_or("--validator é obrigatório")?,
     })
 }

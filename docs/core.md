@@ -1,7 +1,7 @@
 # EAV7 Core — operador local
 
-Binário `eav7-core` (Fase A do [plano 08](plano/08-descentralizacao-core-carteira.md)):
-qualquer pessoa sobe um nó sem ler o monorepo inteiro.
+Binário `eav7-core` ([plano 08](plano/08-descentralizacao-core-carteira.md) Fases A+B):
+qualquer pessoa sobe um nó e opera stake/candidatura sem ler o monorepo.
 
 Celular **não** produz blocos. Core no PC/VPS verifica e, se quiser, produz.
 
@@ -13,23 +13,45 @@ cargo build -p eav7-core -p eav7-node --release
 # binários em target/release/eav7-core e eav7-node (mesmo diretório)
 ```
 
+Release por tag (`v*`): workflow [`.github/workflows/release-core.yml`](../.github/workflows/release-core.yml)
+publica tarball/zip + `.sha256` (Linux x64, macOS arm64, Windows x64).
+
 ## Fluxo mínimo (ouvinte)
 
 ```bash
-# 1) gera carteira + core.json (modo listen = não produz)
 ./target/release/eav7-core init --dir ./data/core-dev \
   --mode listen --port 6072 --allow-private-peers \
   --peers http://127.0.0.1:6070
-
-# 2) sobe o nó (procura eav7-node ao lado / PATH / EAV7_NODE_BIN)
 ./target/release/eav7-core run --dir ./data/core-dev
-
-# 3) outro terminal
 ./target/release/eav7-core status --dir ./data/core-dev
+./target/release/eav7-core health --dir ./data/core-dev
 ```
 
-Com um minerador JS já no ar (`npm run dev:local` ou `node bin/eav7.js mine`),
-o Core em **listen** sincroniza e serve API na porta configurada.
+Com um minerador JS já no ar (`npm run dev:local`), o Core em **listen** sincroniza.
+
+## Candidatura (Fase B)
+
+Precisa de saldo na carteira do Core (faucet/testnet ou transferência).
+
+```bash
+# ver saldo / stake / unbonding / se já atingiu o mínimo
+eav7-core account --dir ./data/core-dev
+
+# stake (valores em EAV7; ≥ 1000 para entrar na eleição)
+eav7-core stake --dir ./data/core-dev --amount 1000 --wait
+
+# gravar modo candidate e subir produzindo se eleito
+eav7-core set-mode candidate --dir ./data/core-dev
+eav7-core run --dir ./data/core-dev
+
+# desempenho da lista (marca a sua carteira)
+eav7-core score --dir ./data/core-dev
+
+eav7-core unstake --dir ./data/core-dev --amount 100 --wait
+eav7-core claim --dir ./data/core-dev --validator E7… --wait
+```
+
+`--url` aponta a outro nó se a API não for a porta do `core.json`.
 
 ## Modos
 
@@ -37,9 +59,15 @@ o Core em **listen** sincroniza e serve API na porta configurada.
 |---|---|
 | `listen` | Sync + API; sem `--validator` (não produz) |
 | `candidate` | Carteira ligada; produz **se** estiver no top-27 |
-| `validator` | Igual ao candidate (intenção operacional: VPS 24/7) |
+| `validator` | Igual ao candidate (intenção: VPS 24/7) |
 
-Atalhos: `eav7-core listen|candidate|validator --dir …`
+Atalhos de run: `eav7-core listen|candidate|validator --dir …`
+
+## Chaves (B4 — prática)
+
+- **Hot** no servidor: `validator-wallet.json` (modo 0600) — só o necessário para assinar blocos.
+- **Tesouro / seed**: fora do VPS; nunca no mesmo disco que o Core de produção.
+- `init --force` regenera carteira — faça backup antes.
 
 ## Paths padrão (`init` sem `--dir`)
 
@@ -55,12 +83,7 @@ Override: `EAV7_HOME=/caminho`.
 
 Exemplo em [`deploy/eav7-core.service.example`](../deploy/eav7-core.service.example).
 
-## Empacote multi-OS / CI de release
-
-A1 (binários por alvo) e A7 (Actions por tag) vêm na próxima fatia.
-Este MVP já fecha A2–A5 + guia local (A6 parcial).
-
 ## Relação com o stack local
 
 Ver [local.md](local.md): `npm run dev:local` sobe JS + explorador; o Core Rust
-é o caminho do **operador externo**, não substitui o minerador JS de desenvolvimento.
+é o caminho do **operador externo**.

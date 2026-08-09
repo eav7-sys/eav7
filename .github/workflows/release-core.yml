@@ -1,0 +1,101 @@
+# A7 — binários eav7-core + eav7-node por tag, com SHA256SUMS.
+# Dispara em tags v* (ex.: v0.1.0). Artefatos no GitHub Release.
+name: release-core
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Fatia A7 inicial: 3 alvos nativos estáveis.
+          # Linux arm64 / macOS Intel entram depois (cross ou runner dedicado).
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          key: release-${{ matrix.target }}
+
+      - name: build release
+        working-directory: rust
+        run: cargo build --release -p eav7-core -p eav7-node --target ${{ matrix.target }}
+
+      - name: empacotar (unix)
+        if: runner.os != 'Windows'
+        working-directory: rust
+        run: |
+          set -euo pipefail
+          OUT="eav7-core-${{ github.ref_name }}-${{ matrix.target }}"
+          mkdir -p "dist/$OUT"
+          cp "target/${{ matrix.target }}/release/eav7-core" "dist/$OUT/"
+          cp "target/${{ matrix.target }}/release/eav7-node" "dist/$OUT/"
+          cp ../docs/core.md "dist/$OUT/README-core.md"
+          tar -C dist -czf "dist/${OUT}.tar.gz" "$OUT"
+          (cd dist && shasum -a 256 "${OUT}.tar.gz" > "${OUT}.tar.gz.sha256")
+          echo "ASSET=rust/dist/${OUT}.tar.gz" >> "$GITHUB_ENV"
+          echo "SUM=rust/dist/${OUT}.tar.gz.sha256" >> "$GITHUB_ENV"
+
+      - name: empacotar (windows)
+        if: runner.os == 'Windows'
+        working-directory: rust
+        shell: pwsh
+        run: |
+          $Out = "eav7-core-${{ github.ref_name }}-${{ matrix.target }}"
+          New-Item -ItemType Directory -Force -Path "dist/$Out" | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/eav7-core.exe" "dist/$Out/"
+          Copy-Item "target/${{ matrix.target }}/release/eav7-node.exe" "dist/$Out/"
+          Copy-Item "../docs/core.md" "dist/$Out/README-core.md"
+          Compress-Archive -Path "dist/$Out/*" -DestinationPath "dist/$Out.zip"
+          $hash = (Get-FileHash "dist/$Out.zip" -Algorithm SHA256).Hash.ToLower()
+          Set-Content -Path "dist/$Out.zip.sha256" -Value "$hash  $Out.zip"
+          "ASSET=rust/dist/$Out.zip" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "SUM=rust/dist/$Out.zip.sha256" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            ${{ env.ASSET }}
+            ${{ env.SUM }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
