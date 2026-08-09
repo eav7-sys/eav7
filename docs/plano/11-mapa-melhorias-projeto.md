@@ -140,4 +140,5 @@ Depois: G6–G9, G13, trilha B/C/D do 08, aposentar JS (fase 6).
 | Core Fase A (MVP CLI) | feito A2–A7 (3 alvos no release); falta A4 instaladores + arm64 Linux |
 | Core Fase B candidatura | feito B1–B5 na CLI (`stake`/`score`/`set-mode`/`health`) |
 | Testnet local 3 nós + faucet + demo Core | feito (`bin/eav7-testnet-up.sh --with-core --demo`) |
-| G6 harness / G7 RAM / G10 aposentar fronts | ainda não |
+| G6 harness multi-nó in-process | feito (`eav7_node::boot` + `tests/multi_node.rs`; G16 `Node::novo`) |
+| G7 RAM / G10 aposentar fronts | ainda não |

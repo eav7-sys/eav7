@@ -74,6 +74,15 @@ Em development o default de `NEXT_PUBLIC_API_BASE` é `/api` (não mais eavscan)
 
 Ver [testnet.md](testnet.md).
 
+## Harness multi-nó Rust (G6)
+
+```bash
+cd rust && cargo test -p eav7-node --test multi_node
+```
+
+Sobe 2 nós in-process (produtor + ouvinte), mesma gênese, sync P2P até
+`headHash` igual. API de boot: `eav7_node::boot`.
+
 ## Paridade API JS ↔ Rust (G5)
 
 Sobe os dois nós sobre a **mesma** cadeia fixture, diffa rotas estáveis, derruba:

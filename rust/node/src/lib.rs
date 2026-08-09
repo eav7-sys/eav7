@@ -8,6 +8,7 @@
 
 pub mod ai;
 pub mod api;
+pub mod boot;
 pub mod eavm_rpc;
 pub mod gateway;
 pub mod governance_advisor;

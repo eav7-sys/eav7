@@ -139,6 +139,36 @@ pub struct Node {
 }
 
 impl Node {
+    /// Construtor único dos campos padrão (G16) — evita literais ×N a derivar.
+    pub fn novo(
+        blockchain: Blockchain,
+        validator_address: Option<String>,
+        self_url: Option<String>,
+    ) -> Self {
+        Node {
+            blockchain,
+            mempool: Mempool::new(),
+            validator_address,
+            peers: Vec::new(),
+            security_alerts: Vec::new(),
+            guard: std::sync::Arc::new(std::sync::Mutex::new(AbuseGuard::new(
+                crate::guard::GuardConfig::default(),
+            ))),
+            gateway_target: None,
+            gateway_snapshot: Default::default(),
+            eavm_enabled: false,
+            eavm_port: 0,
+            public_rpc_url: None,
+            self_url,
+            admin_token: None,
+            verified_contracts: Default::default(),
+            eavm_index: std::sync::Arc::new(std::sync::Mutex::new(EavmIndex::novo())),
+            relay_bloco: None,
+            pedir_sync: None,
+            gossip_tx: None,
+        }
+    }
+
     /// Valida e aceita uma transação no mempool. Espelha `submitTransaction`
     /// (`node.js:193`) — MENOS o broadcast, que pertence ao transporte P2P: o
     /// chamador (API/P2P) decide difundir com o resultado em mãos. Manter o
