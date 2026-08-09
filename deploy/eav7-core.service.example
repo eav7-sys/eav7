@@ -1,0 +1,24 @@
+# Exemplo systemd — copiar para /etc/systemd/system/eav7-core.service
+# Ajuste User=, paths e peers. Depois:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now eav7-core
+
+[Unit]
+Description=EAV7 Core node
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eav7
+Group=eav7
+WorkingDirectory=/var/lib/eav7
+Environment=EAV7_NODE_BIN=/usr/local/bin/eav7-node
+ExecStart=/usr/local/bin/eav7-core run --dir /var/lib/eav7
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+# Não rode como root. Carteira deve ser 0600.
+
+[Install]
+WantedBy=multi-user.target

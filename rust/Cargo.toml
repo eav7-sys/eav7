@@ -28,7 +28,7 @@ license = "MIT"
 # axum e serde vivem SÓ no crate de nó — este crate permanece auditável e enxuto,
 # como o cabeçalho acima exige. É a mesma divisão consenso/nó que reth e geth usam.
 [workspace]
-members = ["node", "sdk", "wasm"]
+members = ["node", "sdk", "wasm", "core"]
 
 [dependencies]
 # SHA3-256 — a hash do protocolo eav20. RustCrypto, implementação constante em tempo.

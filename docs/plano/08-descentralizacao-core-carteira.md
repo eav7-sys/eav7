@@ -212,3 +212,18 @@ Detalhe e sinergias: [10-mapa-integrado.md](10-mapa-integrado.md).
 
 Quando (1)–(3) forem verdade em mainnet, aí faz sentido discutir subir o teto
 para 51 ou 101 via governança.
+
+## Progresso (2026-08-09)
+
+| Entrega | Estado |
+|---|---|
+| A2 modos listen/candidate/validator | feito (`eav7-core`) |
+| A3 `status` | feito |
+| A5 `init` + paths por SO | feito |
+| A6 guia | parcial (`docs/core.md` + unit systemd) |
+| A1 binários oficiais multi-alvo | aberto |
+| A4 instaladores / launchd / Windows service | aberto (só exemplo systemd) |
+| A7 CI de release por tag | aberto |
+| Fase B candidatura | aberto (depende S — já entregue no SDK) |
+
+Binário: `cargo build -p eav7-core -p eav7-node`.

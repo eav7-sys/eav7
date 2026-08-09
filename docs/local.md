@@ -10,6 +10,17 @@ Deploy fica para quando o local estiver verde (ver `deploy/`).
 bash bin/eav7-dev-up.sh
 ```
 
+### Core Rust (operador / ouvinte)
+
+```bash
+cd rust && cargo build -p eav7-core -p eav7-node
+./target/debug/eav7-core init --dir ../data/core-dev --mode listen \
+  --port 6072 --allow-private-peers --peers http://127.0.0.1:6070
+./target/debug/eav7-core run --dir ../data/core-dev
+```
+
+Detalhe: [core.md](core.md).
+
 Abre:
 
 | Serviço | URL |
@@ -27,10 +38,16 @@ Ctrl+C encerra o nó e o Next juntos.
 node bin/eav7.js mine --port 6070 --data ./data/dev-local
 ```
 
-### Nó Rust
+### Nó Rust / Core
 
 ```bash
-cd rust && cargo build -p eav7-node
+cd rust && cargo build -p eav7-core -p eav7-node
+# preferível — ver docs/core.md
+./target/debug/eav7-core init --dir ../data/core-dev --mode listen \
+  --port 6072 --allow-private-peers --peers http://127.0.0.1:6070
+./target/debug/eav7-core run --dir ../data/core-dev
+
+# ou eav7-node direto
 ./target/debug/eav7-node --port 6071 --data ../data/dev-rust \
   --peers http://127.0.0.1:6070
 ```

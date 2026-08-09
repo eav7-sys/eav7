@@ -24,6 +24,8 @@ node bin/eav7.js mine
 # plataforma de mineração:  http://127.0.0.1:6070/app
 # testes:                   npm test
 # paridade API JS↔Rust:     npm run parity
+# Core (Rust):              cd rust && cargo build -p eav7-core -p eav7-node
+#                           ver docs/core.md
 ```
 
 ## Identidade da rede

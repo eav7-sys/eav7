@@ -137,4 +137,5 @@ Depois: G6–G9, G13, trilha B/C/D do 08, aposentar JS (fase 6).
 | SDK Fase S (S1–S4, Remetente, timeout) | feito (`cargo test -p eav7-sdk` 16 ok) |
 | G3 vetores ciclo âncora | feito: `vectors/lifecycle.json` + `bin/eav7-vectors-lifecycle.js`; Rust `vetores_de_ciclo_de_vida_batem_com_a_referencia`; JS `test/lifecycle.test.js` (vetor + caminho real assinado) |
 | Local pronto → deploy depois | feito: `docs/local.md`, `npm run dev:local`, `.env.example`, deploy sem IPs (`deploy/nodes.env`) |
-| Core Fase A multiplataforma / G6 harness / G7 RAM / G10 aposentar fronts | ainda não (escopo grande) |
+| Core Fase A (MVP CLI) | parcial: `eav7-core` init/status/run + modos; falta A1/A4/A7 empacote |
+| G6 harness / G7 RAM / G10 aposentar fronts | ainda não |
