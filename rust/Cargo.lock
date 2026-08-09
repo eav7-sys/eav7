@@ -432,6 +432,7 @@ dependencies = [
 name = "eav7-core"
 version = "0.1.0"
 dependencies = [
+ "eav7",
  "eav7-sdk",
  "serde",
  "serde_json",
