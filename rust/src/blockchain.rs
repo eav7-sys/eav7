@@ -1202,6 +1202,24 @@ impl Blockchain {
     /// caminho de leitura em disco exercite ESTE código — não uma cópia dele.
     ///
     /// Devolve `false` se a reaplicação falhou (estado preservado, nada expulso).
+    /// Grita e devolve `false`. Existe porque `debug_assert!` sozinho NÃO faz nada
+    /// em release: a expulsão devolveria `false` em silêncio, `slide_tail` pararia
+    /// de deslizar e a janela de RAM cresceria sem limite — o modo de falha do
+    /// incidente de memória, de volta pela porta dos fundos e sem uma linha de log.
+    ///
+    /// A decisão de DERRUBAR o nó (em vez de degradar) continua sendo do
+    /// `debug_assert!`, que só dispara em debug. O que muda aqui é que o operador
+    /// de produção passa a ver o motivo.
+    fn ancora_corrompida(&self, motivo: &str) -> bool {
+        eprintln!(
+            "[cadeia] ÂNCORA DE ESTADO CORROMPIDA em tail_start={}: {motivo} — \
+             a janela PAROU de deslizar (a RAM vai crescer) e um reorg reconstruiria \
+             estado errado. Reinicie o nó para reconstruir do disco.",
+            self.tail_start,
+        );
+        false
+    }
+
     fn evict_oldest(&mut self) -> bool {
         let Some(saindo) = (!self.tail.is_empty()).then(|| self.tail.remove(0)) else {
             return false;
@@ -1209,15 +1227,77 @@ impl Blockchain {
         // O estado-âncora avança junto: `base_state` é sempre o estado APÓS o
         // bloco `tail_start - 1`. Deixar de aplicar aqui faria a reorganização
         // reconstruir a partir de um estado velho e chegar a outro resultado.
-        let mut base = self.base_state.take().unwrap_or_default();
+        // A âncora que ENTRA. `unwrap_or_default()` estava aqui e era um desastre
+        // silencioso: na PRIMEIRA vez que a janela desliza, `tail_start` é 0 e a
+        // âncora ainda é `None`, então ela nascia como estado VAZIO e o bloco 0
+        // era aplicado em cima do nada.
+        //
+        // As alocações do gênese não são transações — vivem em `block.genesis` e
+        // entram por `apply_genesis`. Aplicar o bloco 0 a um estado vazio perde a
+        // distribuição inteira: todo saldo, todo stake, o tesouro. Daí em diante a
+        // âncora está errada, e como ela só é lida num REORG, o erro dorme até o
+        // dia em que a rede reorganiza — e aí o nó reconstrói um estado que nunca
+        // existiu e sai da cadeia com raiz errada, em silêncio.
+        //
+        // O caminho de reorg já trata isto (`tail_start == 0` → `apply_genesis`,
+        // SEM aplicar o bloco 0: o estado depois do gênese É a alocação). Aqui
+        // seguimos o mesmo, senão os dois discordariam sobre o mesmo ponto.
+        let base_entrada = match self.base_state.take() {
+            Some(s) => Some(s),
+            // Expulsando o PRÓPRIO gênese: a âncora que sai não é "vazio + bloco 0",
+            // é a alocação. Tratado abaixo, sem passar por `apply_block_to`.
+            None if self.tail_start == 0 => None,
+            // Âncora ausente com a janela já deslocada é corrupção, não um estado
+            // vazio. Recusar preserva a cadeia; inventar `default()` a destrói.
+            None => {
+                self.tail.insert(0, saindo);
+                debug_assert!(false, "âncora de estado ausente com tail_start > 0");
+                return self.ancora_corrompida("âncora ausente com a janela já deslocada");
+            }
+        };
+
+        let Some(mut base) = base_entrada else {
+            let alocacoes = match saindo.genesis.clone() {
+                Some(a) => a,
+                None => {
+                    self.tail.insert(0, saindo);
+                    debug_assert!(false, "bloco gênese sem alocações");
+                    return self.ancora_corrompida("bloco gênese sem alocações");
+                }
+            };
+            let mut genese = State::new();
+            if let Err(e) = apply_genesis(&mut genese, &alocacoes) {
+                self.tail.insert(0, saindo);
+                debug_assert!(false, "aplicar alocações da gênese falhou: {e}");
+                return self.ancora_corrompida(&format!("alocações da gênese não aplicam: {e}"));
+            }
+            self.base_state = Some(genese);
+            self.tail_start += 1;
+            return true;
+        };
+
         if let Err(e) = self.apply_block_to(&mut base, &saindo) {
             // Um bloco que já está na cadeia não pode falhar ao ser reaplicado.
             // Se falhar, o estado em memória está corrompido — parar é melhor que
             // seguir com uma âncora errada, que produziria raiz errada em silêncio.
+            //
+            // A mensagem IDENTIFICA o bloco e o que ele carregava. Sem isso o
+            // operador recebe "o estado está corrompido" e nenhum ponto de
+            // partida — foi exatamente o que aconteceu na primeira vez que isto
+            // disparou, e a altura teve de ser deduzida do relógio do log.
+            let tipos: Vec<&str> =
+                saindo.transactions.iter().map(|t| t.tx_type.as_str()).collect();
+            let onde = format!(
+                "bloco {} ({} tx: {}) hash {}",
+                saindo.height,
+                saindo.transactions.len(),
+                if tipos.is_empty() { "—".to_string() } else { tipos.join(",") },
+                saindo.hash,
+            );
             self.base_state = Some(base);
             self.tail.insert(0, saindo);
-            debug_assert!(false, "reaplicar bloco da cadeia falhou: {e}");
-            return false;
+            debug_assert!(false, "reaplicar bloco da cadeia falhou: {onde}: {e}");
+            return self.ancora_corrompida(&format!("{onde} não reaplica: {e}"));
         }
         self.base_state = Some(base);
         self.tail_start += 1;
@@ -2995,6 +3075,68 @@ mod tests {
 
         let _ = std::fs::remove_file(&arquivo);
     }
+    /// A âncora nasce da GÊNESE, não de um estado vazio.
+    ///
+    /// Este é o caso que o arranjo dos testes escondia: `cadeia_saldo` monta toda
+    /// cadeia de teste com `base_state` JÁ preenchido, então a expulsão nunca via
+    /// âncora ausente. Numa cadeia real ela está ausente exatamente uma vez — na
+    /// PRIMEIRA vez que a janela desliza, com `tail_start` ainda em 0.
+    ///
+    /// O código antigo fazia `unwrap_or_default()` ali e aplicava o bloco 0 a um
+    /// estado VAZIO. As alocações da gênese não são transações, então a âncora
+    /// perdia saldo, stake e tesouro inteiros — e como ela só é lida num reorg, o
+    /// erro dormia até a rede reorganizar.
+    ///
+    /// Em produção isto apareceu como uma expulsão que falhou 1.268 blocos depois,
+    /// numa transação que precisava do stake da gênese para pagar a energia.
+    #[test]
+    fn ancora_da_primeira_expulsao_preserva_as_alocacoes_da_genese() {
+        use crate::transaction::JsonValue;
+        let cs = carteiras();
+        let (supply, stake) = (crate::config::GENESIS_SUPPLY, crate::config::GENESIS_STAKE);
+        let produtora = &cs[0];
+        let mut chain = Blockchain::new();
+        let genese = crate::block::build_genesis_block(
+            ts_do_slot(1),
+            JsonValue::map([
+                ("balances".to_string(), JsonValue::map([(
+                    produtora.endereco(), JsonValue::Str((supply - stake).to_string()),
+                )])),
+                ("stakes".to_string(), JsonValue::map([(
+                    produtora.endereco(), JsonValue::Str(stake.to_string()),
+                )])),
+            ]),
+        );
+        chain.adopt_genesis(genese).expect("adota a gênese");
+        assert_eq!(chain.tail_start, 0);
+        assert!(chain.base_state.is_none(), "a gênese nasce SEM âncora — é o caso do bug");
+
+        for slot in 2..=4 {
+            let b = proximo(&chain, &cs, slot);
+            chain.add_block(b, agora(slot)).expect("bloco válido");
+        }
+
+        // Expulsa o gênese: a âncora que sai é a ALOCAÇÃO, não "vazio + bloco 0".
+        assert!(chain.evict_oldest(), "expulsão do gênese");
+        let ancora = chain.base_state.as_ref().expect("âncora depois de expulsar o gênese");
+        let conta = ancora.accounts.get(&produtora.endereco()).expect("conta da gênese na âncora");
+        assert_eq!(conta.staked, stake, "o stake da gênese sumiria com o estado vazio");
+        assert_eq!(conta.balance, supply - stake, "o saldo da gênese sumiria junto");
+
+        // E a INVARIANTE: âncora + blocos da janela == estado corrente. É ela que o
+        // reorg depende, e era ela que quebrava em silêncio.
+        let mut rebuild = ancora.clone();
+        for i in 0..chain.tail.len() {
+            let b = chain.tail[i].clone();
+            chain.apply_block_to(&mut rebuild, &b).expect("reaplica bloco da janela");
+        }
+        assert_eq!(
+            compute_state_root(&rebuild.state_leaves().expect("folhas")),
+            compute_state_root(&chain.state.state_leaves().expect("folhas")),
+            "âncora + janela tem de dar a MESMA raiz do estado corrente",
+        );
+    }
+
     /// A classe de bug que o nó B expôs em rede real: cadeia adotada por
     /// reorg/sync existia SÓ em RAM — o disco ficava vazio e o reboot voltava
     /// do zero. O reorg agora persiste (trunca no fork + re-appenda o rabo,
