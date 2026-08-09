@@ -19,10 +19,15 @@ ROTAS=(
   "/txs?limit=5"
 )
 
-# Remove campos voláteis entre processos (não são contrato de consenso).
+# Remove campos voláteis e ordena chaves (JS preserva inserção; Rust serde
+# alfabetiza — sem -S o diff acusa falso positivo em todo objeto).
+# del(.) só em objetos: /blocks e /tokens podem ser arrays na raiz.
 normaliza() {
-  jq 'del(.headTime, .peers, .mempool, .producer, .slotProducer) | walk(
-        if type == "object" then del(.avgLatencyMs, .lastProducedHeight) else . end
+  jq -S 'walk(
+        if type == "object" then
+          del(.headTime, .peers, .mempool, .producer, .slotProducer,
+              .avgLatencyMs, .lastProducedHeight)
+        else . end
       )'
 }
 

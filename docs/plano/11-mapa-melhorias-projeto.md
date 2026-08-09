@@ -127,7 +127,7 @@ Depois: G6–G9, G13, trilha B/C/D do 08, aposentar JS (fase 6).
 | CSV anti-fórmula | feito |
 | G11 `prebuild` merge-i18n | feito |
 | G12 smoke Playwright + config | feito (esqueleto) |
-| G5 `bin/eav7-api-parity.sh` | esqueleto (precisa 2 nós vivos) |
+| G5 `bin/eav7-api-parity.sh` + `eav7-api-parity-boot.sh` | feito (6 rotas; CI job dedicado ainda aberto) |
 | G14 gitignore zip/Obsidian/Sem título | feito |
 | validators: hoist sort names (JS) | feito |
 | token transfers `nextBefore` no SCAN_CAP (JS+Rust) | feito |
@@ -136,4 +136,5 @@ Depois: G6–G9, G13, trilha B/C/D do 08, aposentar JS (fase 6).
 | G9 sync peers em paralelo | feito |
 | SDK Fase S (S1–S4, Remetente, timeout) | feito (`cargo test -p eav7-sdk` 16 ok) |
 | G3 vetores ciclo âncora | feito: `vectors/lifecycle.json` + `bin/eav7-vectors-lifecycle.js`; Rust `vetores_de_ciclo_de_vida_batem_com_a_referencia`; JS `test/lifecycle.test.js` (vetor + caminho real assinado) |
+| Local pronto → deploy depois | feito: `docs/local.md`, `npm run dev:local`, `.env.example`, deploy sem IPs (`deploy/nodes.env`) |
 | Core Fase A multiplataforma / G6 harness / G7 RAM / G10 aposentar fronts | ainda não (escopo grande) |

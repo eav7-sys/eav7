@@ -2,19 +2,17 @@
 
 Em ordem de **risco**, não de esforço.
 
-## 1. Explorador público fora do ar — crítico
+## 1. Explorador público — deploy adiado de propósito
 
-Nada do que foi construído é visível enquanto o túnel estiver caído.
-Ver [01-estado-atual.md](01-estado-atual.md).
+Produção derrubada para fechar o stack **local** primeiro (ver
+[docs/local.md](../local.md)). Subida fica para quando o local estiver verde.
 
-**Trava:** acesso à infraestrutura.
+**Trava:** ordem explícita para migrar ao deploy (`deploy/nodes.env` + scripts).
 
 ## 2. Comitar o que está solto
 
-Três blocos separáveis. A correção da âncora deveria ir **sozinha e primeiro** —
-é consenso, e misturá-la com frontend atrapalha quem for auditar depois.
-
-**Trava:** aval do dono do projeto.
+Trabalho da sessão de auditoria/melhorias já foi commitado na branch
+`security-audit-fixes`. Restam só inventários locais (`deploy/nodes.env`) fora do git.
 
 ## 3. Crescimento da cadeia: 0,51 GB/dia
 

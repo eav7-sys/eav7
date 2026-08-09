@@ -21,16 +21,9 @@ que altura e por quê. Antes era silêncio absoluto.
 
 ## 2. Scripts de deploy vão para o repositório?
 
-`deploy-eavscan-update.sh` e `redeploy-frontend.sh` estão sem commit e contêm os
-IPs dos três validadores de produção.
-
-| Opção | Custo |
-|---|---|
-| Comitar | Expõe a topologia da rede a quem tiver acesso ao repositório |
-| Não comitar | O deploy fica dependendo de uma máquina específica |
-| Comitar com os IPs em variável de ambiente | Trabalho extra, mas resolve os dois |
-
-Recomendação: a terceira.
+**Resolvido (opção 3):** scripts em `bin/eav7-deploy-*.sh` + inventário em
+`deploy/nodes.env` (gitignored). Modelo: `deploy/nodes.example`. IPs de produção
+não ficam no git.
 
 ## 3. Encolher o bloco vale um fork?
 

@@ -2,10 +2,11 @@ import * as mock from "./mock";
 
 // Cliente da API REST do nó EAV7.
 // Em produção o front é servido no mesmo domínio (same-origin, base = "").
-// Em dev apontamos para o nó público. Sobrescreva com NEXT_PUBLIC_API_BASE.
+// Em development o default é /api (rewrite Next → EAV7_API_ORIGIN), não produção.
+// Sobrescreva com NEXT_PUBLIC_API_BASE se precisar.
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ??
-  (process.env.NODE_ENV === "development" ? "https://eavscan.com" : "");
+  (process.env.NODE_ENV === "development" ? "/api" : "");
 
 // Mock SÓ com opt-in explícito. Default antigo (`!== "false"`) publicava dados
 // fabricados se a env faltasse no build — inaceitável num explorador.

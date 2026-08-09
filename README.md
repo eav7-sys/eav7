@@ -15,11 +15,15 @@ Além do núcleo, a EAV7 traz uma camada L1 completa no estilo Tron: **finalidad
 100% Node.js puro (>= 20) — **zero dependências externas**. Nada de `npm install`.
 
 ```bash
-# subir um nó minerador (cria a carteira e a gênese sozinho)
+# stack local (nó JS + explorador Next) — ver docs/local.md
+npm run dev:local
+
+# ou só o nó minerador
 node bin/eav7.js mine
 
 # plataforma de mineração:  http://127.0.0.1:6070/app
 # testes:                   npm test
+# paridade API JS↔Rust:     npm run parity
 ```
 
 ## Identidade da rede

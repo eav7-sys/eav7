@@ -7,11 +7,17 @@ wallet-*.json
 # segredos — nunca commitar
 .env
 .env.*
+!.env.example
+!**/.env.example
 *.key
 *.pem
 secrets/
 eav7.env
 rust/target/
+
+# inventário de nós de produção (IPs) — use deploy/nodes.example
+deploy/nodes.env
+deploy/inventory.env
 
 # arquivo de build do frontend (12 MB) — o fonte está em web-next/
 eav7-frontend-web.rar
