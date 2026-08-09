@@ -13,8 +13,13 @@ cargo build -p eav7-core -p eav7-node --release
 # binários em target/release/eav7-core e eav7-node (mesmo diretório)
 ```
 
-Release por tag (`v*`): workflow [`.github/workflows/release-core.yml`](../.github/workflows/release-core.yml)
-publica tarball/zip + `.sha256` (Linux x64, macOS arm64, Windows x64).
+Release por tag (`v*`) ou **Actions → release-core → Run workflow**:
+[`.github/workflows/release-core.yml`](../.github/workflows/release-core.yml)
+publica tarball/zip + `.sha256` (Linux x64, Linux arm64, macOS arm64, **Windows x64**
+com `eav7-core.exe` / `eav7-node.exe`).
+
+Pacote só nesta máquina: `bash bin/eav7-package-core.sh 0.1.0` → `rust/dist/`.
+Go-live completo: [go-live.md](go-live.md).
 
 ## Fluxo mínimo (ouvinte)
 
@@ -79,9 +84,13 @@ Atalhos de run: `eav7-core listen|candidate|validator --dir …`
 
 Override: `EAV7_HOME=/caminho`.
 
-## Serviço (Linux systemd)
+## Serviço
 
-Exemplo em [`deploy/eav7-core.service.example`](../deploy/eav7-core.service.example).
+| SO | Doc / unit |
+|---|---|
+| Linux | [`deploy/eav7-core.service.example`](../deploy/eav7-core.service.example) |
+| macOS | [`deploy/eav7-core.launchd.plist.example`](../deploy/eav7-core.launchd.plist.example) |
+| Windows | [`deploy/eav7-core.windows-service.md`](../deploy/eav7-core.windows-service.md) |
 
 ## Relação com o stack local
 

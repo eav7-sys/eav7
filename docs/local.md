@@ -107,8 +107,10 @@ cd web-next && npm run build
 
 ## Deploy (depois)
 
-1. Copie `deploy/nodes.example` → `deploy/nodes.env` e preencha IPs (arquivo gitignored).
-2. Build local do front: `cd web-next && npm run build` (+ copiar static/public no standalone, ver script).
-3. `bash bin/eav7-deploy-eavscan.sh` (ou `redeploy-frontend` equivalente).
+Ver o checklist completo: **[go-live.md](go-live.md)**.
+
+1. `deploy/nodes.example` → `deploy/nodes.env` (gitignored).
+2. `bash bin/eav7-go-live-check.sh --full`
+3. `bash bin/eav7-deploy-eavscan.sh` (src+bin+Next+health).
 
 Nada de IP de produção no repositório — ver [06-decisoes-abertas.md](plano/06-decisoes-abertas.md) §2.

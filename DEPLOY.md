@@ -110,4 +110,13 @@ Config da rede na MetaMask/Trust: **RPC** `https://rpc.SEUDOMINIO.com` · **Chai
 - [ ] Mais de um nó validador (em máquinas/provedores distintos) para descentralização.
 - [ ] Ler `AUDITORIA.md` — limitações residuais antes de custodiar valor real
       (descentralização da ponte, finalidade de consenso, auditoria externa).
+
+## 6. Go-live deste repositório
+
+Operação com inventário SSH + scripts atuais: **[docs/go-live.md](docs/go-live.md)**.
+
+```bash
+bash bin/eav7-go-live-check.sh --full
+bash bin/eav7-deploy-eavscan.sh
 ```
+

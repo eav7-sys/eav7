@@ -1,10 +1,16 @@
 # A7 — binários eav7-core + eav7-node por tag, com SHA256SUMS.
-# Dispara em tags v* (ex.: v0.1.0). Artefatos no GitHub Release.
+# Dispara em tags v* (ex.: v0.1.0) ou workflow_dispatch com input tag.
 name: release-core
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag da release (ex.: v0.1.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -32,6 +38,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: versão do artefato
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -48,13 +64,16 @@ jobs:
       - name: empacotar (unix)
         if: runner.os != 'Windows'
         working-directory: rust
+        env:
+          VER: ${{ steps.ver.outputs.name }}
         run: |
           set -euo pipefail
-          OUT="eav7-core-${{ github.ref_name }}-${{ matrix.target }}"
+          OUT="eav7-core-${VER}-${{ matrix.target }}"
           mkdir -p "dist/$OUT"
           cp "target/${{ matrix.target }}/release/eav7-core" "dist/$OUT/"
           cp "target/${{ matrix.target }}/release/eav7-node" "dist/$OUT/"
           cp ../docs/core.md "dist/$OUT/README-core.md"
+          cp ../deploy/eav7-core.windows-service.md "dist/$OUT/" 2>/dev/null || true
           tar -C dist -czf "dist/${OUT}.tar.gz" "$OUT"
           (cd dist && shasum -a 256 "${OUT}.tar.gz" > "${OUT}.tar.gz.sha256")
           echo "ASSET=rust/dist/${OUT}.tar.gz" >> "$GITHUB_ENV"
@@ -64,12 +83,17 @@ jobs:
         if: runner.os == 'Windows'
         working-directory: rust
         shell: pwsh
+        env:
+          VER: ${{ steps.ver.outputs.name }}
         run: |
-          $Out = "eav7-core-${{ github.ref_name }}-${{ matrix.target }}"
+          $Out = "eav7-core-$env:VER-${{ matrix.target }}"
           New-Item -ItemType Directory -Force -Path "dist/$Out" | Out-Null
           Copy-Item "target/${{ matrix.target }}/release/eav7-core.exe" "dist/$Out/"
           Copy-Item "target/${{ matrix.target }}/release/eav7-node.exe" "dist/$Out/"
           Copy-Item "../docs/core.md" "dist/$Out/README-core.md"
+          if (Test-Path "../deploy/eav7-core.windows-service.md") {
+            Copy-Item "../deploy/eav7-core.windows-service.md" "dist/$Out/"
+          }
           Compress-Archive -Path "dist/$Out/*" -DestinationPath "dist/$Out.zip"
           $hash = (Get-FileHash "dist/$Out.zip" -Algorithm SHA256).Hash.ToLower()
           Set-Content -Path "dist/$Out.zip.sha256" -Value "$hash  $Out.zip"
@@ -92,9 +116,21 @@ jobs:
         with:
           path: artifacts
 
+      - name: tag da release
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: publicar release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.ver.outputs.name }}
+          name: Core ${{ steps.ver.outputs.name }}
           generate_release_notes: true
           files: artifacts/**/*
         env:

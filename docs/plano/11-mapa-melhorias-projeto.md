@@ -18,8 +18,8 @@ este arquivo é o **inventário completo** de alavancas.
 | `web-next/` | Explorador + wallet Next | Único front; smoke e2e + CI |
 | `vectors/` | Conformidade JS→Rust | + lifecycle; checados no `verificar.sh` |
 | `bin/eav7-verificar.sh` | Suíte completa local | CI job + vetores G19 |
-| Deploy | rsync + `deploy/nodes.env` | Build + checksum + health público (G13) |
-| `.github/workflows` | CI + release-core | Parity, e2e, arm64 Linux |
+| Deploy | rsync + `deploy/nodes.env` | Nós `src/`+`bin` + Next + health; [go-live.md](../go-live.md) |
+| `.github/workflows` | CI + release-core | Parity, e2e, arm64; Core Win/Linux/macOS |
 
 ## Já planejado (não repetir aqui)
 
