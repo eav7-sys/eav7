@@ -3,7 +3,7 @@ import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/g
 import { cookies } from "next/headers";
 import "./globals.css";
 import { Providers } from "./providers";
-import { TopBar } from "@/components/top-bar";
+import { ScanHeader } from "@/components/scan/header";
 import { TestnetBanner } from "@/components/testnet-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { I18nProvider } from "@/i18n/provider";
@@ -63,7 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <I18nProvider initialLocale={locale}>
           <Providers>
             <TestnetBanner />
-            <TopBar />
+            <ScanHeader />
             <main className="flex-1">{children}</main>
             <SiteFooter />
           </Providers>

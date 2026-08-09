@@ -1,35 +1,35 @@
-import { getStatus, getBlocks, getTxs, getValidators, getNetworkStats } from "@/lib/api";
-import { HeroWope } from "@/components/home/hero-wope";
-import { NetworkStats } from "@/components/home/network-stats";
-import { NetworkPulse } from "@/components/home/network-pulse";
-import { InkBand } from "@/components/home/ink-band";
-import { ExplorerPreview } from "@/components/home/explorer-preview";
-import { WalletCta } from "@/components/home/wallet-cta";
+import { getStatus, getBlocks, getTxs, getNetworkStats, getNames } from "@/lib/api";
+import { ScanHome } from "@/components/scan/home";
 
 export const dynamic = "force-dynamic";
 
-async function loadHome() {
-  const [status, blocks, txs, validators, stats] = await Promise.all([
+export default async function HomePage() {
+  // Tudo em paralelo, e cada um falha por si: uma métrica indisponível não pode
+  // levar o explorador inteiro junto — a busca é o que mais importa aqui, e ela
+  // não depende de nenhuma destas chamadas.
+  const [status, stats, blocks, txs, nomes] = await Promise.all([
     getStatus().catch(() => null),
+    getNetworkStats().catch(() => null),
     getBlocks(30).catch(() => []),
     getTxs(12).catch(() => null),
-    getValidators().catch(() => null),
-    getNetworkStats().catch(() => null),
+    getNames().catch(() => []),
   ]);
-  return { status, blocks, txs, validators, stats };
-}
 
-export default async function HomePage() {
-  const d = await loadHome();
+  // endereço → nome EAV-NS. Quando um endereço tem mais de um nome apontando
+  // para ele, o primeiro vence — é arbitrário, mas estável, e a alternativa
+  // (mostrar todos) não cabe numa linha de tabela.
+  const porEndereco: Record<string, string> = {};
+  for (const n of nomes ?? []) {
+    if (n.target && !porEndereco[n.target]) porEndereco[n.target] = n.name;
+  }
 
   return (
-    <>
-      <HeroWope initial={{ status: d.status, blocks: d.blocks }} />
-      <NetworkStats initial={d.stats} />
-      <NetworkPulse initial={{ status: d.status, blocks: d.blocks, validators: d.validators }} />
-      <InkBand />
-      <ExplorerPreview initial={{ blocks: d.blocks, txs: d.txs }} />
-      <WalletCta />
-    </>
+    <ScanHome
+      status={status}
+      stats={stats}
+      blocks={blocks ?? []}
+      txs={txs?.txs ?? []}
+      nomes={porEndereco}
+    />
   );
 }

@@ -1,0 +1,55 @@
+/* Tokens do desenho EAVScan (Claude Design).
+ *
+ * Mapeados sobre as variáveis que o app já tem — `--violet-deep` do tema já era
+ * #6336C4, o mesmo `--primary` do desenho, então os dois sistemas encaixam sem
+ * uma segunda paleta. O que entra aqui é só o que o desenho acrescenta: o vidro
+ * dos cards, o brilho do topo e a borda suave. */
+.scan {
+  --scan-card: rgba(63, 63, 63, 0.15);
+  --scan-border: rgba(255, 255, 255, 0.14);
+  --scan-border-soft: rgba(255, 255, 255, 0.07);
+  --scan-chip: rgba(99, 54, 196, 0.16);
+  --scan-hover: rgba(255, 255, 255, 0.045);
+  --scan-glow: radial-gradient(640px 320px at 50% -40px, rgba(99, 54, 196, 0.28), transparent 70%);
+}
+:root[data-theme="light"] .scan {
+  --scan-card: #ffffff;
+  --scan-border: rgba(23, 20, 31, 0.10);
+  --scan-border-soft: rgba(23, 20, 31, 0.06);
+  --scan-chip: rgba(99, 54, 196, 0.10);
+  --scan-hover: rgba(99, 54, 196, 0.06);
+  --scan-glow: radial-gradient(640px 320px at 50% -40px, rgba(99, 54, 196, 0.14), transparent 70%);
+}
+
+.scan-glass {
+  background: var(--scan-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--scan-border);
+  border-radius: 16px;
+}
+.scan-row + .scan-row { border-top: 1px solid var(--scan-border-soft); }
+.scan-row:hover { background: var(--scan-hover); }
+
+/* O ponto que pulsa nos rótulos "ao vivo". */
+@keyframes scanPulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+.scan-live {
+  width: 7px; height: 7px; border-radius: 4px;
+  background: var(--ok); display: inline-block;
+  animation: scanPulse 1.6s infinite;
+}
+@media (prefers-reduced-motion: reduce) { .scan-live { animation: none } }
+
+@keyframes scanFadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+.scan-in { animation: scanFadeUp .35s ease }
+@media (prefers-reduced-motion: reduce) { .scan-in { animation: none } }
+
+/* A grade de seis cards vira 3 e depois 2 conforme a tela encolhe — o desenho é
+ * de 1280px, e abaixo disso seis colunas viram ilegíveis. */
+.scan-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.scan-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 1100px) { .scan-stats { grid-template-columns: repeat(3, 1fr) } }
+@media (max-width: 860px) {
+  .scan-stats { grid-template-columns: repeat(2, 1fr) }
+  .scan-split { grid-template-columns: 1fr }
+}

@@ -1,0 +1,120 @@
+# CI mínima — protege dual-client e o explorador sem exigir máquina local.
+# A verificação completa (`bin/eav7-verificar.sh`) continua sendo a fonte da
+# verdade local; aqui rodamos o núcleo em jobs paralelos a cada push/PR.
+name: ci
+
+on:
+  push:
+    branches: [main, master, security-audit-fixes]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  js:
+    name: referência JS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  config-drift:
+    name: config.rs ↔ config.js
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: node bin/eav7-config-rs.js
+      - name: falhar se config.rs divergiu
+        run: git diff --exit-code -- rust/src/config.rs
+
+  rust:
+    name: cargo test + clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: test
+        working-directory: rust
+        run: cargo test --workspace
+      - name: clippy
+        working-directory: rust
+        # Mesma barra do eav7-verificar.sh: qualquer warning/error falha o job.
+        run: |
+          set -o pipefail
+          if cargo clippy --workspace --all-targets 2>&1 | tee /tmp/clippy.log | grep -qE '^(warning|error)'; then
+            cat /tmp/clippy.log
+            exit 1
+          fi
+
+  web-next:
+    name: Next build + i18n + wasm
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-next
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-next/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: npm ci
+      - name: merge-i18n e falhar se generated.ts divergiu
+        run: |
+          node scripts/merge-i18n.mjs
+          git diff --exit-code -- src/i18n/messages/generated.ts
+      - name: build
+        env:
+          # Produção não pode nascer em mock por acidente.
+          NEXT_PUBLIC_USE_MOCK: "false"
+        run: npm run build
+
+  verificar:
+    name: eav7-verificar (completo)
+    # Mais caro; roda no push à branch principal e sob demanda.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/security-audit-fixes')
+    runs-on: ubuntu-latest
+    needs: [js, config-drift, rust]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - run: npm ci
+      - name: verificação completa
+        run: bash bin/eav7-verificar.sh

@@ -15,12 +15,19 @@ rust/target/
 
 # arquivo de build do frontend (12 MB) — o fonte está em web-next/
 eav7-frontend-web.rar
+eav7-frontend.zip
 
 # notas pessoais do editor, não fazem parte do projeto
 .obsidian/
 *.canvas
 *.base
 2026-*.md
+Sem título/
+Sem\ título.*
+.DS_Store
 
 # skills locais do Claude Code (não são do projeto)
 .claude/skill/
+
+# toolchains baixados localmente (wasm-pack, caches)
+.tools/

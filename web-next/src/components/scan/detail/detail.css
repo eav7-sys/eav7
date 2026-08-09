@@ -1,0 +1,81 @@
+/* Complementos das TELAS DE DETALHE do desenho EAVScan.
+ *
+ * Só entra aqui o que o Tailwind não expressa bem: a grade rótulo/valor de 230px
+ * (que precisa COLAPSAR no celular, senão o valor fica espremido em 60px) e o
+ * comportamento das abas. O resto sai de tokens.css e das classes utilitárias. */
+
+/* Linha rótulo → valor, o padrão visual de todas as quatro telas. */
+.scan-kv {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 0 16px;
+  align-items: center;
+  padding: 14px 0;
+  font-size: 13.5px;
+}
+.scan-kv + .scan-kv { border-top: 1px solid var(--scan-border-soft); }
+.scan-kv > dt { color: var(--muted); }
+.scan-kv > dd { min-width: 0; }
+@media (max-width: 720px) {
+  .scan-kv { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+}
+
+/* Faixa de abas com sublinhado — rola na horizontal em vez de quebrar,
+ * porque a lista do endereço tem sete itens e quebrada perde a leitura de "faixa". */
+.scan-tablist {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--scan-border-soft);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.scan-tablist::-webkit-scrollbar { display: none; }
+.scan-tab {
+  padding: 11px 15px;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--faint);
+  border-bottom: 2px solid transparent;
+  transition: color .15s;
+}
+.scan-tab:hover { color: var(--ink); }
+.scan-tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--violet); }
+
+/* Tabelas densas: rolam dentro do card em vez de esticar a página. */
+.scan-scroll { overflow-x: auto; }
+.scan-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.scan-table th {
+  padding: 12px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.scan-table td { padding: 13px 10px; vertical-align: middle; }
+.scan-table tbody tr { border-top: 1px solid var(--scan-border-soft); }
+.scan-table tbody tr:hover { background: var(--scan-hover); }
+.scan-table th:first-child, .scan-table td:first-child { padding-left: 20px; }
+.scan-table th:last-child, .scan-table td:last-child { padding-right: 20px; }
+
+/* Campo de entrada no tom do desenho (fundo rebaixado, não elevado). */
+.scan-input {
+  background: var(--scan-hover);
+  border: 1px solid var(--scan-border);
+  border-radius: 10px;
+  color: var(--ink);
+  outline: none;
+}
+.scan-input:focus-visible { border-color: var(--violet); }
+
+/* Barra de proporção (participação de detentor, distribuição). */
+.scan-bar { height: 7px; border-radius: 4px; background: var(--line-2); overflow: hidden; }
+.scan-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--violet-deep), var(--violet));
+}

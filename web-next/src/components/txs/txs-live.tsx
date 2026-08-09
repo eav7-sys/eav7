@@ -17,7 +17,7 @@ import { Ago } from "@/components/ui/ago";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Reveal } from "@/components/ui/reveal";
 import { ExplorerSearch } from "@/components/ui/explorer-search";
-import { fmt, numCompact } from "@/lib/format";
+import { fmt, fmtCompact } from "@/lib/format";
 import { IconTx, IconPulse, IconReward, IconEnergy } from "@/components/icons";
 import { useT } from "@/i18n/provider";
 
@@ -135,11 +135,13 @@ export function TxsLive({ initial }: { initial: TxsInitial }) {
           label={t("txs_live.stats.mempool")}
           value={status ? <AnimatedNumber value={status.mempool} /> : "—"}
         />
+        {/* `volume` é MONTANTE em e7 — `fmtCompact` divide por UNIT. `numCompact`,
+            que serve para CONTAGENS, mostraria os e7 crus como se fossem EAV7. */}
         <StatCard
           icon={<IconReward size={16} />}
           chip="chip-gold"
           label={t("txs_live.stats.volume")}
-          value={stats ? numCompact(stats.volume) : "—"}
+          value={stats ? fmtCompact(stats.volume) : "—"}
         />
         <StatCard
           icon={<IconEnergy size={16} />}

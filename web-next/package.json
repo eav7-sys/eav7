@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/merge-i18n.mjs && node scripts/build-wasm.mjs",
     "build": "next build",
+    "wasm:build": "node scripts/build-wasm.mjs",
     "start": "next start",
     "lint": "eslint",
+    "i18n:merge": "node scripts/merge-i18n.mjs",
+    "test:e2e": "playwright test",
     "bg:fetch": "node scripts/fetch-backgrounds.mjs"
   },
   "dependencies": {

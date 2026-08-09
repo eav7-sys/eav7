@@ -1,0 +1,53 @@
+{
+  "namespace": "scan_chrome",
+  "translations": {
+    "pt": {
+      "brandAria": "EAVSCAN — início",
+      "mainnet": "MAINNET",
+      "navHome": "Home",
+      "navBlockchain": "Blockchain",
+      "navBlocks": "Blocos",
+      "navTxs": "Transações",
+      "navContracts": "Contratos",
+      "navTokens": "Tokens",
+      "navValidators": "Validadores",
+      "navGovernance": "Governança",
+      "searchPh": "Buscar bloco, transação, endereço ou token",
+      "wallet": "Carteira",
+      "openMenu": "Abrir menu",
+      "closeMenu": "Fechar menu"
+    },
+    "en": {
+      "brandAria": "EAVSCAN — home",
+      "mainnet": "MAINNET",
+      "navHome": "Home",
+      "navBlockchain": "Blockchain",
+      "navBlocks": "Blocks",
+      "navTxs": "Transactions",
+      "navContracts": "Contracts",
+      "navTokens": "Tokens",
+      "navValidators": "Validators",
+      "navGovernance": "Governance",
+      "searchPh": "Search block, transaction, address or token",
+      "wallet": "Wallet",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    },
+    "es": {
+      "brandAria": "EAVSCAN — inicio",
+      "mainnet": "MAINNET",
+      "navHome": "Inicio",
+      "navBlockchain": "Blockchain",
+      "navBlocks": "Bloques",
+      "navTxs": "Transacciones",
+      "navContracts": "Contratos",
+      "navTokens": "Tokens",
+      "navValidators": "Validadores",
+      "navGovernance": "Gobernanza",
+      "searchPh": "Buscar bloque, transacción, dirección o token",
+      "wallet": "Cartera",
+      "openMenu": "Abrir menú",
+      "closeMenu": "Cerrar menú"
+    }
+  }
+}

@@ -69,7 +69,7 @@ export async function signAndSend(
 
   const acc = await getAddress(account.evm);
   const nonce = acc.nextNonce ?? acc.nonce ?? 0;
-  const raw = buildSignedTx({
+  const raw = await buildSignedTx({
     privateKey: account.privateKey,
     nonce,
     to: params.to,

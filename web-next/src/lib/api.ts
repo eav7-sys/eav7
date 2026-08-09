@@ -7,9 +7,14 @@ export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ??
   (process.env.NODE_ENV === "development" ? "https://eavscan.com" : "");
 
-// FRONT-END PURO: por padrão usa dados mock gerados no próprio front, sem tocar
-// no backend. Para religar o nó real depois, defina NEXT_PUBLIC_USE_MOCK=false.
-export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
+// Mock SÓ com opt-in explícito. Default antigo (`!== "false"`) publicava dados
+// fabricados se a env faltasse no build — inaceitável num explorador.
+export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+if (process.env.NODE_ENV === "production" && USE_MOCK) {
+  throw new Error(
+    "NEXT_PUBLIC_USE_MOCK=true em production — recusado. Remova a env ou use development.",
+  );
+}
 
 // Base efetiva por contexto: no servidor (SSR/Server Components) usa a origem INTERNA
 // do nó (EAV7_API_ORIGIN, ex.: http://127.0.0.1:6070) — rápido e sem sair pela internet;
@@ -129,6 +134,9 @@ export interface Block {
   hash?: string;
   protocol?: string;
   scheme?: string;
+  /** Bytes da serialização do bloco — a mesma linha que o nó grava em disco e
+   *  envia aos peers. `null` só se o bloco não serializar. */
+  size?: number | null;
 }
 
 export interface Tx {
@@ -167,6 +175,10 @@ export interface Validator {
   address: string;
   staked: string;
   votes?: string; // #4 votos recebidos (peso = staked + votes)
+  /** Nome EAV-NS apontando para o validador; `null` quando não há. Resolvido no
+   *  nó — antes o cliente baixava `/names` e invertia o mapa, mas `/names` corta
+   *  em 200 registros e deixava anônimo quem estivesse fora da fatia. */
+  name?: string | null;
 }
 // Score de desempenho de validador (derivado da cadeia; observacional, sem consenso).
 export type ValidatorHealth = "healthy" | "lagging" | "degraded" | "offline";
@@ -302,25 +314,29 @@ export interface AddressInfo {
   contract?: { address: string; codeSize: number; verified: boolean; nonce: number } | null;
 }
 
+// O que `GET /tokens` devolve por item. Não é um resumo: o catálogo e o detalhe
+// saem da MESMA função no nó (`tokenView`, eav20.js:39 / tokens.rs:119), então a
+// lista já traz tudo isto. Este tipo declarava menos campos do que a rota
+// entrega, e a tela de tokens passou a buscar o detalhe de cada item para ler
+// `decimals` — 61 requisições onde uma bastava.
 export interface TokenSummary {
   id: string;
   symbol: string;
   name: string;
+  standard: string;
+  decimals: number;
   totalSupply: string;
   holders: number;
   creator: string;
-}
-
-// Detalhe de um token EAV20 — o que `GET /tokens/:id` devolve. É o `TokenSummary`
-// mais o estado administrativo que o nosso padrão carrega e o TRC20 não tem:
-// pausa, lista de bloqueio, congelamento e emissão adicional.
-export interface TokenDetail extends TokenSummary {
-  standard: string;
-  decimals: number;
   owner: string;
   mintable: boolean;
   paused: boolean;
   createdAt: number;
+}
+
+// `GET /tokens/:id` — o mesmo `tokenView`, mais os mapas administrativos e o
+// `balanceOf` opcional de `?address=`.
+export interface TokenDetail extends TokenSummary {
   /** Endereços impedidos de transacionar pelo administrador. */
   blacklist?: Record<string, boolean>;
   /** Saldo travado até `unlockAt` — não transferível mesmo pertencendo ao dono. */
@@ -360,8 +376,13 @@ export interface TokenHolders {
 export const getStatus = () =>
   USE_MOCK ? Promise.resolve(mock.mockStatus()) : get<Status>("/status");
 
-export const getBlocks = (limit = 12) =>
-  USE_MOCK ? Promise.resolve(mock.mockBlocks(limit)) : get<Block[]>(`/blocks?limit=${limit}`);
+/** `from` = altura inicial (API devolve faixa ascendente). Sem `from` = tip, mais novos primeiro. */
+export const getBlocks = (limit = 12, from?: number) =>
+  USE_MOCK
+    ? Promise.resolve(mock.mockBlocks(limit, from))
+    : get<Block[]>(
+        `/blocks?limit=${limit}${from != null ? `&from=${from}` : ""}`,
+      );
 
 export const getTxs = (limit = 12, before?: number) =>
   USE_MOCK
@@ -644,12 +665,17 @@ export interface NetworkStats {
   accountsDelta: number;
   transactions: number;
   transactionsDelta: number;
-  volume: number;
-  volumeDelta: number;
-  staked: number;
-  stakedDelta: number;
-  txSeries?: number[]; // série horária real (24 buckets) de nº de transações (24h)
-  volSeries?: number[]; // série horária real de volume (EAV7, 24h)
+  // Montantes em e7 CRU, string decimal — a mesma regra do resto da API. Antes
+  // vinham já divididos por UNIT: `fmtCompact` dividia de novo e 7.900 EAV7
+  // aparecia como 0,0079 na tela. Formate com `fmt`/`fmtCompact`, nunca com
+  // `num`/`numCompact` (esses são para CONTAGENS, não para montantes).
+  volume: string;
+  volumeDelta: string;
+  staked: string;
+  stakedDelta: string;
+  tps: number; // medido no nó sobre o intervalo real dos blocos varridos
+  txSeries?: number[]; // série horária real (24 baldes) de nº de transações (24h)
+  volSeries?: string[]; // série horária real de volume, em e7 (24h)
 }
 
 export const getNetworkStats = () =>

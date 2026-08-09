@@ -170,6 +170,10 @@ export function mockBlock(h: number): Block {
     producer: VALIDATORS[h % VALIDATORS.length].address,
     protocol: "eav20",
     scheme: "eav7-hybrid-1",
+    // Cabeçalho assinado (~640 B com as duas assinaturas) + o peso das txs. Não é
+    // uma medida — é uma ordem de grandeza plausível, para a tela não mostrar
+    // travessão onde o nó real mostra bytes.
+    size: 640 + txCountFor(h) * 420,
   };
 }
 
@@ -224,8 +228,13 @@ export function mockStatus(): Status {
   };
 }
 
-export function mockBlocks(limit: number): Block[] {
+export function mockBlocks(limit: number, from?: number): Block[] {
   const h = currentHeight();
+  if (from != null) {
+    const out: Block[] = [];
+    for (let i = 0; i < limit && from + i <= h; i++) out.push(mockBlock(from + i));
+    return out;
+  }
   const out: Block[] = [];
   for (let i = 0; i < limit; i++) out.push(mockBlock(h - i));
   return out;
@@ -330,11 +339,24 @@ export function mockAddressTxs(addr: string, limit: number): { txs: Tx[] } {
   return { txs };
 }
 
+// O catálogo do nó sai de `tokenView`: mesmos campos do detalhe. O mock precisa
+// entregar a mesma forma, senão a tela funciona no mock e quebra no nó real.
+function tokenMock(
+  n: number, symbol: string, name: string, totalSupply: string, holders: number, v: number,
+): TokenSummary {
+  return {
+    id: e7hash(n), symbol, name, totalSupply, holders,
+    standard: "EAV20", decimals: 6, mintable: true, paused: false,
+    creator: VALIDATORS[v].address, owner: VALIDATORS[v].address,
+    createdAt: 1_700_000_000_000 + n * 86_400_000,
+  };
+}
+
 export function mockTokens(): TokenSummary[] {
   return [
-    { id: e7hash(1001), symbol: "USDE", name: "USD EAV", totalSupply: "50000000", holders: 1284, creator: VALIDATORS[0].address },
-    { id: e7hash(1002), symbol: "QBIT", name: "QuantumBit", totalSupply: "21000000", holders: 642, creator: VALIDATORS[1].address },
-    { id: e7hash(1003), symbol: "AIX", name: "AI Oracle Token", totalSupply: "100000000", holders: 318, creator: VALIDATORS[2].address },
+    tokenMock(1001, "USDE", "USD EAV", "50000000", 1284, 0),
+    tokenMock(1002, "QBIT", "QuantumBit", "21000000", 642, 1),
+    tokenMock(1003, "AIX", "AI Oracle Token", "100000000", 318, 2),
   ];
 }
 
@@ -507,19 +529,22 @@ export function mockNetworkStats(): NetworkStats {
   const h = currentHeight();
   // séries horárias determinísticas (24 buckets)
   const txSeries = Array.from({ length: 24 }, (_, i) => intIn(rng(h + i * 31), 2, 40));
-  const volSeries = txSeries.map((n, i) => n * intIn(rng(h + i * 7), 20, 900));
+  // volume em e7 CRU, como o nó publica (UNIT = 1e6)
+  const volSeries = txSeries.map((n, i) => BigInt(n * intIn(rng(h + i * 7), 20, 900)) * 1_000_000n);
   const txCount24h = txSeries.reduce((a, b) => a + b, 0);
-  const vol24h = volSeries.reduce((a, b) => a + b, 0);
+  const vol24h = volSeries.reduce((a, b) => a + b, 0n);
+  const t0 = txSeries.length * 3600; // a série cobre 24 h
   return {
     accounts: Math.floor(902_400 + 0.12 * h),
     accountsDelta: 0, // sem histórico → sem delta (como no real)
     transactions: Math.floor(3.7 * h),
     transactionsDelta: txCount24h, // real: nº de txs em 24h
-    volume: vol24h, // volume 24h
-    volumeDelta: vol24h,
-    staked: 41_280_000,
-    stakedDelta: 0,
+    volume: vol24h.toString(), // volume 24h, em e7
+    volumeDelta: vol24h.toString(),
+    staked: (41_280_000n * 1_000_000n).toString(),
+    stakedDelta: "0",
+    tps: txCount24h / t0,
     txSeries,
-    volSeries,
+    volSeries: volSeries.map((v) => v.toString()),
   };
 }

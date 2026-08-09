@@ -1,0 +1,3 @@
+# Artefato regenerável via `npm run wasm:build` — não versionar o binário.
+*
+!.gitignore

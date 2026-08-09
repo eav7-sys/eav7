@@ -139,7 +139,7 @@ function UnlockView({ onUnlock, onWipe }: { onUnlock: (a: Account) => void; onWi
     setErr("");
     try {
       const priv = await unlockVault(pw);
-      onUnlock(accountFromPrivate(priv));
+      onUnlock(await accountFromPrivate(priv));
     } catch {
       setErr(t("wallet_app.unlock.error_wrong_password"));
     } finally {
@@ -190,8 +190,8 @@ function OnboardingView({ onReady }: { onReady: (a: Account) => void }) {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
-  function startCreate() {
-    setDraft(createAccount());
+  async function startCreate() {
+    setDraft(await createAccount());
     setErr("");
     setStage("create");
   }
@@ -210,14 +210,16 @@ function OnboardingView({ onReady }: { onReady: (a: Account) => void }) {
     }
   }
 
-  function submitImport(e: React.FormEvent) {
+  async function submitImport(e: React.FormEvent) {
     e.preventDefault();
+    let acc: Account;
     try {
-      const acc = accountFromPrivate(priv.trim());
-      finalize(acc);
+      acc = await accountFromPrivate(priv.trim());
     } catch {
       setErr(t("wallet_app.import.error_invalid_key"));
+      return;
     }
+    finalize(acc);
   }
 
   function downloadBackup(acc: Account) {

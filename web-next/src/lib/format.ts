@@ -172,3 +172,18 @@ export function whenUtc(ts: number | null | undefined): string {
   if (Number.isNaN(d.getTime())) return "—";
   return d.toISOString().replace("T", " ").slice(0, 19);
 }
+
+/**
+ * Tamanho em bytes, como um explorador de bloco mostra: B até 1 KiB, depois KiB
+ * e MiB. Base 1024 — é a unidade em que se pensa espaço em disco e é o que
+ * `KiB` significa; escrever "KB" para 1024 bytes é o abuso de sempre.
+ *
+ * `null` (bloco que não serializou no nó) e `undefined` (nó antigo, sem o campo)
+ * viram travessão: um zero ali diria "bloco vazio", que é outra coisa.
+ */
+export function fmtBytes(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n) || n < 0) return "—";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toLocaleString(LOCALE, { maximumFractionDigits: 1 })} KiB`;
+  return `${(n / (1024 * 1024)).toLocaleString(LOCALE, { maximumFractionDigits: 2 })} MiB`;
+}
