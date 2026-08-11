@@ -19,7 +19,7 @@ assets, hybrid post-quantum signatures, and an EVM-facing JSON-RPC layer
 [![Release](https://img.shields.io/github/v/release/eav7-sys/eav7?include_prereleases)](https://github.com/eav7-sys/eav7/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> **Whitepaper:** [English](docs/whitepaper.en.md) · [Português](docs/whitepaper.md) (v1.2)  
+> **Whitepaper:** [English](docs/whitepaper.en.md) · [Português](docs/whitepaper.md) (v1.0)  
 > **Docs index:** [docs/README.md](docs/README.md)
 
 ---

@@ -1,6 +1,6 @@
 # EAV7 — Uma Blockchain de Camada 1 com Segurança Pós-Quântica e Camada Nativa de Inteligência Artificial
 
-**Whitepaper Técnico · Versão 1.3 · 10 de agosto de 2026**
+**Whitepaper Técnico · Versão 1.0 · 11 de agosto de 2026**
 
 Protocolo `eav20` · Símbolo `EAV7` · EAVM Chain ID `72020` (mainnet) / `72021` (testnet)
 
@@ -734,4 +734,4 @@ Estes são os settings pretendidos para o gênese no servidor de entrega, não u
 
 ---
 
-*EAV7 · Whitepaper Técnico v1.3 · 10 de agosto de 2026*
+*EAV7 · Whitepaper Técnico v1.0 · 11 de agosto de 2026*

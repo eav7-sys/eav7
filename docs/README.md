@@ -2,8 +2,8 @@
 
 | Document | Description |
 |---|---|
-| [whitepaper.en.md](whitepaper.en.md) | Protocol whitepaper (English) · v1.2 |
-| [whitepaper.md](whitepaper.md) | Whitepaper (Português) · v1.2 |
+| [whitepaper.en.md](whitepaper.en.md) | Protocol whitepaper (English) · v1.0 |
+| [whitepaper.md](whitepaper.md) | Whitepaper (Português) · v1.0 |
 | [api.md](api.md) | HTTP API reference |
 | [core.md](core.md) | Operator guide for `eav7-core` |
 | [local.md](local.md) | Local development |

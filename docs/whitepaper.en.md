@@ -1,6 +1,6 @@
 # EAV7 — A Layer 1 Blockchain with Post-Quantum Security and a Native Artificial Intelligence Layer
 
-**Technical Whitepaper · Version 1.3 · August 10, 2026**
+**Technical Whitepaper · Version 1.0 · August 11, 2026**
 
 Protocol `eav20` · Symbol `EAV7` · EAVM Chain ID `72020` (mainnet) / `72021` (testnet)
 
@@ -736,4 +736,4 @@ These are the intended delivery-server genesis settings, not a claim that they a
 
 ---
 
-*EAV7 · Technical Whitepaper v1.3 · August 10, 2026*
+*EAV7 · Technical Whitepaper v1.0 · August 11, 2026*
