@@ -1,0 +1,473 @@
+{
+  "namespace": "home_moments",
+  "translations": {
+    "pt": {
+      "sectionEyebrow": "por dentro do protocolo",
+      "sectionTitle": "Uma L1 construída para durar",
+      "items": {
+        "security": {
+          "eyebrow": "segurança",
+          "titlePrefix": "Pronta para a era",
+          "titleHighlight": "pós-quântica",
+          "desc": "Cada carteira, transação e bloco carrega duas assinaturas — e a verificação exige as duas. Forjar exigiria quebrar as duas primitivas ao mesmo tempo.",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "Endereço E7 derivado por SHA3-256"
+        },
+        "consensus": {
+          "eyebrow": "consenso",
+          "titlePrefix": "Um bloco a cada",
+          "titleHighlight": "1 segundo",
+          "desc": "Consenso DPoS com até 51 validadores (governável, teto 101) eleitos por peso (stake + votos), em rodízio determinístico — blocos ~1s, com liveness protegida.",
+          "bullet1": "até 27 validadores (governável) · round-robin",
+          "bullet2": "16 EAV7 de recompensa por bloco"
+        },
+        "intelligence": {
+          "eyebrow": "inteligência",
+          "titlePrefix": "Uma camada",
+          "titleHighlight": "nativa de IA",
+          "desc": "Oráculos on-chain em 6 fases: reputação e slashing, quórum com commit-reveal, janela de desafio com júri, marketplace por leilão reverso, resultados privados por hash e atestação TEE/zk que liquida na hora.",
+          "bullet1": "quórum commit-reveal · desafio + júri · marketplace",
+          "bullet2": "resultados atestados TEE/zk (verified)"
+        },
+        "assets": {
+          "eyebrow": "ativos",
+          "titlePrefix": "Tokens",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "e ponte cross-chain",
+          "desc": "Crie e mova tokens nativos (EAV20 / nativos do protocolo) e conecte a EAV7 a outras redes por um modelo lock-and-release seguro e idempotente.",
+          "bullet1": "Padrão EAV20 · create / transfer / approve",
+          "bullet2": "Ponte ETH · BTC · … (lock-and-release)"
+        }
+      }
+    },
+    "en": {
+      "sectionEyebrow": "inside the protocol",
+      "sectionTitle": "An L1 built to last",
+      "items": {
+        "security": {
+          "eyebrow": "security",
+          "titlePrefix": "Ready for the",
+          "titleHighlight": "post-quantum era",
+          "desc": "Every wallet, transaction, and block carries two signatures — and verification requires both. Forging one would mean breaking both primitives at once.",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "E7 address derived via SHA3-256"
+        },
+        "consensus": {
+          "eyebrow": "consensus",
+          "titlePrefix": "A block every",
+          "titleHighlight": "1 second",
+          "desc": "DPoS consensus with up to 51 validators (governable, max 101) elected by weight (stake + votes), in a deterministic rotation — ~1s blocks, with protected liveness.",
+          "bullet1": "up to 27 validators (governable) · round-robin",
+          "bullet2": "16 EAV7 reward per block"
+        },
+        "intelligence": {
+          "eyebrow": "intelligence",
+          "titlePrefix": "A",
+          "titleHighlight": "native AI layer",
+          "desc": "A 6-phase on-chain oracle layer: reputation and slashing, commit-reveal quorum, a challenge window with a jury, a reverse-auction marketplace, private hash-only results and TEE/zk attestation that settles instantly.",
+          "bullet1": "commit-reveal quorum · challenge + jury · marketplace",
+          "bullet2": "attested TEE/zk results (verified)"
+        },
+        "assets": {
+          "eyebrow": "assets",
+          "titlePrefix": "Tokens",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "and a cross-chain bridge",
+          "desc": "Create and move native tokens (EAV20 / protocol natives) and connect EAV7 to other networks through a secure, idempotent lock-and-release model.",
+          "bullet1": "EAV20 standard · create / transfer / approve",
+          "bullet2": "ETH · BTC · … bridge (lock-and-release)"
+        }
+      }
+    },
+    "es": {
+      "sectionEyebrow": "dentro del protocolo",
+      "sectionTitle": "Una L1 construida para durar",
+      "items": {
+        "security": {
+          "eyebrow": "seguridad",
+          "titlePrefix": "Preparada para la era",
+          "titleHighlight": "poscuántica",
+          "desc": "Cada billetera, transacción y bloque lleva dos firmas — y la verificación exige ambas. Falsificarla requeriría romper las dos primitivas a la vez.",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "Dirección E7 derivada por SHA3-256"
+        },
+        "consensus": {
+          "eyebrow": "consenso",
+          "titlePrefix": "Un bloque cada",
+          "titleHighlight": "1 segundo",
+          "desc": "Consenso DPoS con hasta 51 validadores elegidos por stake, en rotación determinística — bloques ~1s, con liveness protegida.",
+          "bullet1": "27 validadores · round-robin por slot",
+          "bullet2": "16 EAV7 de recompensa por bloque"
+        },
+        "intelligence": {
+          "eyebrow": "inteligencia",
+          "titlePrefix": "Una capa",
+          "titleHighlight": "nativa de IA",
+          "desc": "Oráculos on-chain con escrow: las tareas de IA se publican, se resuelven por el oráculo designado y se liquidan de forma verificable — todo dentro del protocolo.",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "Hash del resultado registrado on-chain"
+        },
+        "assets": {
+          "eyebrow": "activos",
+          "titlePrefix": "Tokens",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "y puente cross-chain",
+          "desc": "Crea y mueve tokens nativos (EAV20 / nativos del protocolo) y conecta EAV7 con otras redes mediante un modelo lock-and-release seguro e idempotente.",
+          "bullet1": "Estándar EAV20 · create / transfer / approve",
+          "bullet2": "Puente ETH · BTC · … (lock-and-release)"
+        }
+      }
+    },
+    "zh": {
+      "sectionEyebrow": "协议内部",
+      "sectionTitle": "为持久而生的 L1",
+      "items": {
+        "security": {
+          "eyebrow": "安全",
+          "titlePrefix": "为",
+          "titleHighlight": "后量子时代",
+          "desc": "每个钱包、交易和区块都携带两个签名——验证需要同时满足两者。伪造需要同时破解两种密码学原语。",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "通过 SHA3-256 派生的 E7 地址"
+        },
+        "consensus": {
+          "eyebrow": "共识",
+          "titlePrefix": "每",
+          "titleHighlight": "1 秒",
+          "desc": "DPoS 共识机制，最多 51 个按质押选出的验证者，确定性轮换——约 1 秒出块，且具备受保护的活性。",
+          "bullet1": "27 个验证者 · 按插槽轮询",
+          "bullet2": "每区块奖励 16 EAV7"
+        },
+        "intelligence": {
+          "eyebrow": "智能",
+          "titlePrefix": "一层",
+          "titleHighlight": "原生 AI",
+          "desc": "带托管的链上预言机:AI 任务被发布、由指定的预言机解决,并以可验证的方式结算——全部在协议内完成。",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "结果哈希记录在链上"
+        },
+        "assets": {
+          "eyebrow": "资产",
+          "titlePrefix": "代币",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "与跨链桥",
+          "desc": "创建和转移原生代币（EAV20 / 协议原生），并通过安全、幂等的锁定释放模型将 EAV7 连接到其他网络。",
+          "bullet1": "EAV20 标准 · create / transfer / approve",
+          "bullet2": "ETH · BTC · … 跨链桥（锁定释放）"
+        }
+      }
+    },
+    "fr": {
+      "sectionEyebrow": "au cœur du protocole",
+      "sectionTitle": "Une L1 conçue pour durer",
+      "items": {
+        "security": {
+          "eyebrow": "sécurité",
+          "titlePrefix": "Prête pour l'ère",
+          "titleHighlight": "post-quantique",
+          "desc": "Chaque portefeuille, transaction et bloc porte deux signatures — et la vérification exige les deux. Falsifier nécessiterait de casser les deux primitives à la fois.",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "Adresse E7 dérivée par SHA3-256"
+        },
+        "consensus": {
+          "eyebrow": "consensus",
+          "titlePrefix": "Un bloc toutes les",
+          "titleHighlight": "1 seconde",
+          "desc": "Consensus DPoS avec jusqu'à 51 validateurs élus par mise, en rotation déterministe — blocs ~1s, avec une liveness protégée.",
+          "bullet1": "27 validateurs · round-robin par slot",
+          "bullet2": "16 EAV7 de récompense par bloc"
+        },
+        "intelligence": {
+          "eyebrow": "intelligence",
+          "titlePrefix": "Une couche",
+          "titleHighlight": "IA native",
+          "desc": "Oracles on-chain avec séquestre : les tâches d'IA sont publiées, résolues par l'oracle désigné et réglées de manière vérifiable — le tout au sein du protocole.",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "Hash du résultat enregistré on-chain"
+        },
+        "assets": {
+          "eyebrow": "actifs",
+          "titlePrefix": "Tokens",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "et pont cross-chain",
+          "desc": "Créez et déplacez des tokens natifs (EAV20 / natifs du protocole) et connectez EAV7 à d'autres réseaux via un modèle lock-and-release sécurisé et idempotent.",
+          "bullet1": "Standard EAV20 · create / transfer / approve",
+          "bullet2": "Pont ETH · BTC · … (lock-and-release)"
+        }
+      }
+    },
+    "de": {
+      "sectionEyebrow": "im Inneren des Protokolls",
+      "sectionTitle": "Eine L1, die für die Ewigkeit gebaut ist",
+      "items": {
+        "security": {
+          "eyebrow": "sicherheit",
+          "titlePrefix": "Bereit für das",
+          "titleHighlight": "postquantenzeitalter",
+          "desc": "Jede Wallet, Transaktion und jeder Block trägt zwei Signaturen — und die Verifizierung erfordert beide. Eine Fälschung würde bedeuten, beide Primitive gleichzeitig zu brechen.",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "E7-Adresse abgeleitet über SHA3-256"
+        },
+        "consensus": {
+          "eyebrow": "konsens",
+          "titlePrefix": "Ein Block alle",
+          "titleHighlight": "1 Sekunde",
+          "desc": "DPoS-Konsens mit bis zu 51 durch Stake gewählten Validatoren in deterministischer Rotation — ~1s Blöcke, mit geschützter Liveness.",
+          "bullet1": "27 Validatoren · Round-Robin pro Slot",
+          "bullet2": "16 EAV7 Belohnung pro Block"
+        },
+        "intelligence": {
+          "eyebrow": "intelligenz",
+          "titlePrefix": "Eine",
+          "titleHighlight": "native KI-Schicht",
+          "desc": "On-Chain-Orakel mit Treuhand: KI-Aufgaben werden veröffentlicht, vom zuständigen Orakel gelöst und nachweisbar abgerechnet — alles innerhalb des Protokolls.",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "Ergebnis-Hash on-chain gespeichert"
+        },
+        "assets": {
+          "eyebrow": "vermögenswerte",
+          "titlePrefix": "Tokens",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "und Cross-Chain-Bridge",
+          "desc": "Erstelle und bewege native Tokens (EAV20 / Protokoll-nativ) und verbinde EAV7 über ein sicheres, idempotentes Lock-and-Release-Modell mit anderen Netzwerken.",
+          "bullet1": "EAV20-Standard · create / transfer / approve",
+          "bullet2": "Bridge ETH · BTC · … (Lock-and-Release)"
+        }
+      }
+    },
+    "ja": {
+      "sectionEyebrow": "プロトコルの内側",
+      "sectionTitle": "長く続くために作られたL1",
+      "items": {
+        "security": {
+          "eyebrow": "セキュリティ",
+          "titlePrefix": "備える",
+          "titleHighlight": "ポスト量子時代",
+          "desc": "すべてのウォレット、トランザクション、ブロックは2つの署名を持ち——検証には両方が必要です。偽造するには両方のプリミティブを同時に破る必要があります。",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "SHA3-256で導出されたE7アドレス"
+        },
+        "consensus": {
+          "eyebrow": "コンセンサス",
+          "titlePrefix": "毎",
+          "titleHighlight": "1秒ごとにブロック生成",
+          "desc": "ステークで選出される最大51のバリデータによる決定論的ローテーションのDPoSコンセンサス——約1秒ブロック、ライブネスが保護されています。",
+          "bullet1": "27バリデータ · スロットごとのラウンドロビン",
+          "bullet2": "ブロックごとに16 EAV7の報酬"
+        },
+        "intelligence": {
+          "eyebrow": "インテリジェンス",
+          "titlePrefix": "ネイティブな",
+          "titleHighlight": "AIレイヤー",
+          "desc": "エスクロー付きのオンチェーンオラクル: AIタスクが公開され、指定のオラクルによって解決され、検証可能な形で決済されます——すべてプロトコル内で。",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "結果ハッシュがオンチェーンに記録"
+        },
+        "assets": {
+          "eyebrow": "アセット",
+          "titlePrefix": "トークン",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "とクロスチェーンブリッジ",
+          "desc": "ネイティブトークン（EAV20 / プロトコルネイティブ）を作成・移動し、安全でべき等なロックアンドリリースモデルによってEAV7を他のネットワークに接続します。",
+          "bullet1": "EAV20標準 · create / transfer / approve",
+          "bullet2": "ETH · BTC · …ブリッジ (lock-and-release)"
+        }
+      }
+    },
+    "ru": {
+      "sectionEyebrow": "внутри протокола",
+      "sectionTitle": "L1, созданный, чтобы служить долго",
+      "items": {
+        "security": {
+          "eyebrow": "безопасность",
+          "titlePrefix": "Готовы к",
+          "titleHighlight": "постквантовой эпохе",
+          "desc": "Каждый кошелёк, транзакция и блок несёт две подписи — и проверка требует обеих. Подделка потребовала бы взлома обоих примитивов одновременно.",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "Адрес E7, полученный через SHA3-256"
+        },
+        "consensus": {
+          "eyebrow": "консенсус",
+          "titlePrefix": "Блок каждую",
+          "titleHighlight": "1 секунду",
+          "desc": "Консенсус DPoS с до 51 валидаторами, избранными по ставке, в детерминированной ротации — блоки ~1с, с защищённой ливнесс.",
+          "bullet1": "27 валидаторов · round-robin по слоту",
+          "bullet2": "16 EAV7 вознаграждения за блок"
+        },
+        "intelligence": {
+          "eyebrow": "интеллект",
+          "titlePrefix": "Нативный",
+          "titleHighlight": "слой ИИ",
+          "desc": "Ончейн-оракулы с эскроу: задачи ИИ публикуются, решаются назначенным оракулом и проверяемо расчитываются — всё внутри протокола.",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "Хэш результата записан ончейн"
+        },
+        "assets": {
+          "eyebrow": "активы",
+          "titlePrefix": "Токены",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "и кросс-чейн мост",
+          "desc": "Создавайте и перемещайте нативные токены (EAV20 / нативные протокола) и подключайте EAV7 к другим сетям через безопасную идемпотентную модель lock-and-release.",
+          "bullet1": "Стандарт EAV20 · create / transfer / approve",
+          "bullet2": "Мост ETH · BTC · … (lock-and-release)"
+        }
+      }
+    },
+    "ar": {
+      "sectionEyebrow": "داخل البروتوكول",
+      "sectionTitle": "طبقة أولى مبنية لتدوم",
+      "items": {
+        "security": {
+          "eyebrow": "الأمان",
+          "titlePrefix": "جاهزة لعصر ما",
+          "titleHighlight": "بعد الكم",
+          "desc": "كل محفظة ومعاملة وكتلة تحمل توقيعين — والتحقق يتطلب كليهما. تزوير ذلك يتطلب كسر كلا الأساسين في آن واحد.",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "عنوان E7 مشتق عبر SHA3-256"
+        },
+        "consensus": {
+          "eyebrow": "الإجماع",
+          "titlePrefix": "كتلة كل",
+          "titleHighlight": "1 ثانية",
+          "desc": "إجماع DPoS بما يصل إلى 51 مدققًا منتخبًا بالحصة، بتناوب حتمي — كتل ~1ث، مع حيوية محمية.",
+          "bullet1": "27 مدققًا · تناوب دائري لكل فتحة",
+          "bullet2": "16 EAV7 مكافأة لكل كتلة"
+        },
+        "intelligence": {
+          "eyebrow": "الذكاء",
+          "titlePrefix": "طبقة",
+          "titleHighlight": "ذكاء اصطناعي أصلية",
+          "desc": "أوراكل على السلسلة مع ضمان: يتم نشر مهام الذكاء الاصطناعي، وحلها بواسطة الأوراكل المحدد، وتسويتها بشكل يمكن التحقق منه — كل ذلك داخل البروتوكول.",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "تجزئة النتيجة مسجلة على السلسلة"
+        },
+        "assets": {
+          "eyebrow": "الأصول",
+          "titlePrefix": "رموز",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "وجسر عبر السلاسل",
+          "desc": "أنشئ وانقل رموزًا أصلية (EAV20 / رموز البروتوكول) واربط EAV7 بشبكات أخرى عبر نموذج قفل وتحرير آمن ومتماثل القوة.",
+          "bullet1": "معيار EAV20 · create / transfer / approve",
+          "bullet2": "جسر ETH · BTC · … (قفل وتحرير)"
+        }
+      }
+    },
+    "hi": {
+      "sectionEyebrow": "प्रोटोकॉल के भीतर",
+      "sectionTitle": "एक L1 जो टिकाऊ बनाई गई है",
+      "items": {
+        "security": {
+          "eyebrow": "सुरक्षा",
+          "titlePrefix": "पोस्ट-क्वांटम युग के लिए",
+          "titleHighlight": "तैयार",
+          "desc": "हर वॉलेट, लेनदेन और ब्लॉक दो हस्ताक्षर रखता है — और सत्यापन दोनों की मांग करता है। जालसाजी करने के लिए दोनों प्रिमिटिव्स को एक साथ तोड़ना पड़ेगा।",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "SHA3-256 द्वारा व्युत्पन्न E7 पता"
+        },
+        "consensus": {
+          "eyebrow": "सर्वसम्मति",
+          "titlePrefix": "हर",
+          "titleHighlight": "1 सेकंड में एक ब्लॉक",
+          "desc": "स्टेक द्वारा चुने गए 51 तक वैलिडेटर्स के साथ निश्चयात्मक रोटेशन में DPoS सर्वसम्मति — ~1से ब्लॉक, संरक्षित लाइवनेस के साथ।",
+          "bullet1": "27 वैलिडेटर्स · स्लॉट के अनुसार राउंड-रॉबिन",
+          "bullet2": "प्रति ब्लॉक 16 EAV7 इनाम"
+        },
+        "intelligence": {
+          "eyebrow": "बुद्धिमत्ता",
+          "titlePrefix": "एक",
+          "titleHighlight": "नेटिव AI परत",
+          "desc": "एस्क्रो के साथ ऑन-चेन ऑरेकल: AI कार्यों को प्रकाशित किया जाता है, नामित ऑरेकल द्वारा हल किया जाता है और सत्यापन योग्य तरीके से निपटाया जाता है — सब कुछ प्रोटोकॉल के भीतर।",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "परिणाम हैश ऑन-चेन दर्ज"
+        },
+        "assets": {
+          "eyebrow": "संपत्ति",
+          "titlePrefix": "टोकन",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "और क्रॉस-चेन ब्रिज",
+          "desc": "नेटिव टोकन (EAV20 / प्रोटोकॉल नेटिव) बनाएं और स्थानांतरित करें, और एक सुरक्षित, आइडेम्पोटेंट लॉक-एंड-रिलीज़ मॉडल के माध्यम से EAV7 को अन्य नेटवर्क से जोड़ें।",
+          "bullet1": "EAV20 मानक · create / transfer / approve",
+          "bullet2": "ETH · BTC · … ब्रिज (lock-and-release)"
+        }
+      }
+    },
+    "ko": {
+      "sectionEyebrow": "프로토콜 내부",
+      "sectionTitle": "오래 지속되도록 만들어진 L1",
+      "items": {
+        "security": {
+          "eyebrow": "보안",
+          "titlePrefix": "준비된",
+          "titleHighlight": "포스트 퀀텀 시대",
+          "desc": "모든 지갑, 트랜잭션, 블록은 두 개의 서명을 가지며 — 검증은 둘 다를 요구합니다. 위조하려면 두 프리미티브를 동시에 깨야 합니다.",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "SHA3-256으로 파생된 E7 주소"
+        },
+        "consensus": {
+          "eyebrow": "합의",
+          "titlePrefix": "매",
+          "titleHighlight": "1초마다 블록 생성",
+          "desc": "지분에 따라 선출된 최대 51명의 검증자가 결정론적으로 순환하는 DPoS 합의 — 약 1초 블록, 라이브니스가 보호됩니다.",
+          "bullet1": "27명의 검증자 · 슬롯별 라운드 로빈",
+          "bullet2": "블록당 16 EAV7 보상"
+        },
+        "intelligence": {
+          "eyebrow": "인텔리전스",
+          "titlePrefix": "네이티브",
+          "titleHighlight": "AI 레이어",
+          "desc": "에스크로가 있는 온체인 오라클: AI 작업이 게시되고, 지정된 오라클에 의해 해결되며, 검증 가능한 방식으로 정산됩니다 — 모두 프로토콜 내에서.",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "결과 해시가 온체인에 기록됨"
+        },
+        "assets": {
+          "eyebrow": "자산",
+          "titlePrefix": "토큰",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "및 크로스체인 브리지",
+          "desc": "네이티브 토큰(EAV20 / 프로토콜 네이티브)을 생성하고 이동하며, 안전하고 멱등적인 lock-and-release 모델을 통해 EAV7을 다른 네트워크에 연결합니다.",
+          "bullet1": "EAV20 표준 · create / transfer / approve",
+          "bullet2": "ETH · BTC · … 브리지 (lock-and-release)"
+        }
+      }
+    },
+    "it": {
+      "sectionEyebrow": "dentro il protocollo",
+      "sectionTitle": "Una L1 costruita per durare",
+      "items": {
+        "security": {
+          "eyebrow": "sicurezza",
+          "titlePrefix": "Pronta per l'era",
+          "titleHighlight": "post-quantistica",
+          "desc": "Ogni wallet, transazione e blocco porta due firme — e la verifica le richiede entrambe. Falsificarla richiederebbe di rompere entrambe le primitive contemporaneamente.",
+          "bullet1": "ECDSA secp256k1 + ML-DSA-44 (FIPS 204)",
+          "bullet2": "Indirizzo E7 derivato tramite SHA3-256"
+        },
+        "consensus": {
+          "eyebrow": "consenso",
+          "titlePrefix": "Un blocco ogni",
+          "titleHighlight": "1 secondo",
+          "desc": "Consenso DPoS con fino a 51 validatori eletti per stake, in rotazione deterministica — blocchi ~1s, con liveness protetta.",
+          "bullet1": "27 validatori · round-robin per slot",
+          "bullet2": "16 EAV7 di ricompensa per blocco"
+        },
+        "intelligence": {
+          "eyebrow": "intelligenza",
+          "titlePrefix": "Un livello",
+          "titleHighlight": "nativo di IA",
+          "desc": "Oracoli on-chain con escrow: le attività di IA vengono pubblicate, risolte dall'oracolo designato e liquidate in modo verificabile — tutto all'interno del protocollo.",
+          "bullet1": "AI_TASK · AI_RESULT · AI_REFUND",
+          "bullet2": "Hash del risultato registrato on-chain"
+        },
+        "assets": {
+          "eyebrow": "asset",
+          "titlePrefix": "Token",
+          "titleHighlight": "EAV20",
+          "titleSuffix": "e ponte cross-chain",
+          "desc": "Crea e sposta token nativi (EAV20 / nativi del protocollo) e collega EAV7 ad altre reti tramite un modello lock-and-release sicuro e idempotente.",
+          "bullet1": "Standard EAV20 · create / transfer / approve",
+          "bullet2": "Ponte ETH · BTC · … (lock-and-release)"
+        }
+      }
+    }
+  }
+}

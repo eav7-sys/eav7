@@ -1,0 +1,14 @@
+{
+  "name": "eav7-blockchain",
+  "version": "0.1.0",
+  "description": "EAV7 — blockchain DPoS (Rust Core + explorador Next); protocolo eav20",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev:local": "bash bin/eav7-dev-up.sh",
+    "testnet:up": "bash bin/eav7-testnet-up.sh",
+    "testnet:down": "bash bin/eav7-testnet-down.sh",
+    "testnet:demo": "bash bin/eav7-testnet-demo.sh",
+    "verificar": "bash bin/eav7-verificar.sh"
+  }
+}

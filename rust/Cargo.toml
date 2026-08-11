@@ -1,0 +1,191 @@
+[package]
+name = "eav7"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+description = "EAV7 — protocolo eav20 (consenso, nó, SDK, Core, wasm)."
+license = "MIT"
+
+# POLÍTICA DE DEPENDÊNCIAS — reversão deliberada em relação ao nó em JavaScript.
+#
+# No nó JS a regra é ZERO dependências: toda a criptografia foi escrita do zero
+# (secp256k1, keccak, ripemd160, blake2f, e um pairing BN254 de 590 linhas). Isso
+# fazia sentido lá porque o ecossistema npm é hostil — dependência transitiva não
+# auditável em código de consenso é risco maior que reimplementar.
+#
+# Em Rust a conta inverte. `sha3`, `k256` e `ark-bn254` são mantidos pelos grupos
+# RustCrypto e arkworks, auditados e usados por praticamente toda a indústria.
+# Usá-los REMOVE ~1.500 linhas de criptografia artesanal nossa, sem auditoria
+# externa, onde um erro é catastrófico. Reimplementar aqui seria escolher o pior
+# dos dois mundos.
+#
+# Regra para este crate: dependência de criptografia só de RustCrypto/arkworks,
+# fixada por versão, e `cargo tree` revisado a cada adição. Nada de conveniência.
+
+
+# Workspace: o crate raiz é a BIBLIOTECA DE CONSENSO e `node/` é o executável do nó
+# (API, P2P, boot). A separação é a fronteira de política de dependências: tokio,
+# axum e serde vivem SÓ no crate de nó — este crate permanece auditável e enxuto,
+# como o cabeçalho acima exige. É a mesma divisão consenso/nó que reth e geth usam.
+[workspace]
+members = ["node", "sdk", "wasm", "core"]
+
+[dependencies]
+# SHA3-256 — a hash do protocolo eav20. RustCrypto, implementação constante em tempo.
+sha3 = "0.10"
+hex = "0.4"
+
+# ECDSA secp256k1 — o ramo clássico do `eav7-hybrid-1`.
+#
+# `k256` (RustCrypto) e não o binding do libsecp256k1: o binding é a implementação
+# mais escrutinada do mundo, mas arrasta toolchain C e compilação condicional para
+# um crate que hoje é 100% Rust puro e cruza-compila sem esforço. `k256` é Rust
+# puro, tempo constante, e é o que Ethereum/Solana usam em produção via alloy e
+# ecdsa. A conta da política já foi feita para o `sha3`; aqui ela dá o mesmo.
+#
+# `pem` traz a leitura de SPKI PEM, que é o formato em que a carteira guarda a
+# chave. `arithmetic` vem por padrão e é o que a verificação usa.
+k256 = { version = "0.14", default-features = false, features = ["ecdsa", "pem", "std"] }
+
+# ML-DSA-44 (FIPS 204) — o ramo pós-quântico.
+#
+# Três candidatos foram medidos contra a política:
+#
+#   • `pqcrypto-dilithium` — DESCARTADO. É Dilithium round-3, NÃO é ML-DSA final;
+#     o FIPS 204 dedica o apêndice D às diferenças e as assinaturas não se
+#     cruzam. Além disso é binding em C do PQClean — toolchain C que o `k256`
+#     acabou de nos poupar. O sucessor `pqcrypto-mldsa` é FIPS 204, mas expõe só
+#     vetores de bytes crus: sem SPKI, teríamos de escrever parser DER à mão.
+#   • `fips204` — DESCARTADO. Rust puro e correto, mas parado desde 0.4.6
+#     (dez/2024), o README ainda se declara experimental, e também não lê SPKI.
+#   • `libcrux-ml-dsa` — verificado formalmente (F*/hax), tecnicamente o mais
+#     forte. Mas está em 0.0.x, sem estabilidade de API, e também só bytes crus.
+#
+# `ml-dsa` do RustCrypto é o único que atende as três exigências ao mesmo tempo:
+# FIPS 204 FINAL, Rust puro, e leitura de SPKI com o OID `id-ml-dsa-44`
+# (2.16.840.1.101.3.4.3.17, RFC 9881) — que é exatamente o que o Node emite. Sem
+# isso, todo o resto seria parser DER artesanal nosso, que é o que a política
+# existe para evitar.
+#
+# PISO DE VERSÃO — não baixar de 0.1.1. GHSA-5x2r-hc65-25f9 / CVE-2026-24850
+# (jan/2026) aceitava índices de hint REPETIDOS na verificação (`<=` no lugar de
+# `<`), tornando a assinatura maleável. O aviso cita nominalmente sistemas que
+# dependem de unicidade de assinatura para dedup — é o nosso caso na mempool.
+# Corrigido no rc.4; 0.1.1 é posterior.
+#
+# Ressalva registrada: como `sha3` e `k256`, NÃO passou por auditoria externa
+# independente (o README do RustCrypto diz isso explicitamente). É a mesma
+# aposta que a política já assume, mas numa primitiva bem mais jovem — daí os
+# vetores de conformidade em `tests/` serem obrigatórios, não opcionais.
+ml-dsa = "0.1.1"
+
+# U256 — a palavra da EAVM.
+#
+# A política acima manda usar crate maduro no lugar de aritmética artesanal, e a
+# palavra de 256 bits é o caso mais agudo disso: TODO opcode aritmético é
+# consenso, e um erro de carry no `mul_mod` ou no deslocamento aritmético não
+# aparece em teste de fumaça — aparece como fork meses depois.
+#
+# Dois candidatos foram medidos:
+#
+#   • `primitive-types` (Parity) — maduro e onipresente, mas a `U256` dele não
+#     expõe `mul_mod`/`add_mod` de 512 bits; ADDMOD e MULMOD teriam de ser
+#     escritos à mão sobre `U512`, que é exatamente a aritmética artesanal que a
+#     política existe para evitar.
+#   • `ruint` (alloy-rs) — ESCOLHIDO. É a palavra do `revm`, o interpretador EVM
+#     dominante em Rust: a mesma aritmética que executa mainnet Ethereum hoje,
+#     com o mesmo perfil de opcodes que precisamos. Traz `add_mod`, `mul_mod`,
+#     `leading_zeros` e a família `wrapping_*` prontas e testadas.
+#
+# `default-features = false` + `alloc`: o padrão é só `std`, e todas as pontes
+# opcionais (rlp, serde, ark-ff, proptest, rand) já vêm desligadas. A árvore
+# resultante é `ruint` + `ruint-macro` — Rust puro, sem `-sys`, sem toolchain C,
+# em linha com a revisão de `cargo tree` registrada abaixo.
+ruint = { version = "1.19", default-features = false, features = ["alloc"] }
+# Precompiles da EAVM (`src/eavm/host.rs`). Aqui a política INVERTE o que o nó em
+# JavaScript fez: lá tudo foi escrito à mão porque npm é hostil; em Rust existem os
+# crates auditados, e usá-los remove ~1.500 linhas de criptografia artesanal nossa.
+#
+# BN254 (precompiles 0x06-0x08, EIP-196/197). `ark-bn254` do arkworks é a
+# implementação de referência do ecossistema Rust — a mesma que os provadores
+# Groth16/PLONK usam. A alternativa era portar as 590 linhas de aritmética de corpo
+# finito da referência, onde um erro não é um teste vermelho: é um pairing FORJÁVEL,
+# isto é, uma prova de conhecimento zero falsa que verifica. `ark-ec`/`ark-ff` vêm
+# junto porque são a curva e o corpo; `ark-bn254` sozinho não expõe `is_on_curve`
+# nem a checagem de subgrupo de G2, que é obrigatória.
+ark-bn254 = "0.5"
+ark-ec = "0.5"
+ark-ff = "0.5"
+
+# RIPEMD-160 (0x03) e SHA-256 (0x02), ambos do RustCrypto. `sha2` na 0.11 e não na
+# 0.10 porque é a versão que o `k256` já arrasta: fixar a 0.10 duplicaria o crate na
+# árvore para nada.
+ripemd = "0.1"
+sha2 = "0.11"
+
+# Inteiro de precisão arbitrária para o `modexp` (0x05), cujos operandos vão a 1024
+# bytes — 8192 bits, muito além do `ruint` de 256 que a VM usa. Não é criptografia e
+# não precisa de tempo constante: os três operandos do `modexp` são públicos por
+# definição (vêm da calldata), e o geth usa `math/big` no mesmo lugar pelo mesmo
+# motivo. `num-bigint` é do rust-num, Rust puro, e JÁ entra na árvore via arkworks,
+# então declará-lo não acrescenta um crate — só torna a dependência explícita.
+num-bigint = "0.4"
+
+# REVISÃO DO `cargo tree` (exigida pela política acima) — 2026-07-20.
+#
+# 50 crates transitivos. NENHUM `-sys`, nenhum `build.rs` compilando C, nenhum
+# bindgen: a árvore inteira cruza-compila sem toolchain nativa, que era a razão
+# de recusar os bindings em C.
+#
+# Fora do guarda-chuva RustCrypto sobram sete, todos infraestrutura de base:
+# `cfg-if`, `typenum`, `num-traits`, `libc`, `getrandom`, `rand_core` e o
+# `rfc6979`. Vale notar que `rfc6979` (nonce determinístico) e `getrandom` só
+# existem no caminho de ASSINATURA do `ecdsa` — este crate apenas verifica, e
+# verificação não consome aleatoriedade. São código morto para nós, mantidos por
+# serem features não-opcionais do `ecdsa`.
+#
+# ADENDO — 2026-07-20, entrada do `ruint` e dos precompiles da EAVM.
+#
+# A árvore foi de 50 para 86 crates. O salto é quase todo do arkworks, que traz a
+# sua própria infraestrutura (`ark-std`, `ark-serialize`, `educe`, `zeroize`,
+# `itertools`, `num-bigint`/`num-integer`, `rand`/`rand_chacha`) além dos derives.
+#
+# O critério da política continua satisfeito e foi reconferido crate a crate:
+# NENHUM `-sys`, nenhum `build.rs` compilando C, nenhum `bindgen` — a árvore inteira
+# segue cruzando-compilando sem toolchain nativa. `rand`/`rand_chacha` entram pelo
+# `ark-std` e servem ao caminho de AMOSTRAGEM (gerar pontos/escalares aleatórios),
+# que este crate nunca exercita: os precompiles só leem pontos da calldata. É código
+# morto para nós, como o `rfc6979` acima, e por isso não introduz não-determinismo.
+#
+# O que a troca compra: ~590 linhas de aritmética de corpo finito e pairing BN254
+# que NÃO precisamos escrever nem auditar, num lugar onde o modo de falha é uma
+# prova de conhecimento zero falsa que verifica em silêncio.
+
+[dev-dependencies]
+# Só para LER os vetores de conformidade nos testes; não entra no binário.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha3 = "0.10"
+hex = "0.4"
+
+[profile.release]
+# Consenso não pode depender de otimização: overflow silencioso em release e pânico
+# em debug seriam duas implementações diferentes do mesmo protocolo.
+overflow-checks = true
+debug-assertions = false
+lto = true
+codegen-units = 1
+
+# Tamanho, para o WASM. O binário do navegador vai pela rede a cada visita, então
+# `strip` e o LTO acima valem por si.
+#
+# `opt-level` fica no PADRÃO (3) de propósito: otimizar para tamanho no workspace
+# inteiro custaria desempenho no nó, e o nó é quem verifica assinatura em lote no
+# boot. Se o WASM precisar de `opt-level = "z"`, a saída é
+# `[profile.release.package.eav7-wasm]` — nunca mudar o perfil de todos.
+strip = true
+
+# Só o crate do navegador otimiza para TAMANHO. Isolado por pacote para não
+# custar desempenho ao nó, que compartilha o mesmo perfil de release.
+[profile.release.package.eav7-wasm]
+opt-level = "z"

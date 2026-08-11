@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- A4: exemplo launchd para eav7-core (macOS).
+     Copie para ~/Library/LaunchAgents/com.eav7.core.plist e ajuste caminhos. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.eav7.core</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/eav7-core</string>
+    <string>run</string>
+    <string>--dir</string>
+    <string>/Users/SEU_USER/.eav7</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/SEU_USER/.eav7</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/SEU_USER/.eav7/core.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/SEU_USER/.eav7/core.err.log</string>
+</dict>
+</plist>

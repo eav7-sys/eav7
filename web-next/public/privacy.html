@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EAV7 Wallet — Política de Privacidade</title>
+<style>
+  body{max-width:760px;margin:40px auto;padding:0 20px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.65;color:#1a1a1a;background:#fff}
+  h1{font-size:26px} h2{font-size:18px;margin-top:32px} code{background:#f2f2f5;padding:1px 5px;border-radius:4px}
+  .muted{color:#666;font-size:14px} a{color:#7A3CFF}
+</style>
+</head>
+<body>
+<h1>Política de Privacidade — EAV7 Wallet</h1>
+<p class="muted">Última atualização: 17 de julho de 2026 · App: <code>com.eav7.wallet</code></p>
+
+<p>O <strong>EAV7 Wallet</strong> é uma carteira de criptomoedas <strong>não-custodial</strong>. Você (e somente você) controla suas chaves. Este documento explica quais dados o aplicativo usa e como.</p>
+
+<h2>1. Nós NÃO coletamos dados pessoais</h2>
+<p>O EAV7 Wallet <strong>não coleta, não armazena em servidores e não compartilha</strong> nenhum dado pessoal. Não há cadastro, login, e-mail, nome, telefone, analytics, rastreadores ou publicidade.</p>
+
+<h2>2. Suas chaves ficam só no seu aparelho</h2>
+<p>A frase de recuperação (12 palavras) e as chaves privadas são <strong>geradas e guardadas exclusivamente no seu dispositivo</strong>, cifradas (PBKDF2 + AES-GCM) e protegidas por senha e, opcionalmente, biometria (via Android Keystore, respaldado por hardware). Essas informações <strong>nunca saem do aparelho</strong> e não são transmitidas a nós nem a terceiros.</p>
+
+<h2>3. Permissões e por quê</h2>
+<ul>
+  <li><strong>Internet</strong> — para consultar saldos, cotações e transmitir transações às redes blockchain, via APIs/RPCs públicos.</li>
+  <li><strong>Câmera</strong> — apenas para ler QR Codes de endereços. As imagens não são gravadas nem enviadas; só o texto lido é usado localmente.</li>
+  <li><strong>Biometria</strong> — apenas para desbloquear o app localmente. Nenhum dado biométrico é acessado ou transmitido.</li>
+</ul>
+
+<h2>4. Serviços de terceiros contatados</h2>
+<p>Para funcionar, o app consulta serviços públicos de blockchain, enviando apenas <strong>endereços públicos e valores</strong> — nunca sua identidade:</p>
+<ul>
+  <li>eavscan.com (rede EAV7)</li>
+  <li>CoinGecko (cotações)</li>
+  <li>RPCs públicos de Ethereum, BNB Chain, Polygon, Base, Arbitrum</li>
+  <li>mempool.space (Bitcoin), Solana RPC e outros RPCs públicos de blockchain</li>
+  <li>LI.FI (roteamento de swap cross-chain)</li>
+</ul>
+<p>Cada serviço tem sua própria política de privacidade. Endereços blockchain são públicos por natureza.</p>
+
+<h2>5. Dados de transação</h2>
+<p>As transações que você assina são registradas nas respectivas blockchains públicas — isso é inerente à tecnologia e está fora do controle do app.</p>
+
+<h2>6. Crianças</h2>
+<p>O app não é destinado a menores de 18 anos.</p>
+
+<h2>7. Alterações</h2>
+<p>Podemos atualizar esta política. A data no topo indica a última revisão.</p>
+
+<h2>8. Contato</h2>
+<p>Dúvidas: <a href="mailto:contato@eav7.com">contato@eav7.com</a></p>
+</body>
+</html>

@@ -1,0 +1,197 @@
+{
+  "namespace": "home_heroExp",
+  "translations": {
+    "pt": {
+      "hero": {
+        "coinAlt": "Moeda EAV7",
+        "titleBefore": "A blockchain EAV7, e",
+        "titleHighlight": "além",
+        "subtitle": "Consenso DPoS de 1 segundo, segurança pós-quântica e uma camada nativa de IA. Explore blocos, transações e validadores em tempo real.",
+        "exploreNetwork": "Explorar a rede",
+        "openWallet": "Abrir carteira",
+        "scrollAriaLabel": "Rolar para o painel"
+      },
+      "vitals": {
+        "height": "Altura",
+        "blockTime": "Bloco",
+        "validators": "Validadores"
+      }
+    },
+    "en": {
+      "hero": {
+        "coinAlt": "EAV7 Coin",
+        "titleBefore": "The EAV7 blockchain, and",
+        "titleHighlight": "beyond",
+        "subtitle": "1-second DPoS consensus, post-quantum security, and a native AI layer. Explore blocks, transactions, and validators in real time.",
+        "exploreNetwork": "Explore the network",
+        "openWallet": "Open wallet",
+        "scrollAriaLabel": "Scroll to the panel"
+      },
+      "vitals": {
+        "height": "Height",
+        "blockTime": "Block",
+        "validators": "Validators"
+      }
+    },
+    "es": {
+      "hero": {
+        "coinAlt": "Moneda EAV7",
+        "titleBefore": "La blockchain EAV7, y",
+        "titleHighlight": "más allá",
+        "subtitle": "Consenso DPoS de 1 segundo, seguridad poscuántica y una capa nativa de IA. Explora bloques, transacciones y validadores en tiempo real.",
+        "exploreNetwork": "Explorar la red",
+        "openWallet": "Abrir billetera",
+        "scrollAriaLabel": "Desplazarse al panel"
+      },
+      "vitals": {
+        "height": "Altura",
+        "blockTime": "Bloque",
+        "validators": "Validadores"
+      }
+    },
+    "zh": {
+      "hero": {
+        "coinAlt": "EAV7 代币",
+        "titleBefore": "EAV7 区块链，以及",
+        "titleHighlight": "更多",
+        "subtitle": "1秒DPoS共识、后量子安全和原生AI层。实时探索区块、交易和验证者。",
+        "exploreNetwork": "探索网络",
+        "openWallet": "打开钱包",
+        "scrollAriaLabel": "滚动到面板"
+      },
+      "vitals": {
+        "height": "高度",
+        "blockTime": "出块时间",
+        "validators": "验证者"
+      }
+    },
+    "fr": {
+      "hero": {
+        "coinAlt": "Pièce EAV7",
+        "titleBefore": "La blockchain EAV7, et",
+        "titleHighlight": "au-delà",
+        "subtitle": "Consensus DPoS d'1 seconde, sécurité post-quantique et une couche IA native. Explorez blocs, transactions et validateurs en temps réel.",
+        "exploreNetwork": "Explorer le réseau",
+        "openWallet": "Ouvrir le portefeuille",
+        "scrollAriaLabel": "Défiler vers le panneau"
+      },
+      "vitals": {
+        "height": "Hauteur",
+        "blockTime": "Bloc",
+        "validators": "Validateurs"
+      }
+    },
+    "de": {
+      "hero": {
+        "coinAlt": "EAV7-Münze",
+        "titleBefore": "Die EAV7-Blockchain, und",
+        "titleHighlight": "darüber hinaus",
+        "subtitle": "1-Sekunden-DPoS-Konsens, postquantensichere Verschlüsselung und eine native KI-Ebene. Erkunde Blöcke, Transaktionen und Validatoren in Echtzeit.",
+        "exploreNetwork": "Netzwerk erkunden",
+        "openWallet": "Wallet öffnen",
+        "scrollAriaLabel": "Zum Bereich scrollen"
+      },
+      "vitals": {
+        "height": "Höhe",
+        "blockTime": "Block",
+        "validators": "Validatoren"
+      }
+    },
+    "ja": {
+      "hero": {
+        "coinAlt": "EAV7コイン",
+        "titleBefore": "EAV7ブロックチェーン、そして",
+        "titleHighlight": "その先へ",
+        "subtitle": "1秒のDPoSコンセンサス、耐量子セキュリティ、ネイティブAIレイヤー。ブロック、トランザクション、バリデーターをリアルタイムで探索できます。",
+        "exploreNetwork": "ネットワークを探索",
+        "openWallet": "ウォレットを開く",
+        "scrollAriaLabel": "パネルへスクロール"
+      },
+      "vitals": {
+        "height": "ブロック高",
+        "blockTime": "ブロック時間",
+        "validators": "バリデーター"
+      }
+    },
+    "ru": {
+      "hero": {
+        "coinAlt": "Монета EAV7",
+        "titleBefore": "Блокчейн EAV7, и",
+        "titleHighlight": "не только",
+        "subtitle": "Консенсус DPoS с блоком в 1 секунду, постквантовая безопасность и встроенный слой ИИ. Изучайте блоки, транзакции и валидаторов в реальном времени.",
+        "exploreNetwork": "Исследовать сеть",
+        "openWallet": "Открыть кошелёк",
+        "scrollAriaLabel": "Прокрутить к панели"
+      },
+      "vitals": {
+        "height": "Высота",
+        "blockTime": "Блок",
+        "validators": "Валидаторы"
+      }
+    },
+    "ar": {
+      "hero": {
+        "coinAlt": "عملة EAV7",
+        "titleBefore": "بلوكتشين EAV7، وما",
+        "titleHighlight": "بعده",
+        "subtitle": "إجماع DPoS بزمن ثانية واحدة، وأمان مقاوم للحوسبة الكمية، وطبقة ذكاء اصطناعي أصلية. استكشف الكتل والمعاملات والمدققين في الوقت الفعلي.",
+        "exploreNetwork": "استكشاف الشبكة",
+        "openWallet": "فتح المحفظة",
+        "scrollAriaLabel": "التمرير إلى اللوحة"
+      },
+      "vitals": {
+        "height": "الارتفاع",
+        "blockTime": "الكتلة",
+        "validators": "المدققون"
+      }
+    },
+    "hi": {
+      "hero": {
+        "coinAlt": "EAV7 सिक्का",
+        "titleBefore": "EAV7 ब्लॉकचेन, और",
+        "titleHighlight": "उससे भी आगे",
+        "subtitle": "1-सेकंड DPoS सर्वसम्मति, पोस्ट-क्वांटम सुरक्षा और एक नेटिव AI परत। ब्लॉक, लेनदेन और वैलिडेटर को रीयल-टाइम में एक्सप्लोर करें।",
+        "exploreNetwork": "नेटवर्क एक्सप्लोर करें",
+        "openWallet": "वॉलेट खोलें",
+        "scrollAriaLabel": "पैनल पर स्क्रॉल करें"
+      },
+      "vitals": {
+        "height": "ऊंचाई",
+        "blockTime": "ब्लॉक",
+        "validators": "वैलिडेटर"
+      }
+    },
+    "ko": {
+      "hero": {
+        "coinAlt": "EAV7 코인",
+        "titleBefore": "EAV7 블록체인, 그리고",
+        "titleHighlight": "그 너머",
+        "subtitle": "1초 DPoS 합의, 양자 내성 보안, 네이티브 AI 레이어. 블록, 트랜잭션, 검증자를 실시간으로 탐색하세요.",
+        "exploreNetwork": "네트워크 탐색",
+        "openWallet": "지갑 열기",
+        "scrollAriaLabel": "패널로 스크롤"
+      },
+      "vitals": {
+        "height": "높이",
+        "blockTime": "블록",
+        "validators": "검증자"
+      }
+    },
+    "it": {
+      "hero": {
+        "coinAlt": "Moneta EAV7",
+        "titleBefore": "La blockchain EAV7, e",
+        "titleHighlight": "oltre",
+        "subtitle": "Consenso DPoS di 1 secondo, sicurezza post-quantistica e un livello IA nativo. Esplora blocchi, transazioni e validatori in tempo reale.",
+        "exploreNetwork": "Esplora la rete",
+        "openWallet": "Apri il wallet",
+        "scrollAriaLabel": "Scorri al pannello"
+      },
+      "vitals": {
+        "height": "Altezza",
+        "blockTime": "Blocco",
+        "validators": "Validatori"
+      }
+    }
+  }
+}

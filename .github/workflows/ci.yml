@@ -1,0 +1,117 @@
+# CI — Core Rust + explorador Next
+name: ci
+
+on:
+  push:
+    branches: [main, master, security-audit-fixes]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: cargo test + clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: test
+        working-directory: rust
+        run: cargo test --workspace
+      - name: clippy
+        working-directory: rust
+        run: |
+          set -o pipefail
+          if cargo clippy --workspace --all-targets 2>&1 | tee /tmp/clippy.log | grep -qE '^(warning|error)'; then
+            cat /tmp/clippy.log
+            exit 1
+          fi
+
+  web-next:
+    name: Next build + i18n + wasm
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-next
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-next/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: npm ci
+      - name: merge-i18n e falhar se generated.ts divergiu
+        run: |
+          node scripts/merge-i18n.mjs
+          git diff --exit-code -- src/i18n/messages/generated.ts
+      - name: build
+        env:
+          NEXT_PUBLIC_USE_MOCK: "false"
+        run: npm run build
+
+  e2e-smoke:
+    name: Playwright smoke (mock)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-next
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-next/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: npm ci
+      - name: build wasm (wallet)
+        run: npm run wasm:build
+      - name: instalar Chromium
+        run: npx playwright install --with-deps chromium
+      - name: smoke 6 rotas
+        env:
+          NEXT_PUBLIC_USE_MOCK: "true"
+        run: npm run test:e2e
+
+  verificar:
+    name: eav7-verificar
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/security-audit-fixes')
+    runs-on: ubuntu-latest
+    needs: [rust]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: verificação
+        run: bash bin/eav7-verificar.sh

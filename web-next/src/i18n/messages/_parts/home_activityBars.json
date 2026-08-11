@@ -1,0 +1,53 @@
+{
+  "namespace": "home_activityBars",
+  "translations": {
+    "pt": {
+      "ariaLabel": "Transações por bloco",
+      "txsCount": "{n} txs"
+    },
+    "en": {
+      "ariaLabel": "Transactions per block",
+      "txsCount": "{n} txs"
+    },
+    "es": {
+      "ariaLabel": "Transacciones por bloque",
+      "txsCount": "{n} txs"
+    },
+    "zh": {
+      "ariaLabel": "每个区块的交易数",
+      "txsCount": "{n} 笔交易"
+    },
+    "fr": {
+      "ariaLabel": "Transactions par bloc",
+      "txsCount": "{n} tx"
+    },
+    "de": {
+      "ariaLabel": "Transaktionen pro Block",
+      "txsCount": "{n} Tx"
+    },
+    "ja": {
+      "ariaLabel": "ブロックごとのトランザクション数",
+      "txsCount": "{n} 件のトランザクション"
+    },
+    "ru": {
+      "ariaLabel": "Транзакции по блокам",
+      "txsCount": "{n} тр."
+    },
+    "ar": {
+      "ariaLabel": "المعاملات لكل كتلة",
+      "txsCount": "{n} معاملة"
+    },
+    "hi": {
+      "ariaLabel": "प्रति ब्लॉक लेनदेन",
+      "txsCount": "{n} लेनदेन"
+    },
+    "ko": {
+      "ariaLabel": "블록당 거래 수",
+      "txsCount": "{n}건의 거래"
+    },
+    "it": {
+      "ariaLabel": "Transazioni per blocco",
+      "txsCount": "{n} tx"
+    }
+  }
+}

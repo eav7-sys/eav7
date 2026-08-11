@@ -1,0 +1,17 @@
+{
+  "namespace": "home_slotsGauge",
+  "translations": {
+    "pt": { "ariaValueOf": "{value} de {max}" },
+    "en": { "ariaValueOf": "{value} of {max}" },
+    "es": { "ariaValueOf": "{value} de {max}" },
+    "zh": { "ariaValueOf": "{value} / {max}" },
+    "fr": { "ariaValueOf": "{value} sur {max}" },
+    "de": { "ariaValueOf": "{value} von {max}" },
+    "ja": { "ariaValueOf": "{max}中{value}" },
+    "ru": { "ariaValueOf": "{value} из {max}" },
+    "ar": { "ariaValueOf": "{value} من {max}" },
+    "hi": { "ariaValueOf": "{max} में से {value}" },
+    "ko": { "ariaValueOf": "{max}중 {value}" },
+    "it": { "ariaValueOf": "{value} su {max}" }
+  }
+}

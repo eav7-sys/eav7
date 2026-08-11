@@ -1,0 +1,89 @@
+{
+  "namespace": "home_walletCta",
+  "translations": {
+    "pt": {
+      "eyebrow": "comece agora",
+      "title": "Explore a rede EAV7 agora",
+      "description": "Sua carteira é gerada e assinada no navegador com proteção pós-quântica — nunca sai do seu dispositivo. Envie, faça stake e minere direto pela web.",
+      "createWallet": "Criar carteira",
+      "exploreNetwork": "Explorar a rede"
+    },
+    "en": {
+      "eyebrow": "get started now",
+      "title": "Explore the EAV7 network now",
+      "description": "Your wallet is generated and signed in the browser with post-quantum protection — it never leaves your device. Send, stake, and mine right from the web.",
+      "createWallet": "Create wallet",
+      "exploreNetwork": "Explore the network"
+    },
+    "es": {
+      "eyebrow": "empieza ahora",
+      "title": "Explora la red EAV7 ahora",
+      "description": "Tu billetera se genera y firma en el navegador con protección post-cuántica — nunca sale de tu dispositivo. Envía, haz staking y mina directo desde la web.",
+      "createWallet": "Crear billetera",
+      "exploreNetwork": "Explorar la red"
+    },
+    "zh": {
+      "eyebrow": "立即开始",
+      "title": "立即探索 EAV7 网络",
+      "description": "您的钱包在浏览器中生成并签名,具备后量子保护——永远不会离开您的设备。直接通过网页发送、质押和挖矿。",
+      "createWallet": "创建钱包",
+      "exploreNetwork": "探索网络"
+    },
+    "fr": {
+      "eyebrow": "commencez maintenant",
+      "title": "Explorez le réseau EAV7 maintenant",
+      "description": "Votre portefeuille est généré et signé dans le navigateur avec une protection post-quantique — il ne quitte jamais votre appareil. Envoyez, misez et minez directement depuis le web.",
+      "createWallet": "Créer un portefeuille",
+      "exploreNetwork": "Explorer le réseau"
+    },
+    "de": {
+      "eyebrow": "jetzt loslegen",
+      "title": "Entdecke jetzt das EAV7-Netzwerk",
+      "description": "Deine Wallet wird im Browser mit postquantensicherem Schutz erstellt und signiert — sie verlässt niemals dein Gerät. Sende, staken und mine direkt über das Web.",
+      "createWallet": "Wallet erstellen",
+      "exploreNetwork": "Netzwerk erkunden"
+    },
+    "ja": {
+      "eyebrow": "今すぐ始める",
+      "title": "今すぐEAV7ネットワークを探索",
+      "description": "ウォレットはブラウザ内でポスト量子保護のもと生成・署名され、デバイスから外部に出ることはありません。送金、ステーキング、マイニングもすべてウェブから直接行えます。",
+      "createWallet": "ウォレットを作成",
+      "exploreNetwork": "ネットワークを探索"
+    },
+    "ru": {
+      "eyebrow": "начните прямо сейчас",
+      "title": "Исследуйте сеть EAV7 прямо сейчас",
+      "description": "Ваш кошелёк создаётся и подписывается в браузере с постквантовой защитой — он никогда не покидает ваше устройство. Отправляйте, стейкайте и майните прямо через веб.",
+      "createWallet": "Создать кошелёк",
+      "exploreNetwork": "Исследовать сеть"
+    },
+    "ar": {
+      "eyebrow": "ابدأ الآن",
+      "title": "استكشف شبكة EAV7 الآن",
+      "description": "يتم إنشاء محفظتك وتوقيعها في المتصفح بحماية ما بعد الكم — ولا تغادر جهازك أبدًا. أرسل، وقم بالمشاركة (Staking)، وقم بالتعدين مباشرة عبر الويب.",
+      "createWallet": "إنشاء محفظة",
+      "exploreNetwork": "استكشاف الشبكة"
+    },
+    "hi": {
+      "eyebrow": "अभी शुरू करें",
+      "title": "अभी EAV7 नेटवर्क एक्सप्लोर करें",
+      "description": "आपका वॉलेट ब्राउज़र में पोस्ट-क्वांटम सुरक्षा के साथ जनरेट और साइन किया जाता है — यह कभी भी आपकी डिवाइस से बाहर नहीं जाता। सीधे वेब से भेजें, स्टेक करें और माइन करें।",
+      "createWallet": "वॉलेट बनाएं",
+      "exploreNetwork": "नेटवर्क एक्सप्लोर करें"
+    },
+    "ko": {
+      "eyebrow": "지금 시작하기",
+      "title": "지금 EAV7 네트워크를 살펴보세요",
+      "description": "지갑은 브라우저에서 포스트 퀀텀 보호 기능으로 생성되고 서명되며, 기기를 절대 벗어나지 않습니다. 웹에서 바로 전송, 스테이킹, 채굴을 할 수 있습니다.",
+      "createWallet": "지갑 생성",
+      "exploreNetwork": "네트워크 탐색"
+    },
+    "it": {
+      "eyebrow": "inizia ora",
+      "title": "Esplora subito la rete EAV7",
+      "description": "Il tuo wallet viene generato e firmato nel browser con protezione post-quantistica — non lascia mai il tuo dispositivo. Invia, fai staking e mina direttamente dal web.",
+      "createWallet": "Crea wallet",
+      "exploreNetwork": "Esplora la rete"
+    }
+  }
+}

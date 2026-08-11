@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "purpose": "private-sale-treasury",
+  "note": "Only PUBLIC receive addresses. Never put seeds or private keys here.",
+  "eav7": {
+    "address": "E7F2906EA4B2CD23D20180C8E813F2D126",
+    "role": "native-foundation-or-ops"
+  },
+  "rails": [
+    {
+      "id": "eth-usdt",
+      "chain": "ethereum",
+      "chainId": 1,
+      "asset": "USDT",
+      "standard": "ERC-20",
+      "token": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+      "decimals": 6,
+      "receive": "0x2ddd408bbd8c84fb64ac950f578e9297e7002a35",
+      "explorer": "https://etherscan.io/address/0x2ddd408bbd8c84fb64ac950f578e9297e7002a35"
+    },
+    {
+      "id": "eth-usdc",
+      "chain": "ethereum",
+      "chainId": 1,
+      "asset": "USDC",
+      "standard": "ERC-20",
+      "token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "decimals": 6,
+      "receive": "0x2ddd408bbd8c84fb64ac950f578e9297e7002a35",
+      "explorer": "https://etherscan.io/address/0x2ddd408bbd8c84fb64ac950f578e9297e7002a35"
+    },
+    {
+      "id": "bsc-usdt",
+      "chain": "bsc",
+      "chainId": 56,
+      "asset": "USDT",
+      "standard": "BEP-20",
+      "token": "0x55d398326f99059fF775485246999027B3197955",
+      "decimals": 18,
+      "receive": "0x2ddd408bbd8c84fb64ac950f578e9297e7002a35",
+      "explorer": "https://bscscan.com/address/0x2ddd408bbd8c84fb64ac950f578e9297e7002a35",
+      "note": "Same 0x key as Ethereum — confirm the account is imported on BSC in your wallet."
+    },
+    {
+      "id": "bsc-usdc",
+      "chain": "bsc",
+      "chainId": 56,
+      "asset": "USDC",
+      "standard": "BEP-20",
+      "token": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+      "decimals": 18,
+      "receive": "0x2ddd408bbd8c84fb64ac950f578e9297e7002a35",
+      "explorer": "https://bscscan.com/address/0x2ddd408bbd8c84fb64ac950f578e9297e7002a35"
+    },
+    {
+      "id": "tron-usdt",
+      "chain": "tron",
+      "asset": "USDT",
+      "standard": "TRC-20",
+      "token": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+      "decimals": 6,
+      "receive": "TMymUyjrF1aumbr7FYGnfJdca1dkndg6qj",
+      "explorer": "https://tronscan.org/#/address/TMymUyjrF1aumbr7FYGnfJdca1dkndg6qj"
+    },
+    {
+      "id": "tron-usdc",
+      "chain": "tron",
+      "asset": "USDC",
+      "standard": "TRC-20",
+      "token": "TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8",
+      "decimals": 6,
+      "receive": "TMymUyjrF1aumbr7FYGnfJdca1dkndg6qj",
+      "explorer": "https://tronscan.org/#/address/TMymUyjrF1aumbr7FYGnfJdca1dkndg6qj"
+    },
+    {
+      "id": "btc",
+      "chain": "bitcoin",
+      "asset": "BTC",
+      "standard": "native",
+      "receive": "bc1q0h3d69d03c7wwaul97xq322l64c0lag2nddy3j",
+      "explorer": "https://mempool.space/address/bc1q0h3d69d03c7wwaul97xq322l64c0lag2nddy3j"
+    },
+    {
+      "id": "sol-usdt",
+      "chain": "solana",
+      "asset": "USDT",
+      "standard": "SPL",
+      "token": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+      "decimals": 6,
+      "receive": "E1fuh28E9nFkvWEpUYujvnWChB7modBhitBP4fqTyedt",
+      "explorer": "https://solscan.io/account/E1fuh28E9nFkvWEpUYujvnWChB7modBhitBP4fqTyedt"
+    },
+    {
+      "id": "sol-usdc",
+      "chain": "solana",
+      "asset": "USDC",
+      "standard": "SPL",
+      "token": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "decimals": 6,
+      "receive": "E1fuh28E9nFkvWEpUYujvnWChB7modBhitBP4fqTyedt",
+      "explorer": "https://solscan.io/account/E1fuh28E9nFkvWEpUYujvnWChB7modBhitBP4fqTyedt"
+    }
+  ],
+  "flow": {
+    "payment": "Buyer creates intent → pays exact amount on chosen rail to treasury address.",
+    "confirm": "Relayer watches ETH/BSC/TRON (auto); BTC/Solana via confirm assistido.",
+    "delivery": "On confirmation, relayer calls SaleVault.grant — vesting created without founder signature.",
+    "release": "Buyer calls release() after cliff.",
+    "listing": "Treasury USDT/USDC/BTC funds exchange listing."
+  }
+}

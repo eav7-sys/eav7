@@ -1,0 +1,186 @@
+{
+  "cases": [
+    {
+      "input": "",
+      "kind": "eavHash",
+      "output": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+    },
+    {
+      "input": "eav7",
+      "kind": "eavHash",
+      "output": "f5fe121bbb865b0ee1d45cb0f8485e84d2007a61e8805938c27e0aa449eaf794"
+    },
+    {
+      "input": "a",
+      "kind": "eavHash",
+      "output": "80084bf2fba02475726feb2cab2d8215eab14bc6bdd8bfb2c8151257032ecd8b"
+    },
+    {
+      "input": "abc",
+      "kind": "eavHash",
+      "output": "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"
+    },
+    {
+      "input": "EAV7-EMPTY-ROOT",
+      "kind": "eavHash",
+      "output": "5739d2e1eb3cb0fec784251b040870c908d09c4e16a025403f1d717d518c57f1"
+    },
+    {
+      "input": [
+        "a",
+        "b",
+        "c"
+      ],
+      "kind": "eavHash.multipart",
+      "note": "partes são concatenadas na ordem, sem separador",
+      "output": "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"
+    },
+    {
+      "input": [],
+      "kind": "merkleRoot",
+      "note": "lista vazia tem raiz própria, não zero",
+      "output": "5739d2e1eb3cb0fec784251b040870c908d09c4e16a025403f1d717d518c57f1"
+    },
+    {
+      "input": [
+        "bffe674cc411a7e893d863ee3668ed6d338d699f61b1e3161666ce97e45de1cc"
+      ],
+      "kind": "merkleRoot",
+      "output": "bffe674cc411a7e893d863ee3668ed6d338d699f61b1e3161666ce97e45de1cc"
+    },
+    {
+      "input": [
+        "bffe674cc411a7e893d863ee3668ed6d338d699f61b1e3161666ce97e45de1cc",
+        "93acb4d51de7d17ad052a936cf757b8a0362652c082a0d40d090b96b9fc946e4"
+      ],
+      "kind": "merkleRoot",
+      "output": "42bc902dd1864010062d277a677c2e4a44883119d70c16f21af85c39c9e57940"
+    },
+    {
+      "input": [
+        "bffe674cc411a7e893d863ee3668ed6d338d699f61b1e3161666ce97e45de1cc",
+        "93acb4d51de7d17ad052a936cf757b8a0362652c082a0d40d090b96b9fc946e4",
+        "19f52d6acce9950a5952b24ffcfb0bc5eff463210f648a5cbc4ef95316deb810"
+      ],
+      "kind": "merkleRoot",
+      "note": "quantidade ímpar: o último pareia consigo mesmo",
+      "output": "74993c98d7d63267828dcbf24aef986417d0dc648643a6c2e65a272c47fb5cdc"
+    },
+    {
+      "input": [
+        "bffe674cc411a7e893d863ee3668ed6d338d699f61b1e3161666ce97e45de1cc",
+        "93acb4d51de7d17ad052a936cf757b8a0362652c082a0d40d090b96b9fc946e4",
+        "19f52d6acce9950a5952b24ffcfb0bc5eff463210f648a5cbc4ef95316deb810",
+        "954ce34864e01ef929dcc489d1ff529c22f4675d29de2819588df8f679cfbb82"
+      ],
+      "kind": "merkleRoot",
+      "output": "4cc2a8d0ffd262de310de93b3a919ea3e32683e00cef8005adaec1fa548d76c4"
+    },
+    {
+      "input": [
+        "bffe674cc411a7e893d863ee3668ed6d338d699f61b1e3161666ce97e45de1cc",
+        "93acb4d51de7d17ad052a936cf757b8a0362652c082a0d40d090b96b9fc946e4",
+        "19f52d6acce9950a5952b24ffcfb0bc5eff463210f648a5cbc4ef95316deb810",
+        "954ce34864e01ef929dcc489d1ff529c22f4675d29de2819588df8f679cfbb82",
+        "c01a82347ccd0e2c49a726bdb9caf459a41ee6a50673e9698e6eb877a0e59d83"
+      ],
+      "kind": "merkleRoot",
+      "note": "quantidade ímpar: o último pareia consigo mesmo",
+      "output": "92202b416921c6ad4fd1a792a2e2b585e4914235e3b2bc85d1ab92aa0b845371"
+    },
+    {
+      "input": [
+        "bffe674cc411a7e893d863ee3668ed6d338d699f61b1e3161666ce97e45de1cc",
+        "93acb4d51de7d17ad052a936cf757b8a0362652c082a0d40d090b96b9fc946e4",
+        "19f52d6acce9950a5952b24ffcfb0bc5eff463210f648a5cbc4ef95316deb810",
+        "954ce34864e01ef929dcc489d1ff529c22f4675d29de2819588df8f679cfbb82",
+        "c01a82347ccd0e2c49a726bdb9caf459a41ee6a50673e9698e6eb877a0e59d83",
+        "38b32e4c7595369dfe35c81793b3d6b79e42e835450e5f872d3ce4866f01f97e",
+        "a527d1e235d50236f8fde46ea4196e2df02bfd3413e212abbac7c9c43e65b6f9",
+        "914194585ec88ae6a6f221231ef38ee202bd544c1806a2ab7b5b7aab751398b3"
+      ],
+      "kind": "merkleRoot",
+      "output": "e74925c855ed0e6a6cf8874bedeb01c2b3a6b5fa608f50485fe2c15c2b07d306"
+    },
+    {
+      "input": "VETOR:alice",
+      "kind": "deriveAddressFrom",
+      "note": "E7 + 28 hex do SHA3 + 4 hex de checksum",
+      "output": "E7D36986E47AC3768974578F7CCD3123AE"
+    },
+    {
+      "input": "VETOR:bob",
+      "kind": "deriveAddressFrom",
+      "note": "E7 + 28 hex do SHA3 + 4 hex de checksum",
+      "output": "E74FE1240972091DE7BE392072067581DC"
+    },
+    {
+      "input": "VETOR:carol",
+      "kind": "deriveAddressFrom",
+      "note": "E7 + 28 hex do SHA3 + 4 hex de checksum",
+      "output": "E72C3EA79EBF7AE5B3936344D4122D87A9"
+    },
+    {
+      "input": "VETOR:",
+      "kind": "deriveAddressFrom",
+      "note": "E7 + 28 hex do SHA3 + 4 hex de checksum",
+      "output": "E75344E8F8552E307A3B52D8635639DBD9"
+    },
+    {
+      "input": "E7D36986E47AC3768974578F7CCD3123AE",
+      "kind": "isValidAddress",
+      "output": true
+    },
+    {
+      "input": "E74FE1240972091DE7BE392072067581DC",
+      "kind": "isValidAddress",
+      "output": true
+    },
+    {
+      "input": "E700000000000000000000000000000000",
+      "kind": "isValidAddress",
+      "output": false
+    },
+    {
+      "input": "E7D36986E47AC3768974578F7CCD3123A0",
+      "kind": "isValidAddress",
+      "output": false
+    },
+    {
+      "input": "e7d36986e47ac3768974578f7ccd3123ae",
+      "kind": "isValidAddress",
+      "output": false
+    },
+    {
+      "input": "",
+      "kind": "isValidAddress",
+      "output": false
+    },
+    {
+      "input": "741efa311f97686956946758e0d95f70f11ff2da4f2feb7c54314f44134ac49f",
+      "kind": "isValidHash",
+      "output": true
+    },
+    {
+      "input": "741EFA311F97686956946758E0D95F70F11FF2DA4F2FEB7C54314F44134AC49F",
+      "kind": "isValidHash",
+      "output": false
+    },
+    {
+      "input": "0000000000000000000000000000000000000000000000000000000000000000",
+      "kind": "isValidHash",
+      "output": true
+    },
+    {
+      "input": "000000000000000000000000000000000000000000000000000000000000000",
+      "kind": "isValidHash",
+      "output": false
+    },
+    {
+      "input": "E700000000000000000000000000000000000000000000000000000000000000",
+      "kind": "isValidHash",
+      "output": false
+    }
+  ],
+  "description": "Primitivas de hash e derivação de endereço. O hash é SHA3-256 COMPLETA, 64 hex minúsculos, SEM prefixo — o prefixo E7 pertence ao endereço, não à hash."
+}

@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "goal": "binance-spot-long-term",
+  "bucket": {
+    "name": "public-distribution",
+    "shareOfGenesis": 0.45,
+    "tokensEav7": "45000000000",
+    "vesting": "liquid-at-tge",
+    "genesisDestination": "PublicVault",
+    "neverSendTo": ["foundation-eoa", "personal-wallet"]
+  },
+  "partition": {
+    "lbp": {
+      "id": "lbp",
+      "shareOfPublic": 0.3,
+      "tokensEav7": "13500000000",
+      "mode": "dutch-or-lbp",
+      "durationHours": 72,
+      "priceAnchor": "align-private-last-tiers",
+      "priceHintUsd": { "start": "0.008", "end": "0.015" },
+      "delivery": "liquid-immediate",
+      "paymentRails": "reuse:contracts/sale/payment-rails.json",
+      "automation": [
+        "open on admin/multisig once",
+        "buyers pay → relayer confirm → PublicVault.grant liquid",
+        "tier/scarcity optional same engine as private",
+        "on deadline: auto finalize — no human per-buyer"
+      ]
+    },
+    "lpSeed": {
+      "id": "lp-canonical",
+      "shareOfPublic": 0.5,
+      "tokensEav7": "22500000000",
+      "pair": "EAV7/USDT",
+      "venues": ["single-canonical-amm-first"],
+      "stableSide": "from-private-sale-treasury",
+      "lpLockMonths": 18,
+      "automation": [
+        "at LBP end: PublicVault.finalizeToLp() moves leftovers + lpSeed tokens",
+        "seed AMM pool",
+        "LP tokens → TimelockVault (no early withdraw)",
+        "site Trade link points only to this pool"
+      ]
+    },
+    "cexBuffer": {
+      "id": "mm-cex-buffer",
+      "shareOfPublic": 0.15,
+      "tokensEav7": "6750000000",
+      "release": "manual-ops-after-dex-gate",
+      "automation": [
+        "held in BufferVault",
+        "no auto-dump",
+        "ops withdraw only with multisig + checklist (CEX deal signed)"
+      ],
+      "venueLadder": [
+        "MEXC-or-Gate",
+        "Bitget-or-KuCoin",
+        "Bybit-or-OKX",
+        "Binance-spot"
+      ]
+    },
+    "incentives": {
+      "id": "incentives",
+      "shareOfPublic": 0.05,
+      "tokensEav7": "2250000000",
+      "automation": [
+        "RewardsDistributor drip by epoch",
+        "no discretionary airdrop from EOA"
+      ]
+    }
+  },
+  "cashflow": {
+    "lbpAndPublicSalePayments": "treasury-rails (same receive addresses as private)",
+    "dexSwaps": "stay-in-amm-pool",
+    "privateSaleStables": "fund-lp-stable-side + mm-inventory",
+    "foundationBucket3025": "untouchable-until-12m-cliff"
+  },
+  "stateMachine": [
+    {
+      "id": "S0_GENESIS",
+      "auto": true,
+      "action": "mint/allocate 45B to PublicVault + BufferVault + Incentives"
+    },
+    {
+      "id": "S1_PRIVATE_LIVE",
+      "auto": true,
+      "action": "private SaleVault+relayer running; accumulate USDT/BTC"
+    },
+    {
+      "id": "S2_OPEN_LBP",
+      "auto": false,
+      "humanOnce": "multisig openLbp(deadlineBlock)",
+      "then": "fully autonomous buys"
+    },
+    {
+      "id": "S3_LBP_LIVE",
+      "auto": true,
+      "action": "intent→pay→grant liquid; optional public tiers"
+    },
+    {
+      "id": "S4_FINALIZE_LP",
+      "auto": true,
+      "trigger": "block.number > lbpDeadline OR sold-out",
+      "action": "finalizeToLp → TimelockLpSeeder (escrow; trySeedAmm when router set)"
+    },
+    {
+      "id": "S5_DEX_LISTED",
+      "auto": true,
+      "action": "permissionless swaps 24/7"
+    },
+    {
+      "id": "S6_CEX_LADDER",
+      "auto": false,
+      "human": "per venue deal; pull from BufferVault",
+      "order": ["tracker CG/CMC", "tier2 CEX", "tier1 CEX", "Binance"]
+    }
+  ],
+  "humanActionsAllowed": [
+    "openLbp once",
+    "pause emergency",
+    "cex buffer withdraw with multisig after gates",
+    "set AMM router address once before finalize"
+  ],
+  "humanActionsForbidden": [
+    "per-buyer grant from foundation EOA",
+    "send public bucket to personal wallet",
+    "use foundation vesting tokens for listing before cliff",
+    "pull LP before lock ends"
+  ],
+  "relayer": {
+    "reusePrivateRelayer": true,
+    "grantTarget": "PublicVault",
+    "liquid": true,
+    "cliffBlocks": 0,
+    "durationBlocks": 0
+  },
+  "successGates": {
+    "beforeFirstCex": [
+      "canonical pool live",
+      "lp locked",
+      "30d organic dex volume",
+      "coingecko+cmc listed"
+    ],
+    "beforeBinance": [
+      "1-2 smaller cex live",
+      "mm professional",
+      "audits+dossier",
+      "no major incident 90d"
+    ]
+  },
+  "references": {
+    "privateTiers": "contracts/sale/auto-delivery.json",
+    "rails": "contracts/sale/payment-rails.json",
+    "roadmapVenues": "canvas venues-escada-binance",
+    "roadmapBinance": "canvas roadmap-binance"
+  }
+}

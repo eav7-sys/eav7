@@ -1,0 +1,39 @@
+{
+  "namespace": "page_nfts",
+  "translations": {
+    "pt": {
+      "metaTitle": "NFTs EAV721 · EAV7 Scan",
+      "eyebrow": "padrão EAV721",
+      "title": "NFTs",
+      "subtitle": "Coleções EAV721 (equivalente ao TRC721) emitidas na rede EAV7",
+      "colCollection": "Coleção",
+      "colSymbol": "Símbolo",
+      "colSupply": "Emitidos",
+      "colOwner": "Criador",
+      "empty": "Nenhuma coleção EAV721 emitida ainda",
+      "tokensTitle": "Tokens",
+      "colTokenId": "Token",
+      "colTokenOwner": "Dono",
+      "colUri": "URI",
+      "supplyLabel": "emitidos",
+      "back": "todas as coleções"
+    },
+    "en": {
+      "metaTitle": "EAV721 NFTs · EAV7 Scan",
+      "eyebrow": "EAV721 standard",
+      "title": "NFTs",
+      "subtitle": "EAV721 collections (TRC721 equivalent) minted on the EAV7 network",
+      "colCollection": "Collection",
+      "colSymbol": "Symbol",
+      "colSupply": "Minted",
+      "colOwner": "Creator",
+      "empty": "No EAV721 collection minted yet",
+      "tokensTitle": "Tokens",
+      "colTokenId": "Token",
+      "colTokenOwner": "Owner",
+      "colUri": "URI",
+      "supplyLabel": "minted",
+      "back": "all collections"
+    }
+  }
+}

@@ -1,0 +1,91 @@
+[package]
+name = "eav7-node"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+description = "Nó EAV7 — camada de rede em volta da biblioteca de consenso: API HTTP, P2P, gateway, guarda e boot."
+license = "MIT"
+
+# POLÍTICA DE DEPENDÊNCIAS deste crate — diferente da lib de consenso DE PROPÓSITO.
+#
+# A lib `eav7` é o que precisa de auditoria linha a linha: lá, dependência só de
+# criptografia consagrada. AQUI é a casca de I/O — servidor HTTP, sockets, JSON de
+# APRESENTAÇÃO. O ecossistema padrão (tokio/axum/serde) é a escolha nativa: maduro,
+# auditado pela indústria inteira, e nada dele toca consenso. A fronteira que importa:
+#
+#   • JSON DE CONSENSO (payload assinado, bloco em disco, folha de stateRoot) usa o
+#     parser/escritor CANÔNICO da lib `eav7` (`transaction::parse_json`/
+#     `canonical_json`) — byte a byte igual à referência, sem float.
+#   • JSON DE APRESENTAÇÃO (respostas da API) usa `serde_json` — nunca é hasheado,
+#     nunca é assinado, nunca volta para o estado.
+#
+# Misturar os dois seria o bug; mantê-los em crates separados torna a mistura
+# visível no `use`.
+
+[dependencies]
+eav7 = { path = ".." }
+
+# A carteira (geração, carregamento e assinatura) vive no SDK: é trabalho de
+# CLIENTE, e o nó é só mais um cliente quando assina bloco ou transação. Uma
+# cópia aqui seria a segunda versão da mesma coisa — e é justamente a regra que
+# decide o que é assinado.
+eav7-sdk = { path = "../sdk" }
+
+# Runtime assíncrono + servidor HTTP. Decisão de projeto registrada (2026-07-20):
+# tokio+axum, o padrão do ecossistema. O async NÃO ameaça o determinismo do
+# consenso — consenso vive na lib síncrona; aqui é só I/O em volta.
+tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "signal", "macros", "sync", "fs"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio", "query"] }
+
+# Serialização das RESPOSTAS da API (apresentação, nunca consenso — ver acima).
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Cliente HTTP do P2P (gossip + sync entre nós). `hyper-util` é o cliente da
+# MESMA pilha hyper que o axum já traz — nenhum ecossistema novo entra na
+# árvore. Sem TLS de propósito: a malha fala http entre nós (o público entra
+# pela Cloudflare); adicionar rustls aqui seria peso sem ameaça correspondente.
+hyper = { version = "1", features = ["client", "http1"] }
+hyper-util = { version = "0.1", features = ["client-legacy", "http1", "tokio"] }
+http-body-util = "0.1"
+
+# TLS para a ÚNICA chamada externa do nó: o parecer/execução do LLM na API da
+# Anthropic (HTTPS). Decisão do operador (rustls no binário do nó): o TLS fica
+# ISOLADO nesta borda — a malha P2P/API continua http (o público entra pela
+# Cloudflare). `ring` como provedor (sem OpenSSL/toolchain C); `webpki-roots`
+# embute as CAs. `rustls` direto só para instalar o provedor como default.
+hyper-rustls = { version = "0.27", default-features = false, features = ["http1", "ring", "webpki-roots"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+
+# Comparação constant-time do token de admin (SHA-256 dos dois lados). Mesma
+# versão que a lib `eav7` já traz — não duplica crate na árvore.
+sha2 = "0.11"
+
+# Carteira de PRODUÇÃO (`src/wallet.rs`): a lib `eav7` só VERIFICA — assinar
+# exige as chaves privadas, e o lado que assina vive aqui, no nó. MESMAS versões
+# que a lib já traz (k256 0.14, ml-dsa 0.1.1) para não duplicar crates na
+# árvore; `pkcs8` a mais no k256 porque a carteira LÊ a chave privada PKCS#8 do
+# arquivo do operador (a lib só lê SPKI público). O ml-dsa traz pkcs8 por
+# padrão, incluindo a leitura da forma "seed" da RFC 9881 que o Node emite.
+k256 = { version = "0.14", default-features = false, features = ["ecdsa", "pem", "pkcs8", "std"] }
+ml-dsa = "0.1.1"
+
+[[bin]]
+name = "eav7-node"
+path = "src/main.rs"
+
+# CLI cliente (porte de bin/eav7.js): gera carteira, consulta o nó e monta/submete
+# transações assinadas. SEGUNDO binário do MESMO crate — reusa wallet.rs (assina),
+# ai/bridge.rs (serializa canônico) e a lib eav7 sem crate novo.
+[[bin]]
+name = "eav7-cli"
+path = "src/bin/eav7-cli.rs"
+
+[[bin]]
+name = "eav7-write-genesis"
+path = "src/bin/eav7-write-genesis.rs"
+
+[dev-dependencies]
+tempfile = "3"
+ureq = { version = "2", default-features = false, features = ["json"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "net", "sync"] }

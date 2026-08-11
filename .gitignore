@@ -1,0 +1,52 @@
+node_modules/
+data/
+# exceção: `data/` mira diretórios de runtime dos nós; este é fonte do portal
+!web-next/src/components/developers/data/
+wallet-*.json
+*.wallet.json
+.DS_Store
+
+# segredos — nunca commitar
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.key
+*.pem
+secrets/
+eav7.env
+rust/target/
+
+# inventário de nós de produção (IPs) — use deploy/nodes.example
+deploy/nodes.env
+deploy/inventory.env
+# checksums gerados no deploy (G13)
+deploy/checksums/
+
+# arquivo de build do frontend (12 MB) — o fonte está em web-next/
+eav7-frontend-web.rar
+eav7-frontend.zip
+
+# notas pessoais do editor, não fazem parte do projeto
+.obsidian/
+*.canvas
+*.base
+2026-*.md
+Sem título/
+Sem\ título.*
+.DS_Store
+
+# Claude Code / Cursor locais (não são do projeto)
+.claude/
+.claude/settings.local.json
+.claude/skill/
+
+# toolchains baixados localmente (wasm-pack, caches)
+.tools/
+
+web-next/test-results/
+playwright-report/
+contracts/sale/relayer/sale-state.json
+contracts/sale/relayer/sale-state-public.json
+contracts/sale/relayer/node_modules/
+contracts/node_modules/

@@ -1,0 +1,77 @@
+{
+  "namespace": "home_inkBand",
+  "translations": {
+    "pt": {
+      "eyebrow": "interativo",
+      "title": "Passe o mouse e revele",
+      "subtitle": "a rede EAV7, além do bloco",
+      "mobileHint": "no celular a arte aparece direto"
+    },
+    "en": {
+      "eyebrow": "interactive",
+      "title": "Hover to reveal",
+      "subtitle": "the EAV7 network, beyond the block",
+      "mobileHint": "on mobile the art appears directly"
+    },
+    "es": {
+      "eyebrow": "interactivo",
+      "title": "Pasa el mouse y revela",
+      "subtitle": "la red EAV7, más allá del bloque",
+      "mobileHint": "en el móvil el arte aparece directamente"
+    },
+    "zh": {
+      "eyebrow": "互动",
+      "title": "移动鼠标以揭示",
+      "subtitle": "EAV7 网络,超越区块",
+      "mobileHint": "在手机上图案会直接显示"
+    },
+    "fr": {
+      "eyebrow": "interactif",
+      "title": "Passez la souris pour révéler",
+      "subtitle": "le réseau EAV7, au-delà du bloc",
+      "mobileHint": "sur mobile, l'illustration apparaît directement"
+    },
+    "de": {
+      "eyebrow": "interaktiv",
+      "title": "Maus bewegen zum Enthüllen",
+      "subtitle": "das EAV7-Netzwerk, jenseits des Blocks",
+      "mobileHint": "auf dem Handy erscheint die Grafik direkt"
+    },
+    "ja": {
+      "eyebrow": "インタラクティブ",
+      "title": "マウスを合わせて表示",
+      "subtitle": "EAV7ネットワーク、ブロックの先へ",
+      "mobileHint": "モバイルではアートがそのまま表示されます"
+    },
+    "ru": {
+      "eyebrow": "интерактивно",
+      "title": "Наведите курсор, чтобы открыть",
+      "subtitle": "сеть EAV7, за пределами блока",
+      "mobileHint": "на мобильном изображение отображается сразу"
+    },
+    "ar": {
+      "eyebrow": "تفاعلي",
+      "title": "مرّر الفأرة للكشف",
+      "subtitle": "شبكة EAV7، إلى ما وراء الكتلة",
+      "mobileHint": "على الجوال يظهر التصميم مباشرة"
+    },
+    "hi": {
+      "eyebrow": "इंटरैक्टिव",
+      "title": "माउस घुमाकर देखें",
+      "subtitle": "EAV7 नेटवर्क, ब्लॉक से परे",
+      "mobileHint": "मोबाइल पर कलाकृति सीधे दिखाई देती है"
+    },
+    "ko": {
+      "eyebrow": "인터랙티브",
+      "title": "마우스를 올려 확인하세요",
+      "subtitle": "EAV7 네트워크, 블록 그 너머",
+      "mobileHint": "모바일에서는 아트가 바로 나타납니다"
+    },
+    "it": {
+      "eyebrow": "interattivo",
+      "title": "Passa il mouse per rivelare",
+      "subtitle": "la rete EAV7, oltre il blocco",
+      "mobileHint": "su mobile l'immagine appare direttamente"
+    }
+  }
+}

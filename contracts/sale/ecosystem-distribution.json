@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "goal": "open-ecosystem-not-single-partner",
+  "bucket": {
+    "name": "ecosystem-program",
+    "whitepaperLabel": "Parceiro estratégico",
+    "shareOfGenesis": 0.1,
+    "tokensEav7": "10000000000",
+    "vesting": "cliff-12m + linear-36m (on-contract per grant)",
+    "genesisDestination": "EcosystemVault",
+    "neverSendTo": ["personal-wallet", "single-eoa-partner", "foundation-eoa-for-discretionary"]
+  },
+  "reinterpretation": {
+    "from": "one strategic partner wallet with protocol vesting",
+    "to": "open builders program: council awards + optional Merkle RFP rounds",
+    "narrative": "10% = ecosystem fuel, not a preferred insider"
+  },
+  "partition": {
+    "infra": {
+      "id": "infra",
+      "categoryId": 0,
+      "shareOfGenesis": 0.04,
+      "shareOfBucket": 0.4,
+      "tokensEav7": "4000000000",
+      "examples": ["RPC/indexer operators", "explorer maintainers", "bridge adapters", "core tooling"],
+      "awardPath": "council.award(Infra, …) or Merkle round"
+    },
+    "apps": {
+      "id": "apps",
+      "categoryId": 1,
+      "shareOfGenesis": 0.03,
+      "shareOfBucket": 0.3,
+      "tokensEav7": "3000000000",
+      "examples": ["wallets", "DeFi", "gamesfi", "developer SDKs"],
+      "awardPath": "council.award(Apps, …) or Merkle round"
+    },
+    "liquidity": {
+      "id": "liquidity",
+      "categoryId": 2,
+      "shareOfGenesis": 0.02,
+      "shareOfBucket": 0.2,
+      "tokensEav7": "2000000000",
+      "examples": ["DEX LPs beyond public seed", "market makers under public MoU", "bridge liquidity"],
+      "awardPath": "council.award(Liquidity, …)",
+      "note": "Does not replace PublicVault lpSeed; this is partner/ecosystem top-ups"
+    },
+    "buffer": {
+      "id": "buffer",
+      "categoryId": 3,
+      "shareOfGenesis": 0.01,
+      "shareOfBucket": 0.1,
+      "tokensEav7": "1000000000",
+      "release": "timelocked draw after unlockBlock",
+      "examples": ["emergency ecosystem top-up", "unplanned critical infra"],
+      "awardPath": "drawBuffer after unlock — not discretionary day-1"
+    }
+  },
+  "governance": {
+    "admin": "foundation-multisig (bootstrap: set council, pause, transferAdmin)",
+    "council": {
+      "day0": "3-of-5: foundation seat + 2 independent + 2 builder seats (or all independent)",
+      "target": "elected via Âncora/gov after validators mature",
+      "powers": ["award within category budgets", "publish Merkle RFP roots", "propose buffer unlock"],
+      "forbidden": ["move tokens to personal EOAs", "raise category caps", "bypass vesting defaults without public reason in event"]
+    },
+    "vestingDefaults": {
+      "cliffBlocks": 31536000,
+      "durationBlocks": 126144000,
+      "note": "whitepaper partner schedule: 12m cliff + 36m linear"
+    }
+  },
+  "stateMachine": [
+    {
+      "id": "E0_GENESIS",
+      "auto": true,
+      "action": "10B → EcosystemVault; setBuckets fixed; council set"
+    },
+    {
+      "id": "E1_COUNCIL_LIVE",
+      "auto": false,
+      "humanOnce": "transferCouncil to day-0 multisig; publish members",
+      "then": "awards only via council"
+    },
+    {
+      "id": "E2_RFP_ROUNDS",
+      "auto": true,
+      "action": "optional setRoundRoot → builders claim Merkle without per-tx council"
+    },
+    {
+      "id": "E3_VEST_RELEASE",
+      "auto": true,
+      "action": "beneficiaries release() after cliff — no admin in path"
+    },
+    {
+      "id": "E4_ELECTED_COUNCIL",
+      "auto": false,
+      "human": "gov proposal transfers council to elected set",
+      "gate": "validators+gov mature"
+    },
+    {
+      "id": "E5_BUFFER_UNLOCK",
+      "auto": false,
+      "human": "setBufferUnlock then drawBuffer under published checklist"
+    }
+  ],
+  "humanActionsAllowed": [
+    "set council once / transfer to elected",
+    "award + publish milestoneId + reason",
+    "set Merkle RFP roots",
+    "pause emergency",
+    "buffer unlock after published height"
+  ],
+  "humanActionsForbidden": [
+    "single-key discretionary grants from founder EOA",
+    "send 10% to one 'strategic partner' wallet at genesis",
+    "bypass category budgets",
+    "draw buffer before unlockBlock"
+  ],
+  "successGates": {
+    "decentralizationNarrative": [
+      "genesis balance on EcosystemVault not EOA",
+      "council members published",
+      "≥3 awards to unaffiliated builders in year 1",
+      "≥1 Merkle RFP round claimed without council per-claim",
+      "council transferred off founder-majority when gov ready"
+    ]
+  },
+  "references": {
+    "whitepaper": "docs/whitepaper.md §12.2 partner row",
+    "publicPlan": "contracts/sale/public-distribution.json",
+    "privateSale": "contracts/sale/auto-delivery.json"
+  }
+}

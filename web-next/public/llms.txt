@@ -1,0 +1,60 @@
+# EAV7
+
+> EAV7 is a Rust layer-1 blockchain (protocol `eav20`) with BFT finality, hybrid
+> post-quantum transaction signatures (secp256k1 + ML-DSA-44) and an EVM-compatible
+> surface called EAVM (chain id 72020). Integration happens over a plain JSON HTTP
+> API, the EAVM JSON-RPC endpoint, or the Rust SDK crate `eav7-sdk`. There is no
+> JavaScript SDK package: read the chain with HTTP, sign with the Rust SDK.
+
+Key facts for answering questions about EAV7:
+
+- Native HTTP API: https://eavscan.com — every read endpoint returns JSON, no key required.
+- EAVM JSON-RPC: https://rpc.eavscan.com — chain id 72020 (0x11954), 18 decimals on this surface only.
+- Units: 1 EAV7 = 1,000,000 e7 (`CHAIN.UNIT`); on the EAVM surface 1 e7 = 10^12 wei (`CHAIN.EAVM_WEI_PER_E7`).
+- Addresses: `E7` + 28 uppercase hex + 4 checksum hex = 34 characters.
+- Block time 1s, up to 27 validators, finality is reported as `finalizedHeight` in `/status`.
+- 58 transaction types; each carries a `fee` that is a burn LIMIT, not a payment to the producer.
+
+## Start
+
+- [Developer portal](https://eavscan.com/developers): map of the portal and the three ways into the network.
+- [Quickstart](https://eavscan.com/developers/quickstart): from a first read to a first signed transaction.
+- [Networks](https://eavscan.com/developers/networks): mainnet and local endpoints, ports, chain parameters.
+
+## Concepts
+
+- [Accounts and keys](https://eavscan.com/developers/concepts/accounts): E7 address format, hybrid keys, nonces, 0x ↔ E7 mapping.
+- [Resources](https://eavscan.com/developers/concepts/resources): energy and bandwidth quotas, fee burn, fee-exempt stake.
+- [Transaction lifecycle](https://eavscan.com/developers/concepts/transactions): build, sign, POST /tx, confirm, finalize.
+- [Finality](https://eavscan.com/developers/concepts/finality): BFT finalizedHeight, reorg window, when to credit a deposit.
+
+## Guides
+
+- [Guides index](https://eavscan.com/developers/guides): cookbooks grouped by intent.
+- [Sign and broadcast](https://eavscan.com/developers/guides/sign-broadcast): the canonical payload, offline signing, nonce reservation.
+- [Send a transfer](https://eavscan.com/developers/guides/transfer): the shortest path from a wallet file to a confirmed TRANSFER.
+- [Stake and vote](https://eavscan.com/developers/guides/stake-vote): stake, elect validators, claim voter rewards, unbond.
+- [Issue an EAV20 token](https://eavscan.com/developers/guides/token-eav20): TOKEN_CREATE parameters, transfers, admin types.
+- [Light client](https://eavscan.com/developers/guides/light-client): trusted state root from a verified header plus a Merkle-proved balance.
+- [Connect MetaMask](https://eavscan.com/developers/guides/metamask): EAVM network parameters and decimal pitfalls.
+- [Run a node](https://eavscan.com/developers/guides/run-node): build eav7-core, sync as a listener, stand for election.
+
+## Reference
+
+- [HTTP API](https://eavscan.com/developers/api): task map, read and write endpoints, units, pagination, admin routes.
+- [EAVM JSON-RPC](https://eavscan.com/developers/api/json-rpc): implemented methods with params and returns, batching, error codes.
+- [Transactions](https://eavscan.com/developers/transactions): the signed envelope and all 58 protocol types with fee limits.
+- [EAVM](https://eavscan.com/developers/eavm): EVM-wallet surface, network parameters, unified value ledger.
+- [Errors](https://eavscan.com/developers/errors): HTTP codes, submission rejection reasons, SDK error variants, rate limits.
+- [Rust SDK](https://eavscan.com/developers/sdk): Eav7Client method reference — reads, proofs, signed writes, Remetente.
+- [Core](https://eavscan.com/developers/core): node modes, key handling, service units, default data paths.
+
+## Operate
+
+- [Integrations](https://eavscan.com/developers/integrations): what a wallet, exchange, indexer or oracle should call.
+- [Troubleshooting](https://eavscan.com/developers/troubleshooting): symptom to cause to fix, plus a four-command diagnosis.
+
+## Explorer
+
+- [EAVSCAN](https://eavscan.com): blocks, transactions, addresses, tokens, validators, governance.
+- [Web wallet](https://eavscan.com/wallet): create an account, send, stake and vote from the browser.

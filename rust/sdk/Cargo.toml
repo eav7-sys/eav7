@@ -1,0 +1,30 @@
+[package]
+name = "eav7-sdk"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+description = "SDK EAV7 — carteira, construção de transações e cliente HTTP para programar contra a rede eav20."
+license = "MIT"
+
+# POLÍTICA DE DEPENDÊNCIAS deste crate.
+#
+# Depende da lib de CONSENSO (`eav7`) e NUNCA do crate do nó. A direção importa:
+# um SDK que arrastasse o nó obrigaria quem só quer enviar uma transação a
+# compilar servidor HTTP, P2P e máquina de produção de blocos — e acabaria
+# convidando a copiar a assinatura em vez de depender disso.
+#
+# Fora do consenso, o que entra é I/O e apresentação:
+#   • `ureq` — cliente HTTP SÍNCRONO e sem runtime. Um SDK não deve impor tokio a
+#     quem o usa; quem já tem runtime chama de dentro de `spawn_blocking`, e quem
+#     não tem escreve um script direto. É a escolha que menos restringe o chamador.
+#   • `serde_json` — só para LER respostas da API, que são apresentação. O JSON
+#     que vai ASSINADO usa o serializador canônico da lib, byte a byte igual à
+#     referência.
+#   • geração de chaves (`k256`, `ml-dsa`, `pkcs8`) — criar carteira é trabalho de
+#     cliente, não de consenso; por isso mora aqui e não na lib.
+[dependencies]
+eav7 = { path = ".." }
+serde_json = "1"
+ureq = { version = "2", default-features = false, features = ["tls", "json"] }
+k256 = { version = "0.14", default-features = false, features = ["ecdsa", "pem", "pkcs8", "std"] }
+ml-dsa = "0.1.1"

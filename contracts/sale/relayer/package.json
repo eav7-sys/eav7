@@ -1,0 +1,16 @@
+{
+  "name": "eav7-sale-relayer",
+  "private": true,
+  "type": "module",
+  "description": "Confirma pagamentos USDT/USDC e chama SaleVault.grant",
+  "scripts": {
+    "serve": "node index.mjs serve",
+    "serve:public": "SALE_MODE=public PORT=8788 node index.mjs serve",
+    "watch": "node index.mjs watch",
+    "watch:public": "SALE_MODE=public node index.mjs watch",
+    "tick": "node index.mjs tick"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0"
+  }
+}

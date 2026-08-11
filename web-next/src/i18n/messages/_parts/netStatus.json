@@ -1,0 +1,65 @@
+{
+  "namespace": "netStatus",
+  "translations": {
+    "pt": {
+      "onlineTitle": "Rede EAV7 online · altura {height}",
+      "offlineTitle": "Nó offline",
+      "connecting": "conectando…"
+    },
+    "en": {
+      "onlineTitle": "EAV7 network online · height {height}",
+      "offlineTitle": "Node offline",
+      "connecting": "connecting…"
+    },
+    "es": {
+      "onlineTitle": "Red EAV7 en línea · altura {height}",
+      "offlineTitle": "Nodo fuera de línea",
+      "connecting": "conectando…"
+    },
+    "zh": {
+      "onlineTitle": "EAV7 网络在线 · 高度 {height}",
+      "offlineTitle": "节点离线",
+      "connecting": "连接中…"
+    },
+    "fr": {
+      "onlineTitle": "Réseau EAV7 en ligne · hauteur {height}",
+      "offlineTitle": "Nœud hors ligne",
+      "connecting": "connexion…"
+    },
+    "de": {
+      "onlineTitle": "EAV7-Netzwerk online · Höhe {height}",
+      "offlineTitle": "Knoten offline",
+      "connecting": "verbinden…"
+    },
+    "ja": {
+      "onlineTitle": "EAV7ネットワーク オンライン · 高さ {height}",
+      "offlineTitle": "ノードオフライン",
+      "connecting": "接続中…"
+    },
+    "ru": {
+      "onlineTitle": "Сеть EAV7 онлайн · высота {height}",
+      "offlineTitle": "Узел офлайн",
+      "connecting": "подключение…"
+    },
+    "ar": {
+      "onlineTitle": "شبكة EAV7 متصلة · الارتفاع {height}",
+      "offlineTitle": "العقدة غير متصلة",
+      "connecting": "جارٍ الاتصال…"
+    },
+    "hi": {
+      "onlineTitle": "EAV7 नेटवर्क ऑनलाइन · ऊँचाई {height}",
+      "offlineTitle": "नोड ऑफ़लाइन",
+      "connecting": "कनेक्ट हो रहा है…"
+    },
+    "ko": {
+      "onlineTitle": "EAV7 네트워크 온라인 · 높이 {height}",
+      "offlineTitle": "노드 오프라인",
+      "connecting": "연결 중…"
+    },
+    "it": {
+      "onlineTitle": "Rete EAV7 online · altezza {height}",
+      "offlineTitle": "Nodo offline",
+      "connecting": "connessione in corso…"
+    }
+  }
+}

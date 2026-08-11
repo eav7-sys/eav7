@@ -1,0 +1,59 @@
+{
+  "namespace": "scan_footer",
+  "translations": {
+    "pt": {
+      "desc": "Explorador oficial da rede EAV7 — blocos, transações, tokens EAV20, validadores e governança em tempo real.",
+      "products": "Produtos",
+      "explorer": "Explorer",
+      "wallet": "Carteira EAV7",
+      "bridge": "Bridge",
+      "mining": "Plataforma de mineração",
+      "dev": "Desenvolvedores",
+      "api": "Documentação da API",
+      "endpoints": "Endpoints públicos",
+      "verify": "Verificar contrato",
+      "network": "Rede",
+      "status": "Status da rede",
+      "peers": "Peers",
+      "gov": "Governança",
+      "feesBurned": "100% das taxas queimadas",
+      "rights": "EAV7 Labs. Todos os direitos reservados."
+    },
+    "en": {
+      "desc": "Official explorer of the EAV7 network — blocks, transactions, EAV20 tokens, validators and governance in real time.",
+      "products": "Products",
+      "explorer": "Explorer",
+      "wallet": "EAV7 Wallet",
+      "bridge": "Bridge",
+      "mining": "Mining platform",
+      "dev": "Developers",
+      "api": "API documentation",
+      "endpoints": "Public endpoints",
+      "verify": "Verify contract",
+      "network": "Network",
+      "status": "Network status",
+      "peers": "Peers",
+      "gov": "Governance",
+      "feesBurned": "100% of fees burned",
+      "rights": "EAV7 Labs. All rights reserved."
+    },
+    "es": {
+      "desc": "Explorador oficial de la red EAV7 — bloques, transacciones, tokens EAV20, validadores y gobernanza en tiempo real.",
+      "products": "Productos",
+      "explorer": "Explorer",
+      "wallet": "Billetera EAV7",
+      "bridge": "Bridge",
+      "mining": "Plataforma de minería",
+      "dev": "Desarrolladores",
+      "api": "Documentación de la API",
+      "endpoints": "Endpoints públicos",
+      "verify": "Verificar contrato",
+      "network": "Red",
+      "status": "Estado de la red",
+      "peers": "Peers",
+      "gov": "Gobernanza",
+      "feesBurned": "100% de las tarifas quemadas",
+      "rights": "EAV7 Labs. Todos los derechos reservados."
+    }
+  }
+}

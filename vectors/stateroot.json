@@ -1,0 +1,189 @@
+{
+  "cases": [
+    {
+      "input": "estado vazio",
+      "kind": "stateRoot",
+      "output": "7175bd3955e7c5c96f6fc49a84db7852d2b5dbb2c9127353ee4354441051ce9e"
+    },
+    {
+      "input": "três contas",
+      "kind": "stateRoot",
+      "output": "9ece1fd41302a85894a64d97235c59ee929dfac4d29e942e31a26d8229e9c83c"
+    },
+    {
+      "input": {
+        "account": {
+          "map": {
+            "balance": {
+              "int": "1000000000"
+            },
+            "bandwidthBlock": {
+              "int": "0"
+            },
+            "bandwidthUsed": {
+              "int": "0"
+            },
+            "delegatedIn": {
+              "int": "0"
+            },
+            "delegatedOut": {
+              "int": "0"
+            },
+            "energyBlock": {
+              "int": "0"
+            },
+            "energyUsed": {
+              "int": "0"
+            },
+            "nonce": {
+              "int": "3"
+            },
+            "staked": {
+              "int": "0"
+            }
+          }
+        },
+        "address": "E7D36986E47AC3768974578F7CCD3123AE"
+      },
+      "kind": "accountLeaf",
+      "output": "f1bef513aa5eaea8811b278f08c330e44d9acda4d987fc31f6e1a70aaa2f01ae",
+      "role": "sampleState"
+    },
+    {
+      "input": {
+        "account": {
+          "map": {
+            "balance": {
+              "int": "500000000"
+            },
+            "bandwidthBlock": {
+              "int": "0"
+            },
+            "bandwidthUsed": {
+              "int": "0"
+            },
+            "delegatedIn": {
+              "int": "0"
+            },
+            "delegatedOut": {
+              "int": "0"
+            },
+            "energyBlock": {
+              "int": "0"
+            },
+            "energyUsed": {
+              "int": "0"
+            },
+            "nonce": {
+              "int": "0"
+            },
+            "staked": {
+              "int": "2000000000"
+            }
+          }
+        },
+        "address": "E74FE1240972091DE7BE392072067581DC"
+      },
+      "kind": "accountLeaf",
+      "output": "4795a210a898a26db3a3d28dd674b17edcf868530ebbdaa7044258585730783b",
+      "role": "sampleState"
+    },
+    {
+      "input": {
+        "account": {
+          "map": {
+            "balance": {
+              "int": "1"
+            },
+            "bandwidthBlock": {
+              "int": "0"
+            },
+            "bandwidthUsed": {
+              "int": "0"
+            },
+            "delegatedIn": {
+              "int": "0"
+            },
+            "delegatedOut": {
+              "int": "0"
+            },
+            "energyBlock": {
+              "int": "0"
+            },
+            "energyUsed": {
+              "int": "0"
+            },
+            "nonce": {
+              "int": "0"
+            },
+            "staked": {
+              "int": "0"
+            }
+          }
+        },
+        "address": "E72C3EA79EBF7AE5B3936344D4122D87A9"
+      },
+      "kind": "accountLeaf",
+      "output": "7c9e0d5aec6733aee4feb39b893b0210d47b5a4249ba1e98b3a609a1f803adaf",
+      "role": "sampleState"
+    },
+    {
+      "input": {
+        "account": {
+          "map": {
+            "apelido": {
+              "str": "café ção"
+            },
+            "balance": {
+              "int": "1"
+            }
+          }
+        },
+        "address": "E7D36986E47AC3768974578F7CCD3123AE"
+      },
+      "kind": "accountLeaf",
+      "note": "UTF-8 multibyte no VALOR hasheado, não só na descrição",
+      "output": "16ac0b3d3eb403b4fe1b1d754d3290372bcaa81e21d0eca90832e7e8ea2b43a6",
+      "role": "encodingCoverage"
+    },
+    {
+      "input": {
+        "account": {
+          "map": {
+            "memo": {
+              "str": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          }
+        },
+        "address": "E7D36986E47AC3768974578F7CCD3123AE"
+      },
+      "kind": "accountLeaf",
+      "note": "comprimento 200: o u32BE do tamanho tem byte 0xc8, acima de 0x7f",
+      "output": "f518a3d041563c7c7c308ce54bc179a7b21a190781fc63e90d496471f6389fa9",
+      "role": "encodingCoverage"
+    },
+    {
+      "input": {
+        "account": {
+          "map": {
+            "s": {
+              "str": "ÿÀ"
+            }
+          }
+        },
+        "address": "E7D36986E47AC3768974578F7CCD3123AE"
+      },
+      "kind": "accountLeaf",
+      "note": "os pontos de código exatos onde latin1 e UTF-8 divergem",
+      "output": "a2ff504c1bd73ced77d04fe18194a94e1dd3a31c2bdc452e83347d5356eff734",
+      "role": "encodingCoverage"
+    },
+    {
+      "input": "mesmas contas inseridas em ordem inversa",
+      "kind": "stateRoot.ordemNaoImporta",
+      "note": "tem de bater com o caso \"três contas\"",
+      "output": "9ece1fd41302a85894a64d97235c59ee929dfac4d29e942e31a26d8229e9c83c"
+    }
+  ],
+  "description": "Folhas canônicas e raiz de Merkle do estado. O campo `account` vem TIPADO ({int|str|bool|list|map}) porque `\"1000000000\"` sozinho é ambíguo entre inteiro e texto, e os dois produzem folhas diferentes. As folhas são ORDENADAS antes de compor a árvore, então a raiz não depende da ordem de inserção — requisito para dois clientes chegarem ao mesmo valor partindo de caminhos diferentes."
+}

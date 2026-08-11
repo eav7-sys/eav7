@@ -1,0 +1,1115 @@
+{
+  "cases": [
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "9f14b2da4234ede8d0aa89bc0f52f4ada8e95ab467656ed256c22dd5e7882902",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "d75315337b0fac728f9e2fd5eecb5a00e01357e1f9caa7dd3310d65481ad9fa1",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+            "gasUsed": "384",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "743e9c736cdb89ed173688b2a189f267a9ff548e140bfa5d81608174416d3c63"
+      },
+      "height": 1900010,
+      "name": "deploy simples: contador publicado, deposito de codigo cobrado",
+      "note": "gasUsed do recibo INCLUI o depósito de código (len×20 = 360); endereço do contrato = keccak(encodeE7Dest(remetente) + \":\" + nonceDaConta)[12:]",
+      "pre": {
+        "accounts": {
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000",
+            "staked": "10000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6012600c60003960126000f36000546001018060005560005260206000f3"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "79f3cb8351a814c5e44a939dca256031dd6dde4aa486b9b3970a79cf552c74c2",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0",
+          "0"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "501b9f94746dd51b697d837a53781950714ea3e9550af1f20c89abab88fd8242",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "b5acbaef5402eb6d234797b0b7887757433c4de406746e8b4fb62d4985fecb71",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+            "gasUsed": "51054",
+            "logs": [
+              {
+                "address": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+                "data": "0x000000000000000000000000000000000000000000000000000000e8d4a51000",
+                "topics": [
+                  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                  "0x0000000000000000000000000000000000000000000000000000000000000000",
+                  "0x000000000000000000000000e7000000d91885c11bd3dad3f2824fad4e94bd9a"
+                ]
+              }
+            ],
+            "success": true,
+            "xfers": []
+          },
+          {
+            "gasUsed": "5651",
+            "logs": [
+              {
+                "address": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+                "data": "0x000000000000000000000000000000000000000000000000000000000ee6b280",
+                "topics": [
+                  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                  "0x000000000000000000000000e7000000d91885c11bd3dad3f2824fad4e94bd9a",
+                  "0x0000000000000000000000002222222222222222222222222222222222222222"
+                ]
+              }
+            ],
+            "success": true,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "a27caf3252bcc5116543219ef876433159ad57373cabae9dbd42719f9029f427"
+      },
+      "height": 1900010,
+      "name": "ERC20 do fixture: deploy com args de construtor + transfer() com sucesso",
+      "note": "bytecode real de solc 0.8.26 (shanghai); `decimals` é immutable — gravado no RUNTIME pelo construtor, então o código on-chain difere do artefato do compilador",
+      "pre": {
+        "accounts": {
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000",
+            "staked": "100000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x60a060405234801561000f575f80fd5b50604051610a62380380610a6283398101604081905261002e9161016c565b5f6100398582610273565b5060016100468482610273565b5060ff8216608052600380546001600160a01b0319163390811790915560028290555f81815260046020526040808220849055517fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef906100a99085815260200190565b60405180910390a35050505061032d565b634e487b7160e01b5f52604160045260245ffd5b5f82601f8301126100dd575f80fd5b81516001600160401b038111156100f6576100f66100ba565b604051601f8201601f19908116603f011681016001600160401b0381118282101715610124576101246100ba565b60405281815283820160200185101561013b575f80fd5b5f5b828110156101595760208186018101518383018201520161013d565b505f918101602001919091529392505050565b5f805f806080858703121561017f575f80fd5b84516001600160401b03811115610194575f80fd5b6101a0878288016100ce565b602087015190955090506001600160401b038111156101bd575f80fd5b6101c9878288016100ce565b935050604085015160ff811681146101df575f80fd5b6060959095015193969295505050565b600181811c9082168061020357607f821691505b60208210810361022157634e487b7160e01b5f52602260045260245ffd5b50919050565b601f82111561026e57805f5260205f20601f840160051c8101602085101561024c5750805b601f840160051c820191505b8181101561026b575f8155600101610258565b50505b505050565b81516001600160401b0381111561028c5761028c6100ba565b6102a08161029a84546101ef565b84610227565b6020601f8211600181146102d2575f83156102bb5750848201515b5f19600385901b1c1916600184901b17845561026b565b5f84815260208120601f198516915b8281101561030157878501518255602094850194600190920191016102e1565b508482101561031e57868401515f19600387901b60f8161c191681555b50505050600190811b01905550565b60805161071d6103455f395f610150015261071d5ff3fe608060405234801561000f575f80fd5b50600436106100b1575f3560e01c806340c10f191161006e57806340c10f191461018457806370a082311461019957806395d89b41146101b857806398650275146101c0578063a9059cbb146101c8578063dd62ed3e146101db575f80fd5b806306fdde03146100b557806307546172146100d3578063095ea7b3146100fe57806318160ddd1461012157806323b872dd14610138578063313ce5671461014b575b5f80fd5b6100bd610205565b6040516100ca919061055c565b60405180910390f35b6003546100e6906001600160a01b031681565b6040516001600160a01b0390911681526020016100ca565b61011161010c3660046105c2565b610290565b60405190151581526020016100ca565b61012a60025481565b6040519081526020016100ca565b6101116101463660046105ea565b6102fc565b6101727f000000000000000000000000000000000000000000000000000000000000000081565b60405160ff90911681526020016100ca565b6101976101923660046105c2565b61038c565b005b61012a6101a7366004610624565b60046020525f908152604090205481565b6100bd610420565b61019761042d565b6101116101d63660046105c2565b6104a1565b61012a6101e9366004610644565b600560209081525f928352604080842090915290825290205481565b5f805461021190610675565b80601f016020809104026020016040519081016040528092919081815260200182805461023d90610675565b80156102885780601f1061025f57610100808354040283529160200191610288565b820191905f5260205f20905b81548152906001019060200180831161026b57829003601f168201915b505050505081565b335f8181526005602090815260408083206001600160a01b038716808552925280832085905551919290917f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925906102ea9086815260200190565b60405180910390a35060015b92915050565b6001600160a01b0383165f9081526005602090815260408083203384529091528120545f1981146103765782811015610348576040516313be252b60e01b815260040160405180910390fd5b61035283826106c1565b6001600160a01b0386165f9081526005602090815260408083203384529091529020555b6103818585856104b6565b506001949350505050565b6003546001600160a01b031633146103b757604051633e34a41b60e21b815260040160405180910390fd5b8060025f8282546103c891906106d4565b90915550506001600160a01b0382165f818152600460209081526040808320805486019055518481527fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef910160405180910390a35050565b6001805461021190610675565b6003546001600160a01b0316331461045857604051633e34a41b60e21b815260040160405180910390fd5b6003546040515f916001600160a01b0316907f3b0007eb941cf645526cbb3a4fdaecda9d28ce4843167d9263b536a1f1edc0f6908390a3600380546001600160a01b0319169055565b5f6104ad3384846104b6565b50600192915050565b6001600160a01b0383165f90815260046020526040902054818110156104ef57604051631e9acf1760e31b815260040160405180910390fd5b6001600160a01b038085165f8181526004602052604080822086860390559286168082529083902080548601905591517fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef9061054e9086815260200190565b60405180910390a350505050565b602081525f82518060208401525f5b81811015610588576020818601810151604086840101520161056b565b505f604082850101526040601f19601f83011684010191505092915050565b80356001600160a01b03811681146105bd575f80fd5b919050565b5f80604083850312156105d3575f80fd5b6105dc836105a7565b946020939093013593505050565b5f805f606084860312156105fc575f80fd5b610605846105a7565b9250610613602085016105a7565b929592945050506040919091013590565b5f60208284031215610634575f80fd5b61063d826105a7565b9392505050565b5f8060408385031215610655575f80fd5b61065e836105a7565b915061066c602084016105a7565b90509250929050565b600181811c9082168061068957607f821691505b6020821081036106a757634e487b7160e01b5f52602260045260245ffd5b50919050565b634e487b7160e01b5f52601160045260245ffd5b818103818111156102f6576102f66106ad565b808201808211156102f6576102f66106ad56fea2646970667358221220b5f7f3f2c69415223c87390e00cddd0e12eb7e55ce6f3caa7f2c20868ee3491164736f6c634300081a0033000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000e8d4a5100000000000000000000000000000000000000000000000000000000000000000055665746f7200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000035645540000000000000000000000000000000000000000000000000000000000"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "3a8053ca5fff51acf108ca861a3998e23fea38ce1127468769d820d33cc5ec82",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        },
+        {
+          "amount": "0",
+          "data": {
+            "input": "0xa9059cbb0000000000000000000000002222222222222222222222222222222222222222000000000000000000000000000000000000000000000000000000000ee6b280",
+            "to": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "52fd6d20fb3652c3dc61ce805f5b6ca94a29ff4622380f57c5cdac7e6e5099f7",
+          "nonce": 2,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_CALL"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "40000",
+          "120000"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "9e31cb0e5750210e1ae564c65fbf24aafd1c692d841fc301f68db6e2fa77c164",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ac4fc6c12ca1160a34ba62ad4e64acb5c25267a61fd9859e735e169391a872d6",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "b49c286e4c68e2819693d94aaae15d8cb79ea49c57f147b11f2fee83531f054c",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+            "gasUsed": "124",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          },
+          {
+            "gasUsed": "6",
+            "logs": [],
+            "success": false,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "ff2b813f4c5252e922ee485991a56a7a153ec6e7c238d53f6e421616dd1bba39"
+      },
+      "height": 1900010,
+      "name": "call que reverte: taxa cobrada, contrato intacto, recibo success:false",
+      "note": "revert NÃO devolve a taxa: o gás consumido pela execução é convertido em energia e a falta é queimada — a tx entra no bloco como válida",
+      "pre": {
+        "accounts": {
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6005600c60003960056000f360006000fd"
+          },
+          "fee": "2000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "4fcc982f2b08fa33a3c1aeff68827f95c52855cb47a97e4e5460612eb6962ac4",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        },
+        {
+          "amount": "0",
+          "data": {
+            "input": "0x",
+            "to": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188"
+          },
+          "fee": "2000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "272b55d1c0ac026acb1d6a426374855f3d11a2f7daf8786eed24b19dda67904e",
+          "nonce": 2,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_CALL"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0",
+          "0"
+        ],
+        "leaves": [
+          "1e6302833b245a525d1e22eb561384ba860a12c74f17d3caf1e78e7e2952d1f0",
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "4e87c168111f71ddf25da8af6ca83aeb00c2ac2612ea0f886c19eb13a3c9aafc",
+          "666d548b4402cdc8a8dd9c96f7d2d0e89d788c610e239085eddb67d8f09e4872",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "996a6e38ada3a3b72126763460281c4365342bfcff3cda68a489b29de2029a71",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+            "gasUsed": "730",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          },
+          {
+            "gasUsed": "9123",
+            "logs": [],
+            "success": true,
+            "xfers": [
+              {
+                "amount": "5000000",
+                "from": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+                "fromE7": "E7DD48539489FD367B2EA156705E2CA44C",
+                "kind": "call",
+                "to": "0xe7000000c3475d430271d1fbaff5e9d599cb77d4",
+                "toE7": "E7C3475D430271D1FBAFF5E9D599CB77D4"
+              }
+            ]
+          }
+        ],
+        "stateRoot": "fd579d8c3b6b0c8c67f56889f70d1e3ddb51e35b89700f368465012b4fcc0ad6"
+      },
+      "height": 1900010,
+      "name": "payable: valor entra, contrato repassa via CALL, xfer interna registrada",
+      "note": "ledger unificado: contracts[].balance permanece 0n SEMPRE — o saldo 0x É o da conta nativa resolvida por decodeE7Dest ?? eavmToE7. O valor de ENTRADA (amount) não vira xfer interna (kind \"entry\" não é registrado)",
+      "pre": {
+        "accounts": {
+          "E7C3475D430271D1FBAFF5E9D599CB77D4": {
+            "balance": "0"
+          },
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000",
+            "staked": "10000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6023600c60003960236000f360006000600060004773e7000000c3475d430271d1fbaff5e9d599cb77d461fffff100"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "2361a6177c22126d1aeee7e41f5c7722e94e9d9551d77012bd361d3b5edcd2f8",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        },
+        {
+          "amount": "5000000",
+          "data": {
+            "input": "0x",
+            "to": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "e6221c32bebe22c9a210001c95439f9bf254125b478e7e4017967dd295bd6a21",
+          "nonce": 2,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_CALL"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a07936120c30b582156228c6545cb9dc503059b9f5eb5bb7bf483fd948ce53f2",
+          "a1c13b85ead12c331fa25e520b4763a7c7c16c9bb79c68d9d79609c75d67dbea",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          null
+        ],
+        "stateRoot": "9a2720ba1928027ce0f18c7bcd8e9d21eb53f31aba3545c82f3d086644586a5f"
+      },
+      "height": 1900010,
+      "name": "EAVM_TRANSFER (scheme eavm): débito, crédito e taxa — sem recibo (null)",
+      "note": "EAVM_TRANSFER aceita amount 0 (carteiras EVM permitem); transação não-EAVM_CALL/DEPLOY não emite recibo",
+      "pre": {
+        "accounts": {
+          "E7666B35F8A87CA31797C3D42C0C081C5A": {
+            "balance": "100000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "3000000",
+          "data": {
+            "eavmFrom": "0x5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a"
+          },
+          "fee": "100000",
+          "from": "E7666B35F8A87CA31797C3D42C0C081C5A",
+          "id": "5fb5de9182cdb3001081d516b413b467c550cc080d6dafc45bea58181b75f009",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-eavm-1",
+          "timestamp": 1700000000000,
+          "to": "E779254E275655122DB7E72895E30D10E6",
+          "type": "EAVM_TRANSFER"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "error": "contratos pela rota EVM ainda não ativos nesta altura",
+        "errorTxIndex": 0,
+        "fees": [],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "5d9f27bf9bbc4c6cd88c62cc207f9a33a869224512692b1d667d4dee95178892",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [],
+        "stateRoot": "732db5213dc79f07761e59a6d3c39d0e934dab7a7bbab1f938fca25aab211b24"
+      },
+      "height": 1899990,
+      "name": "fork gate: EAVM_DEPLOY com scheme eavm abaixo de EAVM_CONTRACTS_HEIGHT lança",
+      "note": "o gate vive no State (stateful) porque o envelope relaxado é stateless — abaixo do fork nó velho e nó novo rejeitam igual; leaves = estado intacto",
+      "pre": {
+        "accounts": {
+          "E7A738C19A48FAF34240C7AF59B1E58677": {
+            "balance": "100000000",
+            "staked": "1000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6012600c60003960126000f36000546001018060005560005260206000f3",
+            "eavmFrom": "0x6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b"
+          },
+          "fee": "10000000",
+          "from": "E7A738C19A48FAF34240C7AF59B1E58677",
+          "id": "b43f102f85abe4b3f828cfdd97a1891cabfd8d45050bfc39769a1f48e58791c9",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-eavm-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "error": "EAVM não aceita valor (amount) nesta fase — use 0",
+        "errorTxIndex": 0,
+        "fees": [],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "52b5995fb369a7abd7b491d35698e8cc5328fec737241fd6a209f688f846e196",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9",
+          "fa5c9bdde16a74b80594fa6d494b8df6fa02de18a3ab47b9007e8170309cd8ac"
+        ],
+        "receipts": [],
+        "stateRoot": "d9bb505b8583ae0ddaf9ddd6bbd7562720df0a24dd34bdb64ca5c3ef8ff39a69"
+      },
+      "height": 1899990,
+      "name": "fork valor: EAVM_CALL com amount>0 abaixo de EAVM_VALUE_HEIGHT lança",
+      "note": "rejeitado ANTES de rodar a VM — abaixo do fork os contratos são non-payable",
+      "pre": {
+        "accounts": {
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "100000000",
+            "staked": "1000000000"
+          }
+        },
+        "contracts": {
+          "0x7777777777777777777777777777777777777777": {
+            "balance": "0",
+            "code": "0x00",
+            "nonce": 0,
+            "storage": {}
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "1000000",
+          "data": {
+            "input": "0x",
+            "to": "0x7777777777777777777777777777777777777777"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "a923d2358308d379b0a90d71170f2ef5dc07e4fcb657a6cb8148089f8e2b69b8",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_CALL"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "error": "energia/saldo insuficiente para executar o contrato",
+        "errorTxIndex": 0,
+        "fees": [],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "5eb18bfe7e651af6f3063e8c158c506847816db6c1263219ffe4c4d41c2dd2a8",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [],
+        "stateRoot": "bd5e28fe39379053680a0a6a81f2d363205169a4758dcfe046a8c4c1a38aeab2"
+      },
+      "height": 1900010,
+      "name": "orçamento: energia/saldo insuficiente lança antes de executar a VM",
+      "note": "budget = energiaDisponível + min(fee, saldo)/BURN_PER_ENERGY − custoBase; <= 0 rejeita sem tocar na VM (fechamento do achado A-4)",
+      "pre": {
+        "accounts": {
+          "E779254E275655122DB7E72895E30D10E6": {
+            "balance": "1000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6012600c60003960126000f36000546001018060005560005260206000f3"
+          },
+          "fee": "0",
+          "from": "E779254E275655122DB7E72895E30D10E6",
+          "id": "399a48c14f16355f2857799b0446d1a953fee9af96a9d568c9377aacfc7cec42",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0",
+          "0"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "313658eb2e846adfd690442bf34d4b3922902173dde4fc0c64c34e8edbf11755",
+          "4f274ca3908b7d21bb75d15b250e85d856452acedae924aadb0a80eb538ad66c",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "bb46294bc052c4a14867f205cc7be1ec2b8aef911f53100131c82cdd8a364d0c",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+            "gasUsed": "204",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          },
+          {
+            "gasUsed": "2106",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "93f32cde47ed437db49a6018780433f7b203940da440b7f73e1f227c6ad1bf89"
+      },
+      "height": 1900010,
+      "name": "BLOCKHASH: anel EIP-2935 semeado via recordBlockHash, lido pela VM",
+      "note": "o anel vive no storage do endereço de sistema 0x0000f908…2935 (slot = número % 8191) e por isso é folha ctr do stateRoot; o opcode só serve a janela de 256 blocos e exige altura >= EAVM_OSAKA_HEIGHT",
+      "pre": {
+        "accounts": {
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000",
+            "staked": "10000000000"
+          }
+        },
+        "blockHashes": [
+          [
+            1900009,
+            "9960d2c101906494facf6dc9931571c5f9464f209ea04dd967bdc327bedd9ba9"
+          ],
+          [
+            1900008,
+            "3f21d9b13c72fa07503079b676f8ab08c29aa2b4ee4e1d04fe07e259748717ec"
+          ]
+        ]
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6009600c60003960096000f3621cfde94060005500"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "08d71226e2d729eb680857adc094c9d34ea612fa279b0610c175d825ec8b0e56",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        },
+        {
+          "amount": "0",
+          "data": {
+            "input": "0x",
+            "to": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "2f30c57a244e2c0b336f5a7b55084bfbeecdea66d2348f621c69d6a403af7d63",
+          "nonce": 2,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_CALL"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "6dff4d0efedd417f2919e1ce4d4199b8399bb5d47ed3145646f2a75c4f19bff9",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          {
+            "gasUsed": "4538",
+            "logs": [],
+            "success": false,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "dfd1bcf12ecfd119bfd08a2f21bc09301aa70e6881e1daddc22a6ec75e96bd6c"
+      },
+      "height": 1900010,
+      "name": "deploy oversized: runtime > MAX_CONTRACT_BYTES falha sem gravar código",
+      "note": "init devolve 30.000 bytes (teto 24576); o gasUsed do recibo NÃO inclui o depósito (o depósito nunca é cobrado quando o deploy falha na checagem)",
+      "pre": {
+        "accounts": {
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000",
+            "staked": "100000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6175306000f3"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "2317c19c40d7d7fbccc7e934b65c11723a0aaf2b7a4e299d41991900e17d5629",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0",
+          "0"
+        ],
+        "leaves": [
+          "148536f1f2d1aa57299117b38f9eaf344a521d44ecc81f3c20a89a767cb18668",
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "2b1922311f881c647a70bf0f020ea9f7faad186fa8475af67b08f6be559947b4",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9",
+          "f94e5e5d53c1895b857869144cb497424c5b8cc982ca424b5a9949d793b1b026"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+            "gasUsed": "584",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          },
+          {
+            "gasUsed": "5268",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "da37d455aac56e23529c671019255355b0f7afc69d2e336e095f12ac5010a9eb"
+      },
+      "height": 1900010,
+      "name": "CREATE aninhado: fábrica publica filho, nonce do contrato avança",
+      "note": "endereço do filho = keccak(fábrica + \":\" + nonceDoContrato)[12:] — a MESMA regra de derivação do deploy de topo, com o nonce do CONTRATO (bumpNonce do mundo)",
+      "pre": {
+        "accounts": {
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000",
+            "staked": "10000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x601c600c600039601c6000f36c6001600c60003960016000f300600052600d60136000f060005500"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "6515088bd7dd819c5c97cbde40ac75fe9580d9a846912e3f8488c5ccbbebdf3c",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        },
+        {
+          "amount": "0",
+          "data": {
+            "input": "0x",
+            "to": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "679df85e788ddf063c7f11f4d5c72808dc2483b172d03ed1bba6a111f3645354",
+          "nonce": 2,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_CALL"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0",
+          "0"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "3cb1d1219ec99d2c6d21280951821a68b5f12ccf93db0e72f032e1e4f9f97ab4",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "96e004fe80049f01b4f4029700cc528504b85c80d822177d0095ada0a2025673",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+            "gasUsed": "44",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          },
+          {
+            "gasUsed": "5190000",
+            "logs": [],
+            "success": false,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "8a476d2cc5261ac515b403ee3bce5c131636e5dd21b09bf50630ab44d92261f4"
+      },
+      "height": 1900010,
+      "name": "SELFDESTRUCT: não suportado — halt excepcional consome TODO o orçamento de gás",
+      "note": "opcode 0xff lança EavmError (\"SELFDESTRUCT não suportado\"); #runEavmTx trata como falha com gasUsed = orçamento INTEIRO — aqui o teto MAX_EAVM_GAS (5190000). A energia correspondente é consumida da conta (visível na folha acct)",
+      "pre": {
+        "accounts": {
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000",
+            "staked": "100000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6001600c60003960016000f3ff"
+          },
+          "fee": "0",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "de1213ee737f955586466b9f0d961c578d3f5279e2ed833c3a01a618f537534b",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        },
+        {
+          "amount": "0",
+          "data": {
+            "input": "0x",
+            "to": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188"
+          },
+          "fee": "0",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "3b59e985c3723426d362d937eaa811522c2e727a7630f66bcf16711328673a23",
+          "nonce": 2,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_CALL"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0",
+          "0"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "6e2a01a5da93fa5e3eaefa62b02ba928368ad3be952313c4e66bb76fbed8fc70",
+          "72a0eee3e4f0341bfcddd2bf39e2df2cc15162114d41d5c1faf29afa1582fb72",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "94846d2e17eb52f74aed9eb886bfcf3f0f490dd81cad17848ae72f2a84fe3385",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "d0266d2d33856ea18c1e1273027844e489af3c4b6ba9e2f31557e5219e39af4b",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188",
+            "gasUsed": "384",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          },
+          {
+            "gasUsed": "2130",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "2c649ac25e21aa829cddfb97c73fffd2be446d7ea7c95a661b5d81e3b827917d"
+      },
+      "height": 1900010,
+      "name": "coexistência: stake + token EAV20 + contrato EAVM no mesmo stateRoot",
+      "note": "prova que a integração EAVM não perturba folhas de outros domínios: o token e o stake de B não mudam — apenas acct de A (taxa/energia/nonce) e a ctr do contador",
+      "pre": {
+        "accounts": {
+          "E779254E275655122DB7E72895E30D10E6": {
+            "balance": "500000000",
+            "staked": "2000000000"
+          },
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000",
+            "staked": "10000000000"
+          }
+        },
+        "tokens": {
+          "af67fc623c20a74a104c4ad47b90b10a2d4d4cf53d989b2345a3eab3d9e041df": {
+            "balances": {
+              "E779254E275655122DB7E72895E30D10E6": "1000000000"
+            },
+            "creator": "E779254E275655122DB7E72895E30D10E6",
+            "decimals": 6,
+            "name": "VetorTok",
+            "symbol": "VTK",
+            "totalSupply": "1000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6012600c60003960126000f36000546001018060005560005260206000f3"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "ec620452c11254916452038787625901cefc5e3cae0c1b08f709c90314b0e005",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        },
+        {
+          "amount": "0",
+          "data": {
+            "input": "0x",
+            "to": "0x46f8c9b9a828286ef4c4620fce4581b4c71c1188"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "32c936ac0a9d35b4127018131c5845cc63414cc1a994ac6b6a09bea8668f0900",
+          "nonce": 2,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_CALL"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "20de93386c556d55c5bf8afb53f528209ca9873445c3e556dc9e7871e1fb657b",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "82d0dcf62e86e39e7fafe0b70133cca5b264e465322813deb32bc8ac564a3f15",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x6aed55ef772c7cf25f30e472b62558c0ea210ada",
+            "gasUsed": "384",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "96284bf88a587e16e8ee2229f4e5c26f697043da65b637684452fa069f36c882"
+      },
+      "height": 1900010,
+      "name": "sender eavm: deploy com data.eavmFrom deriva o contrato do 0x REAL",
+      "note": "acima de EAVM_VALUE_HEIGHT: scheme eavm + data.eavmFrom => sender0x = eavmFrom (a conta MetaMask é a identidade); contrato = keccak(eavmFrom + \":0\")[12:]",
+      "pre": {
+        "accounts": {
+          "E7AF8E1D68146A3869A5DE3860B6A389A5": {
+            "balance": "1000000000",
+            "staked": "10000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6012600c60003960126000f36000546001018060005560005260206000f3",
+            "eavmFrom": "0x9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c"
+          },
+          "fee": "10000000",
+          "from": "E7AF8E1D68146A3869A5DE3860B6A389A5",
+          "id": "eaa8720b492616ed77bf939e60ccd413a81e9b18ff09ca321cfa87d34a73647f",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-eavm-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        }
+      ]
+    },
+    {
+      "blockTs": 1700000000000,
+      "expect": {
+        "fees": [
+          "0"
+        ],
+        "leaves": [
+          "1ed799b9a0ce44d6ae5e343283298eabc9737692d562308e2c4900bdcb750964",
+          "6b975e29d14e51088e2f7729b6d24d4edcd8df37d5d298f8d0604d0aa0ade4e7",
+          "79d5d44ba123ab098d21a6f87403e49d57851bf2e2bdd53bf2b70ae3693dbacd",
+          "863250e9e645f956baa77d0ac4de7743f458b6f48c2063612cb61632089e3c46",
+          "a6c6415aded2559509b38e62d7903c644c766b57fdecafedc4a89d3208b1c777",
+          "a8ac2db45133576c8e76d53e6b97116272deb2256477799b3fac40398a3893f8",
+          "ad32e6a49caa37e6efc5d3cc091e49a893a228ec40567a63c94019a326d19781",
+          "c50f11da7929d0888772d29d29fd1af6e77cf494ef512d2ecc5380d7ccd9441b",
+          "eba52c470250a366246b15a2a3092e98cd9925794584c103c33db503f62e6902",
+          "ecfe994f91cd306140caa9180a9343fa75d4038bf634bb99ed3f0e74b3ef226c",
+          "f740fec7687536aefe38612bc1e491f314c9246988c6a73d1c76b76fa2f505f9"
+        ],
+        "receipts": [
+          {
+            "contractAddr": "0x5d8ea9db429678d2db6793b890be15f7142bc307",
+            "gasUsed": "384",
+            "logs": [],
+            "success": true,
+            "xfers": []
+          }
+        ],
+        "stateRoot": "4f811ff355363832cdec03ee8b950ce1c825ee48e8c93141047df10bc7b658fe"
+      },
+      "height": 1899990,
+      "name": "sender legado: deploy nativo abaixo do fork de valor usa keccak(E7)[12:]",
+      "note": "a MESMA tx acima do fork derivaria outro endereço (encodeE7Dest); é exatamente o tipo de divergência silenciosa que um porte precisa acertar por altura",
+      "pre": {
+        "accounts": {
+          "E7D91885C11BD3DAD3F2824FAD4E94BD9A": {
+            "balance": "1000000000",
+            "staked": "10000000000"
+          }
+        }
+      },
+      "txs": [
+        {
+          "amount": "0",
+          "data": {
+            "code": "0x6012600c60003960126000f36000546001018060005560005260206000f3"
+          },
+          "fee": "10000000",
+          "from": "E7D91885C11BD3DAD3F2824FAD4E94BD9A",
+          "id": "016b323d310530d3413d3b3c290390c52013045bb7b2aefdebdacd8075992f5e",
+          "nonce": 1,
+          "protocol": "eav20",
+          "scheme": "eav7-hybrid-1",
+          "timestamp": 1700000000000,
+          "to": null,
+          "type": "EAVM_DEPLOY"
+        }
+      ]
+    }
+  ],
+  "constants": {
+    "BLOCKHASH_HISTORY": 8191,
+    "BLOCKHASH_WINDOW": 256,
+    "BURN_PER_ENERGY": "20000",
+    "EAVM_CONTRACTS_HEIGHT": 1900000,
+    "EAVM_OSAKA_HEIGHT": 1900000,
+    "EAVM_VALUE_HEIGHT": 1900000,
+    "ENERGY_COST_CALL": 5,
+    "ENERGY_COST_DEPLOY": 10,
+    "ENERGY_FREE": 10,
+    "GAS_PER_ENERGY": 100,
+    "MAX_CONTRACT_BYTES": 24576,
+    "MAX_EAVM_GAS": 5190000,
+    "RESOURCE_HEIGHT": 1600000,
+    "heightAboveForks": 1900010,
+    "heightBelowValueFork": 1899990
+  },
+  "description": "Conformidade da integração EAVM<->estado. Cada caso: estado inicial declarativo + transações CRUAS (applyTransaction não verifica assinatura) + altura -> taxas queimadas, recibos (success/gasUsed/logs/xfers) e TODAS as folhas do stateRoot do estado final (merkleRoot(leaves) == stateRoot). Casos com `error`: a tx de índice errorTxIndex lança e as leaves provam o estado intacto (atomicidade).",
+  "invariants": [
+    "tx EAVM rejeitada (gate de fork, orçamento, saldo) não muta NADA: leaves intactas",
+    "execução revertida ainda é tx válida: taxa cobrada, nonce avança, mundo de contratos intacto",
+    "contracts[].balance é sempre 0n — acima de EAVM_VALUE_HEIGHT o saldo 0x É o da conta nativa (decodeE7Dest ?? eavmToE7)",
+    "deploy bem-sucedido cobra depósito de código: gasUsed += len(runtime) × 20",
+    "a taxa é QUEIMADA (totalBurned), nunca vai ao produtor; applyTransaction retorna 0",
+    "sender0x: altura < EAVM_VALUE_HEIGHT => keccak(E7)[12:]; acima => eavmFrom (scheme eavm) ou encodeE7Dest(E7)",
+    "SELFDESTRUCT não é suportado: halt excepcional que consome o orçamento inteiro"
+  ]
+}

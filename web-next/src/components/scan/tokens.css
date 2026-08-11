@@ -1,0 +1,357 @@
+/* Tokens do desenho EAVScan.dc.html (Aug 2026). */
+.scan {
+  --scan-card: rgba(63, 63, 63, 0.15);
+  --scan-border: rgba(255, 255, 255, 0.14);
+  --scan-border-soft: rgba(255, 255, 255, 0.07);
+  --scan-chip: rgba(99, 54, 196, 0.16);
+  --scan-hover: rgba(255, 255, 255, 0.045);
+  --scan-glow: radial-gradient(640px 320px at 50% -40px, rgba(99, 54, 196, 0.28), transparent 70%);
+  --scan-primary: #6336c4;
+  --scan-primary-h: #7242d4;
+  --scan-link: #9f7bff;
+}
+:root[data-theme="light"] .scan {
+  --scan-card: #ffffff;
+  --scan-border: rgba(23, 20, 31, 0.10);
+  --scan-border-soft: rgba(23, 20, 31, 0.06);
+  --scan-chip: rgba(99, 54, 196, 0.10);
+  --scan-hover: rgba(99, 54, 196, 0.06);
+  --scan-glow: radial-gradient(640px 320px at 50% -40px, rgba(99, 54, 196, 0.14), transparent 70%);
+  --scan-link: #6336c4;
+}
+
+.scan-glass {
+  background: var(--scan-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--scan-border);
+  border-radius: 18px;
+}
+.scan-glass--feed { border-radius: 16px; }
+.scan-row + .scan-row { border-top: 1px solid var(--scan-border-soft); }
+.scan-row:hover { background: var(--scan-hover); }
+
+@keyframes scanPulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+.scan-live {
+  width: 7px; height: 7px; border-radius: 4px;
+  background: var(--ok); display: inline-block;
+  animation: scanPulse 1.6s infinite;
+}
+@media (prefers-reduced-motion: reduce) { .scan-live { animation: none } }
+
+@keyframes scanFadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+.scan-in { animation: scanFadeUp .35s ease }
+@media (prefers-reduced-motion: reduce) { .scan-in { animation: none } }
+
+@keyframes scanGridFlow {
+  0% { background-position: 0 0, 0 0 }
+  100% { background-position: 0 58px, 0 0 }
+}
+@keyframes scanAuroraA {
+  0% { transform: translateX(-50%) translateY(0) scale(1) }
+  100% { transform: translateX(-50%) translateY(46px) scale(1.14) }
+}
+@keyframes scanSpin3d {
+  0% { transform: rotateX(-18deg) rotateY(0deg) }
+  100% { transform: rotateX(-18deg) rotateY(360deg) }
+}
+@keyframes scanSpinRing {
+  0% { transform: rotateX(72deg) rotateZ(0deg) }
+  100% { transform: rotateX(72deg) rotateZ(360deg) }
+}
+@keyframes scanFloatA {
+  0% { transform: translateY(0) }
+  100% { transform: translateY(-16px) }
+}
+@keyframes scanFloatB {
+  0% { transform: translateY(0) }
+  100% { transform: translateY(14px) }
+}
+@keyframes scanShimmer {
+  0% { background-position: 0% 50% }
+  100% { background-position: 200% 50% }
+}
+
+.scan-hero {
+  position: relative;
+  overflow: hidden;
+}
+.scan-hero__bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  mask-image: linear-gradient(180deg, #000 72%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent);
+}
+.scan-hero__grid {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: 220%;
+  height: 130%;
+  transform: translateX(-50%) perspective(560px) rotateX(63deg);
+  transform-origin: top center;
+  background-image:
+    linear-gradient(var(--gridline) 1px, transparent 1px),
+    linear-gradient(90deg, var(--gridline) 1px, transparent 1px);
+  background-size: 58px 58px;
+  mask-image: linear-gradient(180deg, transparent, #000 16%, #000 68%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 16%, #000 68%, transparent);
+  animation: scanGridFlow 1s linear infinite;
+}
+.scan-hero__horizon {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: 130%;
+  height: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, rgba(159, 123, 255, 0.7), transparent);
+  filter: blur(1px);
+}
+.scan-hero__blob {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: 1100px;
+  height: 520px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center, var(--hero1), transparent 62%);
+  opacity: 0.85;
+}
+.scan-hero__aurora {
+  position: absolute;
+  left: 50%;
+  top: -340px;
+  width: 1160px;
+  height: 620px;
+  background: radial-gradient(ellipse at center, var(--hero2), transparent 65%);
+  animation: scanAuroraA 20s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-hero__grid,
+  .scan-hero__aurora { animation: none }
+}
+
+.scan-cube {
+  position: absolute;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+.scan-cube--l {
+  left: 5.5%;
+  top: 148px;
+  width: 128px;
+  height: 128px;
+  transform: perspective(900px);
+  animation: scanFloatA 7s ease-in-out infinite alternate;
+}
+.scan-cube--r {
+  right: 6.5%;
+  top: 286px;
+  width: 72px;
+  height: 72px;
+  opacity: 0.92;
+  filter: blur(0.3px);
+  transform: perspective(700px);
+  animation: scanFloatB 8s ease-in-out infinite alternate;
+}
+.scan-cube__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 218px;
+  height: 218px;
+  margin: -109px 0 0 -109px;
+  border: 1px solid rgba(159, 123, 255, 0.35);
+  border-radius: 50%;
+  animation: scanSpinRing 10s linear infinite;
+}
+.scan-cube__ring-dot {
+  position: absolute;
+  left: 50%;
+  top: -3.5px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 4px;
+  background: #c9b2ff;
+  box-shadow: 0 0 12px #9f7bff;
+}
+.scan-cube__glow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(99, 54, 196, 0.55), transparent 70%);
+  filter: blur(7px);
+  pointer-events: none;
+}
+.scan-cube--l .scan-cube__glow {
+  top: 176px;
+  width: 170px;
+  height: 30px;
+}
+.scan-cube--r .scan-cube__glow {
+  top: 104px;
+  width: 100px;
+  height: 20px;
+  filter: blur(5px);
+  background: radial-gradient(ellipse at center, rgba(99, 54, 196, 0.45), transparent 70%);
+}
+.scan-cube__spin {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: scanSpin3d 20s linear infinite;
+}
+.scan-cube--r .scan-cube__spin { animation-duration: 15s; animation-direction: reverse }
+.scan-cube__face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  color: #e4d6ff;
+  letter-spacing: 0.06em;
+  backface-visibility: hidden;
+}
+.scan-cube__face--front {
+  background: linear-gradient(160deg, rgba(159, 123, 255, 0.24), rgba(99, 54, 196, 0.10));
+  border: 1px solid rgba(185, 155, 255, 0.7);
+  box-shadow: inset 0 0 28px rgba(159, 123, 255, 0.3);
+}
+.scan-cube__face--back {
+  background: rgba(38, 18, 86, 0.34);
+  border: 1px solid rgba(159, 123, 255, 0.45);
+}
+.scan-cube__face--side {
+  background: rgba(64, 32, 132, 0.30);
+  border: 1px solid rgba(159, 123, 255, 0.5);
+  box-shadow: inset 0 0 20px rgba(20, 8, 50, 0.5);
+}
+.scan-cube__face--top {
+  background: linear-gradient(135deg, rgba(220, 203, 255, 0.26), rgba(159, 123, 255, 0.12));
+  border: 1px solid rgba(200, 178, 255, 0.7);
+}
+.scan-cube__face--bottom {
+  background: rgba(14, 5, 40, 0.55);
+  border: 1px solid rgba(99, 54, 196, 0.5);
+}
+.scan-cube__seven {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  background: linear-gradient(135deg, #ffffff, #c9b2ff 45%, #9f7bff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(159, 123, 255, 0.7));
+}
+.scan-hero-chip .scan-glass {
+  border-color: rgba(159, 123, 255, 0.35);
+}
+@media (max-width: 1060px) {
+  .scan-cube--l,
+  .scan-cube--r,
+  .scan-hero-chip { display: none !important }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-cube--l,
+  .scan-cube--r,
+  .scan-cube__spin,
+  .scan-cube__ring { animation: none }
+}
+
+.scan-title-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(159, 123, 255, 0.8);
+}
+:root[data-theme="light"] .scan-title-outline {
+  -webkit-text-stroke: 1.5px rgba(99, 54, 196, 0.55);
+}
+.scan-title-shine {
+  background: linear-gradient(100deg, #9f7bff, #e4d6ff 30%, #7a4ae8 60%, #c9b2ff 85%, #9f7bff);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: scanShimmer 6s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-title-shine { animation: none }
+}
+
+.scan-search-shell {
+  display: flex;
+  gap: 10px;
+  background: var(--scan-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(159, 123, 255, 0.38);
+  border-radius: 18px;
+  padding: 11px;
+  box-shadow: 0 30px 90px -32px rgba(99, 54, 196, 0.7);
+}
+
+.scan-ribbon {
+  background: var(--scan-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--scan-border);
+  border-radius: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  overflow: hidden;
+}
+.scan-ribbon__cell {
+  flex: 1;
+  min-width: 140px;
+  padding: 18px 22px;
+}
+.scan-ribbon__div {
+  width: 1px;
+  background: var(--scan-border-soft);
+}
+.scan-ribbon__label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.scan-ribbon__value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 8px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.scan-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.scan-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.scan-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
+.scan-chart {
+  background: var(--scan-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--scan-border);
+  border-radius: 18px;
+  padding: 18px 20px 12px;
+}
+@media (max-width: 1100px) { .scan-stats { grid-template-columns: repeat(3, 1fr) } }
+@media (max-width: 860px) {
+  .scan-stats { grid-template-columns: repeat(2, 1fr) }
+  .scan-split,
+  .scan-charts { grid-template-columns: 1fr }
+  .scan-ribbon__div { display: none }
+}

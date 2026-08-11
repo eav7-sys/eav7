@@ -1,0 +1,149 @@
+{
+  "namespace": "home_netStats",
+  "translations": {
+    "pt": {
+      "cards": {
+        "accounts": { "label": "Total de contas" },
+        "transactions": { "label": "Total de transações" },
+        "volume": { "label": "Volume transferido" },
+        "staked": { "label": "Total em stake" }
+      },
+      "ring": {
+        "supplyLine1": "do supply",
+        "supplyLine2": "travado em stake"
+      }
+    },
+    "en": {
+      "cards": {
+        "accounts": { "label": "Total accounts" },
+        "transactions": { "label": "Total transactions" },
+        "volume": { "label": "Volume transferred" },
+        "staked": { "label": "Total staked" }
+      },
+      "ring": {
+        "supplyLine1": "of supply",
+        "supplyLine2": "locked in stake"
+      }
+    },
+    "es": {
+      "cards": {
+        "accounts": { "label": "Total de cuentas" },
+        "transactions": { "label": "Total de transacciones" },
+        "volume": { "label": "Volumen transferido" },
+        "staked": { "label": "Total en stake" }
+      },
+      "ring": {
+        "supplyLine1": "del suministro",
+        "supplyLine2": "bloqueado en stake"
+      }
+    },
+    "zh": {
+      "cards": {
+        "accounts": { "label": "账户总数" },
+        "transactions": { "label": "交易总数" },
+        "volume": { "label": "转账总量" },
+        "staked": { "label": "质押总量" }
+      },
+      "ring": {
+        "supplyLine1": "占总供应量",
+        "supplyLine2": "已锁定质押"
+      }
+    },
+    "fr": {
+      "cards": {
+        "accounts": { "label": "Total des comptes" },
+        "transactions": { "label": "Total des transactions" },
+        "volume": { "label": "Volume transféré" },
+        "staked": { "label": "Total en staking" }
+      },
+      "ring": {
+        "supplyLine1": "de l'offre",
+        "supplyLine2": "verrouillée en staking"
+      }
+    },
+    "de": {
+      "cards": {
+        "accounts": { "label": "Konten gesamt" },
+        "transactions": { "label": "Transaktionen gesamt" },
+        "volume": { "label": "Übertragenes Volumen" },
+        "staked": { "label": "Gesamt gestaked" }
+      },
+      "ring": {
+        "supplyLine1": "des Angebots",
+        "supplyLine2": "im Staking gebunden"
+      }
+    },
+    "ja": {
+      "cards": {
+        "accounts": { "label": "アカウント総数" },
+        "transactions": { "label": "取引総数" },
+        "volume": { "label": "転送量" },
+        "staked": { "label": "ステーキング総量" }
+      },
+      "ring": {
+        "supplyLine1": "の供給量が",
+        "supplyLine2": "ステークにロック中"
+      }
+    },
+    "ru": {
+      "cards": {
+        "accounts": { "label": "Всего аккаунтов" },
+        "transactions": { "label": "Всего транзакций" },
+        "volume": { "label": "Объём переводов" },
+        "staked": { "label": "Всего в стейкинге" }
+      },
+      "ring": {
+        "supplyLine1": "от предложения",
+        "supplyLine2": "заблокировано в стейкинге"
+      }
+    },
+    "ar": {
+      "cards": {
+        "accounts": { "label": "إجمالي الحسابات" },
+        "transactions": { "label": "إجمالي المعاملات" },
+        "volume": { "label": "حجم التحويلات" },
+        "staked": { "label": "إجمالي الحصص المرهونة" }
+      },
+      "ring": {
+        "supplyLine1": "من إجمالي العرض",
+        "supplyLine2": "مقفل في الحصص المرهونة"
+      }
+    },
+    "hi": {
+      "cards": {
+        "accounts": { "label": "कुल खाते" },
+        "transactions": { "label": "कुल लेनदेन" },
+        "volume": { "label": "स्थानांतरित वॉल्यूम" },
+        "staked": { "label": "कुल स्टेक्ड" }
+      },
+      "ring": {
+        "supplyLine1": "कुल आपूर्ति का",
+        "supplyLine2": "स्टेक में लॉक्ड"
+      }
+    },
+    "ko": {
+      "cards": {
+        "accounts": { "label": "총 계정 수" },
+        "transactions": { "label": "총 거래 수" },
+        "volume": { "label": "전송된 거래량" },
+        "staked": { "label": "총 스테이킹량" }
+      },
+      "ring": {
+        "supplyLine1": "총 공급량 중",
+        "supplyLine2": "스테이킹에 잠김"
+      }
+    },
+    "it": {
+      "cards": {
+        "accounts": { "label": "Totale account" },
+        "transactions": { "label": "Totale transazioni" },
+        "volume": { "label": "Volume trasferito" },
+        "staked": { "label": "Totale in staking" }
+      },
+      "ring": {
+        "supplyLine1": "dell'offerta",
+        "supplyLine2": "bloccato in staking"
+      }
+    }
+  }
+}

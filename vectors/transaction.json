@@ -1,0 +1,93 @@
+{
+  "cases": [
+    {
+      "id": "4a8026ff797ea8854fcade5da9dd6b21f79f8281f2509bfb000b3dd63901d5cf",
+      "input": {
+        "amount": "1000000",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "nonce": 1,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000000,
+        "to": "E74FE1240972091DE7BE392072067581DC",
+        "type": "TRANSFER"
+      },
+      "kind": "canonicalPayload+id",
+      "payload": "{\"amount\":\"1000000\",\"fee\":\"10000\",\"from\":\"E7D36986E47AC3768974578F7CCD3123AE\",\"nonce\":1,\"protocol\":\"eav20\",\"scheme\":\"eav7-hybrid-1\",\"timestamp\":1700000000000,\"to\":\"E74FE1240972091DE7BE392072067581DC\",\"type\":\"TRANSFER\"}"
+    },
+    {
+      "id": "9b60153e713b9e24e9a5d942edd2d844bba1ea3261bc4f33adb0b6fd6c222864",
+      "input": {
+        "amount": "0",
+        "fee": "0",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "nonce": 2,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000001,
+        "to": "E74FE1240972091DE7BE392072067581DC",
+        "type": "TRANSFER"
+      },
+      "kind": "canonicalPayload+id",
+      "payload": "{\"amount\":\"0\",\"fee\":\"0\",\"from\":\"E7D36986E47AC3768974578F7CCD3123AE\",\"nonce\":2,\"protocol\":\"eav20\",\"scheme\":\"eav7-hybrid-1\",\"timestamp\":1700000000001,\"to\":\"E74FE1240972091DE7BE392072067581DC\",\"type\":\"TRANSFER\"}"
+    },
+    {
+      "id": "e4c62c39a6e28e9e8fbb025d9e757ea0c5e8e17e3e0dca2f7b4ccad2208b8924",
+      "input": {
+        "amount": "5000000000",
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "nonce": 3,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000002,
+        "to": null,
+        "type": "STAKE"
+      },
+      "kind": "canonicalPayload+id",
+      "payload": "{\"amount\":\"5000000000\",\"fee\":\"10000\",\"from\":\"E7D36986E47AC3768974578F7CCD3123AE\",\"nonce\":3,\"protocol\":\"eav20\",\"scheme\":\"eav7-hybrid-1\",\"timestamp\":1700000000002,\"to\":null,\"type\":\"STAKE\"}"
+    },
+    {
+      "id": "16fb65b2ba17b0b2962c709ea3345ca6bce4671a8458129ab98f9a459398d75f",
+      "input": {
+        "amount": "0",
+        "data": {
+          "votes": {
+            "E74FE1240972091DE7BE392072067581DC": "2000000000"
+          }
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "nonce": 4,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000003,
+        "to": null,
+        "type": "VOTE"
+      },
+      "kind": "canonicalPayload+id",
+      "payload": "{\"amount\":\"0\",\"data\":{\"votes\":{\"E74FE1240972091DE7BE392072067581DC\":\"2000000000\"}},\"fee\":\"10000\",\"from\":\"E7D36986E47AC3768974578F7CCD3123AE\",\"nonce\":4,\"protocol\":\"eav20\",\"scheme\":\"eav7-hybrid-1\",\"timestamp\":1700000000003,\"to\":null,\"type\":\"VOTE\"}"
+    },
+    {
+      "id": "693835f6c51773ddd446a11eeaec40087ef12e736fff35c8cd7d1a79c28c0220",
+      "input": {
+        "amount": "250",
+        "data": {
+          "token": "f8b6985aabfbbab610381134e7635c1603f6c93d34af2f41522b8e017002fea2"
+        },
+        "fee": "10000",
+        "from": "E7D36986E47AC3768974578F7CCD3123AE",
+        "nonce": 5,
+        "protocol": "eav20",
+        "scheme": "eav7-hybrid-1",
+        "timestamp": 1700000000004,
+        "to": "E72C3EA79EBF7AE5B3936344D4122D87A9",
+        "type": "TOKEN_TRANSFER"
+      },
+      "kind": "canonicalPayload+id",
+      "payload": "{\"amount\":\"250\",\"data\":{\"token\":\"f8b6985aabfbbab610381134e7635c1603f6c93d34af2f41522b8e017002fea2\"},\"fee\":\"10000\",\"from\":\"E7D36986E47AC3768974578F7CCD3123AE\",\"nonce\":5,\"protocol\":\"eav20\",\"scheme\":\"eav7-hybrid-1\",\"timestamp\":1700000000004,\"to\":\"E72C3EA79EBF7AE5B3936344D4122D87A9\",\"type\":\"TOKEN_TRANSFER\"}"
+    }
+  ],
+  "description": "Payload canônico e id. O id deriva SÓ do payload assinado — nunca dos bytes da assinatura, que são maleáveis. Duas assinaturas diferentes do mesmo payload produzem o MESMO id, e é isso que a deduplicação do mempool aproveita."
+}

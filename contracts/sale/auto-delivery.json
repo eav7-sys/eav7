@@ -1,0 +1,47 @@
+{
+  "priceUsdPerEav7": "0.008",
+  "btcUsdHint": "95000",
+  "pricingMode": "tiers-by-raised-usd",
+  "tiers": [
+    {
+      "id": "launch",
+      "label": "Launch",
+      "untilRaisedUsd": 500000,
+      "priceUsdPerEav7": "0.005"
+    },
+    {
+      "id": "early",
+      "label": "Early",
+      "untilRaisedUsd": 2000000,
+      "priceUsdPerEav7": "0.008"
+    },
+    {
+      "id": "growth",
+      "label": "Growth",
+      "untilRaisedUsd": 5000000,
+      "priceUsdPerEav7": "0.01"
+    },
+    {
+      "id": "final",
+      "label": "Final",
+      "untilRaisedUsd": 15000000,
+      "priceUsdPerEav7": "0.012"
+    },
+    {
+      "id": "last",
+      "label": "Last call",
+      "untilRaisedUsd": null,
+      "priceUsdPerEav7": "0.015"
+    }
+  ],
+  "tierProgressCounts": ["paid", "granted"],
+  "minConfirmations": {
+    "ethereum": 12,
+    "bsc": 15,
+    "tron": 20,
+    "solana": 32,
+    "bitcoin": 3
+  },
+  "uniqueAmountMicros": true,
+  "comment": "Tier price locks on intent create. raisedUsd sums only paid|granted (pending does not move tiers). Buyer settles at locked intent price."
+}

@@ -1,0 +1,21 @@
+{
+  "namespace": "nav_extra",
+  "translations": {
+    "pt": {
+      "nfts": "NFTs EAV721",
+      "nftsDesc": "Coleções de NFT na rede",
+      "names": "Nomes EAV-NS",
+      "namesDesc": "Nomes legíveis → endereço",
+      "governance": "Governança",
+      "governanceDesc": "Propostas, parâmetros e tesouraria"
+    },
+    "en": {
+      "nfts": "EAV721 NFTs",
+      "nftsDesc": "NFT collections on the network",
+      "names": "EAV-NS Names",
+      "namesDesc": "Human-readable names → address",
+      "governance": "Governance",
+      "governanceDesc": "Proposals, parameters and treasury"
+    }
+  }
+}

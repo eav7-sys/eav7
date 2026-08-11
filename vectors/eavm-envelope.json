@@ -1,0 +1,183 @@
+{
+  "cases": [
+    {
+      "envelope": {
+        "amount": "1",
+        "data": {
+          "eavmFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+          "eavmHash": "0x8694744505343ca930cdc569aca403225b863ab972443398763341901d2852b7",
+          "eavmNonce": 0,
+          "eavmTo": "0x7777777777777777777777777777777777777777",
+          "op": null,
+          "raw": "0xf86d80856edf2a079e832dc6c094777777777777777777777777777777777777777785e8d4a5100080830232cba0550fe727de2fb864a6f1691e38476cbdd7b86973635bfa6d2805b53368f9bcf5a04d6f03ff12fca1087dc6788278005ae289208039a985f043b8436ae2a8c06952"
+        },
+        "fee": "10000",
+        "from": "E792446299705BA76615B927CCD72FCBA3",
+        "id": "601176a6fd3692388fd4f926657f94bc5f5c9833b6870e900da4494c00d2f315",
+        "nonce": 1,
+        "to": "E70805406102C4C39CB298860EEC06A6B8",
+        "type": "EAVM_TRANSFER"
+      },
+      "kind": "buildEavmEnvelope",
+      "name": "transferência simples",
+      "parsed": {
+        "chainId": "72020",
+        "dataHex": "0x",
+        "eavmHash": "0x8694744505343ca930cdc569aca403225b863ab972443398763341901d2852b7",
+        "eavmType": 0,
+        "from": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+        "gasLimit": "3000000",
+        "gasPrice": "476190476190",
+        "nonce": 0,
+        "to": "0x7777777777777777777777777777777777777777",
+        "value": "1000000000000"
+      },
+      "raw": "0xf86d80856edf2a079e832dc6c094777777777777777777777777777777777777777785e8d4a5100080830232cba0550fe727de2fb864a6f1691e38476cbdd7b86973635bfa6d2805b53368f9bcf5a04d6f03ff12fca1087dc6788278005ae289208039a985f043b8436ae2a8c06952",
+      "recoveredFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a"
+    },
+    {
+      "envelope": {
+        "amount": "2",
+        "data": {
+          "eavmFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+          "eavmHash": "0x092851aa373c8d12f5d500ce5373076ef55b37ff5139de05598009028f261b61",
+          "eavmNonce": 1,
+          "eavmTo": "0xe7000000d36986e47ac3768974578f7ccd3123ae",
+          "op": null,
+          "raw": "0xf86e01856edf2a079e832dc6c094e7000000d36986e47ac3768974578f7ccd3123ae8601d1a94a200080830232cca0481eea10da4838adf91dd22d511c624b9103a30a4be69b47559590d96e7412c2a05acb390ff245fc2adf840e42c8f94e2d885bb14b33636837e54571549bcbd3bf"
+        },
+        "fee": "10000",
+        "from": "E792446299705BA76615B927CCD72FCBA3",
+        "id": "b39fbd097a5f0cec7a5ef640c286a4c6d3a93c6e753144d4bb69265505d6a2c6",
+        "nonce": 2,
+        "to": "E7D36986E47AC3768974578F7CCD3123AE",
+        "type": "EAVM_TRANSFER"
+      },
+      "kind": "buildEavmEnvelope",
+      "name": "destino E7 nativo no campo to",
+      "parsed": {
+        "chainId": "72020",
+        "dataHex": "0x",
+        "eavmHash": "0x092851aa373c8d12f5d500ce5373076ef55b37ff5139de05598009028f261b61",
+        "eavmType": 0,
+        "from": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+        "gasLimit": "3000000",
+        "gasPrice": "476190476190",
+        "nonce": 1,
+        "to": "0xe7000000d36986e47ac3768974578f7ccd3123ae",
+        "value": "2000000000000"
+      },
+      "raw": "0xf86e01856edf2a079e832dc6c094e7000000d36986e47ac3768974578f7ccd3123ae8601d1a94a200080830232cca0481eea10da4838adf91dd22d511c624b9103a30a4be69b47559590d96e7412c2a05acb390ff245fc2adf840e42c8f94e2d885bb14b33636837e54571549bcbd3bf",
+      "recoveredFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a"
+    },
+    {
+      "envelope": {
+        "amount": "5",
+        "data": {
+          "eavmFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+          "eavmHash": "0xaadb231ec6090096056946da827694aa0f6031f90ce5c0a6c8f2ffc9308bd9b5",
+          "eavmNonce": 2,
+          "eavmTo": "0x0000000000000000000000000000000000007001",
+          "op": "STAKE",
+          "raw": "0xf86e02856edf2a079e832dc6c094000000000000000000000000000000000000700186048c2739500080830232cba0ab15f1d617e3e5f8063673b8155a9eedd48c6970be74f1a9d459bbdb50b78f23a05c52f3599a04343ef66216bfae5d899da042c31f4dff0a8ef132637e98e8c37f"
+        },
+        "fee": "10000",
+        "from": "E792446299705BA76615B927CCD72FCBA3",
+        "id": "63d33b0624e8a468071d06ba52448fc7addad10346e52d77cdd4bcb310bde6f9",
+        "nonce": 3,
+        "to": null,
+        "type": "STAKE"
+      },
+      "kind": "buildEavmEnvelope",
+      "name": "operação nativa STAKE por endereço de sistema",
+      "parsed": {
+        "chainId": "72020",
+        "dataHex": "0x",
+        "eavmHash": "0xaadb231ec6090096056946da827694aa0f6031f90ce5c0a6c8f2ffc9308bd9b5",
+        "eavmType": 0,
+        "from": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+        "gasLimit": "3000000",
+        "gasPrice": "476190476190",
+        "nonce": 2,
+        "to": "0x0000000000000000000000000000000000007001",
+        "value": "5000000000000"
+      },
+      "raw": "0xf86e02856edf2a079e832dc6c094000000000000000000000000000000000000700186048c2739500080830232cba0ab15f1d617e3e5f8063673b8155a9eedd48c6970be74f1a9d459bbdb50b78f23a05c52f3599a04343ef66216bfae5d899da042c31f4dff0a8ef132637e98e8c37f",
+      "recoveredFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a"
+    },
+    {
+      "envelope": {
+        "amount": "0",
+        "data": {
+          "code": "0x6008600c60003960086000f360aa60006000a100",
+          "eavmFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+          "eavmHash": "0xb3b6c644faa10e4077f612167950f99d7bcca932e2930531182c225378c3fa88",
+          "eavmNonce": 3,
+          "eavmTo": null,
+          "op": null,
+          "raw": "0xf86803856edf2a079e832dc6c08080946008600c60003960086000f360aa60006000a100830232cca095a804c82a15a796ff6de43e80dba629cbc90e11e8bda49c652d6c37aad1eda5a01bb48f2fa6465ded572f8c24d69f4e7ab14b8be934faa9938a3e0df66656112c"
+        },
+        "fee": "200000",
+        "from": "E792446299705BA76615B927CCD72FCBA3",
+        "id": "e75c2c0971ec8fd4291de2480a500d4eedaac0729f3c8d4cacae25947da057f8",
+        "nonce": 4,
+        "to": null,
+        "type": "EAVM_DEPLOY"
+      },
+      "kind": "buildEavmEnvelope",
+      "name": "implantação de contrato",
+      "parsed": {
+        "chainId": "72020",
+        "dataHex": "0x6008600c60003960086000f360aa60006000a100",
+        "eavmHash": "0xb3b6c644faa10e4077f612167950f99d7bcca932e2930531182c225378c3fa88",
+        "eavmType": 0,
+        "from": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+        "gasLimit": "3000000",
+        "gasPrice": "476190476190",
+        "nonce": 3,
+        "to": null,
+        "value": "0"
+      },
+      "raw": "0xf86803856edf2a079e832dc6c08080946008600c60003960086000f360aa60006000a100830232cca095a804c82a15a796ff6de43e80dba629cbc90e11e8bda49c652d6c37aad1eda5a01bb48f2fa6465ded572f8c24d69f4e7ab14b8be934faa9938a3e0df66656112c",
+      "recoveredFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a"
+    },
+    {
+      "envelope": {
+        "amount": "0",
+        "data": {
+          "eavmFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+          "eavmHash": "0x4c7fb0b9d8214641d7f18e97f00be09b15e84a380f5efbd60c53126ad7ee562f",
+          "eavmNonce": 4,
+          "eavmTo": "0x8888888888888888888888888888888888888888",
+          "input": "0xdeadbeef",
+          "op": null,
+          "raw": "0xf86c04856edf2a079e832dc6c09488888888888888888888888888888888888888888084deadbeef830232cca041635286b883e14c489045be64a303f8a24a24403d09576d0ece0935dff845faa008c896aeb0b624ab6fb5e685d9163f21ed08b2b9e49e4b9ae0ef86beb5744c01",
+          "to": "0x8888888888888888888888888888888888888888"
+        },
+        "fee": "100000",
+        "from": "E792446299705BA76615B927CCD72FCBA3",
+        "id": "6f24ad3e20b0c83d3a9d1080d07eb6c3f1e109e43a6e4586f592c00142b51c94",
+        "nonce": 5,
+        "to": null,
+        "type": "EAVM_CALL"
+      },
+      "kind": "buildEavmEnvelope",
+      "name": "chamada de contrato com calldata",
+      "parsed": {
+        "chainId": "72020",
+        "dataHex": "0xdeadbeef",
+        "eavmHash": "0x4c7fb0b9d8214641d7f18e97f00be09b15e84a380f5efbd60c53126ad7ee562f",
+        "eavmType": 0,
+        "from": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a",
+        "gasLimit": "3000000",
+        "gasPrice": "476190476190",
+        "nonce": 4,
+        "to": "0x8888888888888888888888888888888888888888",
+        "value": "0"
+      },
+      "raw": "0xf86c04856edf2a079e832dc6c09488888888888888888888888888888888888888888084deadbeef830232cca041635286b883e14c489045be64a303f8a24a24403d09576d0ece0935dff845faa008c896aeb0b624ab6fb5e685d9163f21ed08b2b9e49e4b9ae0ef86beb5744c01",
+      "recoveredFrom": "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a"
+    }
+  ],
+  "description": "Decodificação da transação EVM assinada e classificação do envelope. É o ponto em que uma carteira do ecossistema Ethereum entra na EAV7: o `from` é RECUPERADO da assinatura, nunca informado."
+}

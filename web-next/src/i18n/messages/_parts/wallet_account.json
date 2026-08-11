@@ -1,0 +1,1169 @@
+{
+  "namespace": "wallet_account",
+  "translations": {
+    "pt": {
+      "badge": {
+        "secure": "segura"
+      },
+      "role": {
+        "validator": "Validador",
+        "oracle": "Oráculo",
+        "account": "Conta EAV7"
+      },
+      "lock": {
+        "button": "bloquear"
+      },
+      "balance": {
+        "label": "saldo disponível"
+      },
+      "tier": {
+        "validator": "Validador",
+        "fee_zero": "Taxa zero",
+        "standard": "Padrão"
+      },
+      "actions": {
+        "send": "Enviar",
+        "receive": "Receber",
+        "stake": "Stake"
+      },
+      "stats": {
+        "staked": "Em stake",
+        "staked_suffix": "EAV7",
+        "nonce": "Nonce",
+        "fee": "Taxa",
+        "fee_zero": "zero",
+        "fee_standard": "padrão"
+      },
+      "tier_progress": {
+        "label": "progresso do tier",
+        "remaining_prefix": "faltam",
+        "remaining_suffix": "para o tier {tier}"
+      },
+      "receive": {
+        "title": "Receber EAV7",
+        "description_before": "Compartilhe seu endereço",
+        "description_after": "— a rede mapeia para o seu E7 nativo automaticamente.",
+        "close": "fechar"
+      },
+      "activity": {
+        "title": "Atividade recente",
+        "sent": "Enviado",
+        "received": "Recebido",
+        "empty": "Nenhuma transação recente."
+      },
+      "addresses": {
+        "hint": "use este 0x para receber (padrão EAVM/MetaMask)",
+        "colFormat": "Formato",
+        "colAddress": "Endereço"
+      },
+      "tokens": {
+        "title": "Tokens EAV20"
+      },
+      "footer": {
+        "quantum": "pós-quântica · secp256k1 + ML-DSA-44",
+        "logout": "sair / trocar"
+      },
+      "wipe": {
+        "title": "Apagar esta carteira?",
+        "description_before": "A carteira cifrada será removida",
+        "description_bold": "deste navegador",
+        "description_after": ". Você só consegue restaurar com o backup da chave privada — não há recuperação de senha.",
+        "warning_before": "Confirme que você tem o",
+        "warning_bold": "backup da chave",
+        "warning_after": "antes de apagar.",
+        "download_backup": "Baixar backup (.json)",
+        "cancel": "Cancelar",
+        "confirm": "Apagar carteira"
+      },
+      "faucet": {
+        "button": "Pegar 100 EAV7 de teste",
+        "loading": "Solicitando…",
+        "ok": "100 EAV7 de teste enviados!",
+        "error": "Falha no faucet"
+      },
+      "nav": {
+        "portfolio": "Portfólio",
+        "activity": "Atividade",
+        "addresses": "Endereços",
+        "security": "Segurança",
+        "logout": "Sair"
+      },
+      "portfolio": {
+        "title": "Portfólio",
+        "totalValue": "Valor total",
+        "walletLabel": "Carteira",
+        "composition": "Composição",
+        "available": "Disponível",
+        "staked": "Em stake"
+      },
+      "security": {
+        "lockTitle": "Bloquear sessão",
+        "lockDesc": "Mantém a carteira cifrada neste navegador até a próxima senha.",
+        "quantumTitle": "Assinatura pós-quântica",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "en": {
+      "badge": {
+        "secure": "secure"
+      },
+      "role": {
+        "validator": "Validator",
+        "oracle": "Oracle",
+        "account": "EAV7 Account"
+      },
+      "lock": {
+        "button": "lock"
+      },
+      "balance": {
+        "label": "available balance"
+      },
+      "tier": {
+        "validator": "Validator",
+        "fee_zero": "Zero fee",
+        "standard": "Standard"
+      },
+      "actions": {
+        "send": "Send",
+        "receive": "Receive",
+        "stake": "Stake"
+      },
+      "stats": {
+        "staked": "Staked",
+        "staked_suffix": "EAV7",
+        "nonce": "Nonce",
+        "fee": "Fee",
+        "fee_zero": "zero",
+        "fee_standard": "standard"
+      },
+      "tier_progress": {
+        "label": "tier progress",
+        "remaining_prefix": "remaining",
+        "remaining_suffix": "to reach {tier} tier"
+      },
+      "receive": {
+        "title": "Receive EAV7",
+        "description_before": "Share your address",
+        "description_after": "— the network maps it to your native E7 automatically.",
+        "close": "close"
+      },
+      "activity": {
+        "title": "Recent activity",
+        "sent": "Sent",
+        "received": "Received",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "use this 0x to receive (EAVM/MetaMask standard)",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "EAV20 Tokens"
+      },
+      "footer": {
+        "quantum": "post-quantum · secp256k1 + ML-DSA-44",
+        "logout": "sign out / switch"
+      },
+      "wipe": {
+        "title": "Delete this wallet?",
+        "description_before": "The encrypted wallet will be removed",
+        "description_bold": "from this browser",
+        "description_after": ". You can only restore it with your private key backup — there is no password recovery.",
+        "warning_before": "Confirm you have the",
+        "warning_bold": "key backup",
+        "warning_after": "before deleting.",
+        "download_backup": "Download backup (.json)",
+        "cancel": "Cancel",
+        "confirm": "Delete wallet"
+      },
+      "faucet": {
+        "button": "Get 100 test EAV7",
+        "loading": "Requesting…",
+        "ok": "100 test EAV7 sent!",
+        "error": "Faucet failed"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "es": {
+      "badge": {
+        "secure": "segura"
+      },
+      "role": {
+        "validator": "Validador",
+        "oracle": "Oráculo",
+        "account": "Cuenta EAV7"
+      },
+      "lock": {
+        "button": "bloquear"
+      },
+      "balance": {
+        "label": "saldo disponible"
+      },
+      "tier": {
+        "validator": "Validador",
+        "fee_zero": "Comisión cero",
+        "standard": "Estándar"
+      },
+      "actions": {
+        "send": "Enviar",
+        "receive": "Recibir",
+        "stake": "Stake"
+      },
+      "stats": {
+        "staked": "En stake",
+        "staked_suffix": "EAV7",
+        "nonce": "Nonce",
+        "fee": "Comisión",
+        "fee_zero": "cero",
+        "fee_standard": "estándar"
+      },
+      "tier_progress": {
+        "label": "progreso del nivel",
+        "remaining_prefix": "faltan",
+        "remaining_suffix": "para el nivel {tier}"
+      },
+      "receive": {
+        "title": "Recibir EAV7",
+        "description_before": "Comparte tu dirección",
+        "description_after": "— la red la asigna automáticamente a tu E7 nativo.",
+        "close": "cerrar"
+      },
+      "activity": {
+        "title": "Actividad reciente",
+        "sent": "Enviado",
+        "received": "Recibido",
+        "empty": "No hay transacciones recientes."
+      },
+      "addresses": {
+        "hint": "usa este 0x para recibir (estándar EAVM/MetaMask)",
+        "colFormat": "Formato",
+        "colAddress": "Dirección"
+      },
+      "tokens": {
+        "title": "Tokens EAV20"
+      },
+      "footer": {
+        "quantum": "poscuántica · secp256k1 + ML-DSA-44",
+        "logout": "salir / cambiar"
+      },
+      "wipe": {
+        "title": "¿Eliminar esta cartera?",
+        "description_before": "La cartera cifrada se eliminará",
+        "description_bold": "de este navegador",
+        "description_after": ". Solo puedes restaurarla con el backup de la clave privada — no hay recuperación de contraseña.",
+        "warning_before": "Confirma que tienes el",
+        "warning_bold": "backup de la clave",
+        "warning_after": "antes de eliminar.",
+        "download_backup": "Descargar backup (.json)",
+        "cancel": "Cancelar",
+        "confirm": "Eliminar cartera"
+      },
+      "nav": {
+        "portfolio": "Portafolio",
+        "activity": "Actividad",
+        "addresses": "Direcciones",
+        "security": "Seguridad",
+        "logout": "Salir"
+      },
+      "portfolio": {
+        "title": "Portafolio",
+        "totalValue": "Valor total",
+        "walletLabel": "Cartera",
+        "composition": "Composición",
+        "available": "Disponible",
+        "staked": "En stake"
+      },
+      "security": {
+        "lockTitle": "Bloquear sesión",
+        "lockDesc": "Mantiene la cartera cifrada en este navegador hasta la próxima contraseña.",
+        "quantumTitle": "Firma post-cuántica",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "zh": {
+      "badge": {
+        "secure": "安全"
+      },
+      "role": {
+        "validator": "验证者",
+        "oracle": "预言机",
+        "account": "EAV7 账户"
+      },
+      "lock": {
+        "button": "锁定"
+      },
+      "balance": {
+        "label": "可用余额"
+      },
+      "tier": {
+        "validator": "验证者",
+        "fee_zero": "零手续费",
+        "standard": "标准"
+      },
+      "actions": {
+        "send": "发送",
+        "receive": "接收",
+        "stake": "质押"
+      },
+      "stats": {
+        "staked": "质押中",
+        "staked_suffix": "EAV7",
+        "nonce": "序号",
+        "fee": "手续费",
+        "fee_zero": "零",
+        "fee_standard": "标准"
+      },
+      "tier_progress": {
+        "label": "等级进度",
+        "remaining_prefix": "还差",
+        "remaining_suffix": "达到{tier}等级"
+      },
+      "receive": {
+        "title": "接收 EAV7",
+        "description_before": "分享您的地址",
+        "description_after": "—网络会自动映射到您的原生 E7。",
+        "close": "关闭"
+      },
+      "activity": {
+        "title": "最近活动",
+        "sent": "已发送",
+        "received": "已接收",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "使用此 0x 地址接收（EAVM/MetaMask 标准）",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "EAV20 代币"
+      },
+      "footer": {
+        "quantum": "后量子 · secp256k1 + ML-DSA-44",
+        "logout": "退出/切换"
+      },
+      "wipe": {
+        "title": "删除此钱包？",
+        "description_before": "加密钱包将从",
+        "description_bold": "此浏览器中",
+        "description_after": "移除。您只能通过私钥备份恢复——没有密码恢复功能。",
+        "warning_before": "请确认您已拥有",
+        "warning_bold": "密钥备份",
+        "warning_after": "再进行删除。",
+        "download_backup": "下载备份（.json）",
+        "cancel": "取消",
+        "confirm": "删除钱包"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "fr": {
+      "badge": {
+        "secure": "sécurisée"
+      },
+      "role": {
+        "validator": "Validateur",
+        "oracle": "Oracle",
+        "account": "Compte EAV7"
+      },
+      "lock": {
+        "button": "verrouiller"
+      },
+      "balance": {
+        "label": "solde disponible"
+      },
+      "tier": {
+        "validator": "Validateur",
+        "fee_zero": "Frais zéro",
+        "standard": "Standard"
+      },
+      "actions": {
+        "send": "Envoyer",
+        "receive": "Recevoir",
+        "stake": "Stake"
+      },
+      "stats": {
+        "staked": "En stake",
+        "staked_suffix": "EAV7",
+        "nonce": "Nonce",
+        "fee": "Frais",
+        "fee_zero": "zéro",
+        "fee_standard": "standard"
+      },
+      "tier_progress": {
+        "label": "progression du palier",
+        "remaining_prefix": "il manque",
+        "remaining_suffix": "pour le palier {tier}"
+      },
+      "receive": {
+        "title": "Recevoir des EAV7",
+        "description_before": "Partagez votre adresse",
+        "description_after": "— le réseau la fait correspondre automatiquement à votre E7 natif.",
+        "close": "fermer"
+      },
+      "activity": {
+        "title": "Activité récente",
+        "sent": "Envoyé",
+        "received": "Reçu",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "utilisez ce 0x pour recevoir (standard EAVM/MetaMask)",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "Jetons EAV20"
+      },
+      "footer": {
+        "quantum": "post-quantique · secp256k1 + ML-DSA-44",
+        "logout": "déconnexion / changer"
+      },
+      "wipe": {
+        "title": "Supprimer ce portefeuille ?",
+        "description_before": "Le portefeuille chiffré sera supprimé",
+        "description_bold": "de ce navigateur",
+        "description_after": ". Vous ne pouvez le restaurer qu'avec la sauvegarde de la clé privée — il n'y a pas de récupération de mot de passe.",
+        "warning_before": "Confirmez que vous avez la",
+        "warning_bold": "sauvegarde de la clé",
+        "warning_after": "avant de supprimer.",
+        "download_backup": "Télécharger la sauvegarde (.json)",
+        "cancel": "Annuler",
+        "confirm": "Supprimer le portefeuille"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "de": {
+      "badge": {
+        "secure": "sicher"
+      },
+      "role": {
+        "validator": "Validator",
+        "oracle": "Orakel",
+        "account": "EAV7-Konto"
+      },
+      "lock": {
+        "button": "sperren"
+      },
+      "balance": {
+        "label": "verfügbares Guthaben"
+      },
+      "tier": {
+        "validator": "Validator",
+        "fee_zero": "Gebührenfrei",
+        "standard": "Standard"
+      },
+      "actions": {
+        "send": "Senden",
+        "receive": "Empfangen",
+        "stake": "Stake"
+      },
+      "stats": {
+        "staked": "Gestaked",
+        "staked_suffix": "EAV7",
+        "nonce": "Nonce",
+        "fee": "Gebühr",
+        "fee_zero": "keine",
+        "fee_standard": "Standard"
+      },
+      "tier_progress": {
+        "label": "Stufenfortschritt",
+        "remaining_prefix": "fehlen noch",
+        "remaining_suffix": "bis Stufe {tier}"
+      },
+      "receive": {
+        "title": "EAV7 empfangen",
+        "description_before": "Teile deine Adresse",
+        "description_after": "— das Netzwerk ordnet sie automatisch deinem nativen E7 zu.",
+        "close": "schließen"
+      },
+      "activity": {
+        "title": "Letzte Aktivität",
+        "sent": "Gesendet",
+        "received": "Empfangen",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "verwende dieses 0x, um zu empfangen (EAVM/MetaMask-Standard)",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "EAV20-Token"
+      },
+      "footer": {
+        "quantum": "postquanten · secp256k1 + ML-DSA-44",
+        "logout": "abmelden / wechseln"
+      },
+      "wipe": {
+        "title": "Diese Wallet löschen?",
+        "description_before": "Die verschlüsselte Wallet wird",
+        "description_bold": "aus diesem Browser",
+        "description_after": " entfernt. Du kannst sie nur mit dem Backup des privaten Schlüssels wiederherstellen — es gibt keine Passwort-Wiederherstellung.",
+        "warning_before": "Bestätige, dass du das",
+        "warning_bold": "Schlüssel-Backup",
+        "warning_after": "hast, bevor du löschst.",
+        "download_backup": "Backup herunterladen (.json)",
+        "cancel": "Abbrechen",
+        "confirm": "Wallet löschen"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "ja": {
+      "badge": {
+        "secure": "安全"
+      },
+      "role": {
+        "validator": "バリデーター",
+        "oracle": "オラクル",
+        "account": "EAV7アカウント"
+      },
+      "lock": {
+        "button": "ロック"
+      },
+      "balance": {
+        "label": "利用可能残高"
+      },
+      "tier": {
+        "validator": "バリデーター",
+        "fee_zero": "手数料無料",
+        "standard": "スタンダード"
+      },
+      "actions": {
+        "send": "送金",
+        "receive": "受け取る",
+        "stake": "ステーク"
+      },
+      "stats": {
+        "staked": "ステーク中",
+        "staked_suffix": "EAV7",
+        "nonce": "ノンス",
+        "fee": "手数料",
+        "fee_zero": "無料",
+        "fee_standard": "標準"
+      },
+      "tier_progress": {
+        "label": "ティアの進捗",
+        "remaining_prefix": "残り",
+        "remaining_suffix": "で{tier}ティアに到達"
+      },
+      "receive": {
+        "title": "EAV7を受け取る",
+        "description_before": "アドレスを共有してください",
+        "description_after": "— ネットワークが自動的にネイティブE7に変換します。",
+        "close": "閉じる"
+      },
+      "activity": {
+        "title": "最近のアクティビティ",
+        "sent": "送信済み",
+        "received": "受信済み",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "受け取りにはこの0xを使用してください（EAVM/MetaMask標準）",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "EAV20トークン"
+      },
+      "footer": {
+        "quantum": "耐量子 · secp256k1 + ML-DSA-44",
+        "logout": "ログアウト / 切り替え"
+      },
+      "wipe": {
+        "title": "このウォレットを削除しますか？",
+        "description_before": "暗号化されたウォレットは",
+        "description_bold": "このブラウザから",
+        "description_after": "削除されます。秘密鍵のバックアップでのみ復元できます — パスワードの復旧はありません。",
+        "warning_before": "削除する前に",
+        "warning_bold": "鍵のバックアップ",
+        "warning_after": "を保有していることを確認してください。",
+        "download_backup": "バックアップをダウンロード（.json）",
+        "cancel": "キャンセル",
+        "confirm": "ウォレットを削除"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "ru": {
+      "badge": {
+        "secure": "защищено"
+      },
+      "role": {
+        "validator": "Валидатор",
+        "oracle": "Оракул",
+        "account": "Счёт EAV7"
+      },
+      "lock": {
+        "button": "заблокировать"
+      },
+      "balance": {
+        "label": "доступный баланс"
+      },
+      "tier": {
+        "validator": "Валидатор",
+        "fee_zero": "Нулевая комиссия",
+        "standard": "Стандарт"
+      },
+      "actions": {
+        "send": "Отправить",
+        "receive": "Получить",
+        "stake": "Стейк"
+      },
+      "stats": {
+        "staked": "В стейке",
+        "staked_suffix": "EAV7",
+        "nonce": "Nonce",
+        "fee": "Комиссия",
+        "fee_zero": "ноль",
+        "fee_standard": "стандарт"
+      },
+      "tier_progress": {
+        "label": "прогресс уровня",
+        "remaining_prefix": "осталось",
+        "remaining_suffix": "до уровня «{tier}»"
+      },
+      "receive": {
+        "title": "Получить EAV7",
+        "description_before": "Поделитесь своим адресом",
+        "description_after": "— сеть автоматически сопоставит его с вашим нативным E7.",
+        "close": "закрыть"
+      },
+      "activity": {
+        "title": "Недавняя активность",
+        "sent": "Отправлено",
+        "received": "Получено",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "используйте этот 0x для получения (стандарт EAVM/MetaMask)",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "Токены EAV20"
+      },
+      "footer": {
+        "quantum": "постквантовая · secp256k1 + ML-DSA-44",
+        "logout": "выйти / сменить"
+      },
+      "wipe": {
+        "title": "Удалить этот кошелёк?",
+        "description_before": "Зашифрованный кошелёк будет удалён",
+        "description_bold": "из этого браузера",
+        "description_after": ". Восстановить его можно только с помощью резервной копии приватного ключа — восстановление пароля невозможно.",
+        "warning_before": "Убедитесь, что у вас есть",
+        "warning_bold": "резервная копия ключа",
+        "warning_after": "перед удалением.",
+        "download_backup": "Скачать резервную копию (.json)",
+        "cancel": "Отмена",
+        "confirm": "Удалить кошелёк"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "ar": {
+      "badge": {
+        "secure": "آمنة"
+      },
+      "role": {
+        "validator": "مُصادِق",
+        "oracle": "أوراكل",
+        "account": "حساب EAV7"
+      },
+      "lock": {
+        "button": "قفل"
+      },
+      "balance": {
+        "label": "الرصيد المتاح"
+      },
+      "tier": {
+        "validator": "مُصادِق",
+        "fee_zero": "رسوم صفرية",
+        "standard": "قياسي"
+      },
+      "actions": {
+        "send": "إرسال",
+        "receive": "استلام",
+        "stake": "تكديس"
+      },
+      "stats": {
+        "staked": "المُكدَّس",
+        "staked_suffix": "EAV7",
+        "nonce": "Nonce",
+        "fee": "الرسوم",
+        "fee_zero": "صفر",
+        "fee_standard": "قياسي"
+      },
+      "tier_progress": {
+        "label": "تقدم المستوى",
+        "remaining_prefix": "متبقٍ",
+        "remaining_suffix": "للوصول إلى مستوى {tier}"
+      },
+      "receive": {
+        "title": "استلام EAV7",
+        "description_before": "شارك عنوانك",
+        "description_after": "— تقوم الشبكة تلقائيًا بربطه بعملة E7 الأصلية الخاصة بك.",
+        "close": "إغلاق"
+      },
+      "activity": {
+        "title": "النشاط الأخير",
+        "sent": "مُرسَل",
+        "received": "مُستلَم",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "استخدم هذا العنوان 0x للاستلام (معيار EAVM/MetaMask)",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "عملات EAV20"
+      },
+      "footer": {
+        "quantum": "ما بعد الكم · secp256k1 + ML-DSA-44",
+        "logout": "تسجيل الخروج / تبديل"
+      },
+      "wipe": {
+        "title": "حذف هذه المحفظة؟",
+        "description_before": "ستتم إزالة المحفظة المشفرة",
+        "description_bold": "من هذا المتصفح",
+        "description_after": ". يمكنك استعادتها فقط باستخدام نسخة احتياطية للمفتاح الخاص — لا يوجد استرداد لكلمة المرور.",
+        "warning_before": "تأكد من أن لديك",
+        "warning_bold": "نسخة احتياطية للمفتاح",
+        "warning_after": "قبل الحذف.",
+        "download_backup": "تنزيل النسخة الاحتياطية (.json)",
+        "cancel": "إلغاء",
+        "confirm": "حذف المحفظة"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "hi": {
+      "badge": {
+        "secure": "सुरक्षित"
+      },
+      "role": {
+        "validator": "वैलिडेटर",
+        "oracle": "ओरेकल",
+        "account": "EAV7 खाता"
+      },
+      "lock": {
+        "button": "लॉक करें"
+      },
+      "balance": {
+        "label": "उपलब्ध शेष"
+      },
+      "tier": {
+        "validator": "वैलिडेटर",
+        "fee_zero": "शून्य शुल्क",
+        "standard": "मानक"
+      },
+      "actions": {
+        "send": "भेजें",
+        "receive": "प्राप्त करें",
+        "stake": "स्टेक"
+      },
+      "stats": {
+        "staked": "स्टेक में",
+        "staked_suffix": "EAV7",
+        "nonce": "Nonce",
+        "fee": "शुल्क",
+        "fee_zero": "शून्य",
+        "fee_standard": "मानक"
+      },
+      "tier_progress": {
+        "label": "स्तर की प्रगति",
+        "remaining_prefix": "शेष",
+        "remaining_suffix": "{tier} स्तर तक पहुँचने के लिए"
+      },
+      "receive": {
+        "title": "EAV7 प्राप्त करें",
+        "description_before": "अपना पता साझा करें",
+        "description_after": "— नेटवर्क इसे स्वचालित रूप से आपके नेटिव E7 से मैप कर देता है।",
+        "close": "बंद करें"
+      },
+      "activity": {
+        "title": "हाल की गतिविधि",
+        "sent": "भेजा गया",
+        "received": "प्राप्त हुआ",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "प्राप्त करने के लिए इस 0x का उपयोग करें (EAVM/MetaMask मानक)",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "EAV20 टोकन"
+      },
+      "footer": {
+        "quantum": "पोस्ट-क्वांटम · secp256k1 + ML-DSA-44",
+        "logout": "साइन आउट / बदलें"
+      },
+      "wipe": {
+        "title": "क्या यह वॉलेट हटाएँ?",
+        "description_before": "एन्क्रिप्टेड वॉलेट को",
+        "description_bold": "इस ब्राउज़र से",
+        "description_after": "हटा दिया जाएगा। आप इसे केवल प्राइवेट की बैकअप से पुनर्स्थापित कर सकते हैं — पासवर्ड रिकवरी संभव नहीं है।",
+        "warning_before": "हटाने से पहले पुष्टि करें कि आपके पास",
+        "warning_bold": "की बैकअप",
+        "warning_after": "है।",
+        "download_backup": "बैकअप डाउनलोड करें (.json)",
+        "cancel": "रद्द करें",
+        "confirm": "वॉलेट हटाएँ"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "ko": {
+      "badge": {
+        "secure": "안전함"
+      },
+      "role": {
+        "validator": "검증인",
+        "oracle": "오라클",
+        "account": "EAV7 계정"
+      },
+      "lock": {
+        "button": "잠금"
+      },
+      "balance": {
+        "label": "사용 가능 잔액"
+      },
+      "tier": {
+        "validator": "검증인",
+        "fee_zero": "수수료 없음",
+        "standard": "표준"
+      },
+      "actions": {
+        "send": "보내기",
+        "receive": "받기",
+        "stake": "스테이크"
+      },
+      "stats": {
+        "staked": "스테이킹됨",
+        "staked_suffix": "EAV7",
+        "nonce": "논스",
+        "fee": "수수료",
+        "fee_zero": "없음",
+        "fee_standard": "표준"
+      },
+      "tier_progress": {
+        "label": "등급 진행률",
+        "remaining_prefix": "남음",
+        "remaining_suffix": "{tier} 등급까지"
+      },
+      "receive": {
+        "title": "EAV7 받기",
+        "description_before": "주소를 공유하세요",
+        "description_after": "— 네트워크가 자동으로 네이티브 E7로 매핑합니다.",
+        "close": "닫기"
+      },
+      "activity": {
+        "title": "최근 활동",
+        "sent": "보냄",
+        "received": "받음",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "받으려면 이 0x를 사용하세요 (EAVM/MetaMask 표준)",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "EAV20 토큰"
+      },
+      "footer": {
+        "quantum": "포스트 퀀텀 · secp256k1 + ML-DSA-44",
+        "logout": "로그아웃 / 전환"
+      },
+      "wipe": {
+        "title": "이 지갑을 삭제하시겠습니까?",
+        "description_before": "암호화된 지갑이",
+        "description_bold": "이 브라우저에서",
+        "description_after": "제거됩니다. 개인 키 백업으로만 복원할 수 있으며 — 비밀번호 복구는 불가능합니다.",
+        "warning_before": "삭제하기 전에",
+        "warning_bold": "키 백업",
+        "warning_after": "을 가지고 있는지 확인하세요.",
+        "download_backup": "백업 다운로드 (.json)",
+        "cancel": "취소",
+        "confirm": "지갑 삭제"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    },
+    "it": {
+      "badge": {
+        "secure": "sicura"
+      },
+      "role": {
+        "validator": "Validatore",
+        "oracle": "Oracolo",
+        "account": "Conto EAV7"
+      },
+      "lock": {
+        "button": "blocca"
+      },
+      "balance": {
+        "label": "saldo disponibile"
+      },
+      "tier": {
+        "validator": "Validatore",
+        "fee_zero": "Commissione zero",
+        "standard": "Standard"
+      },
+      "actions": {
+        "send": "Invia",
+        "receive": "Ricevi",
+        "stake": "Stake"
+      },
+      "stats": {
+        "staked": "In stake",
+        "staked_suffix": "EAV7",
+        "nonce": "Nonce",
+        "fee": "Commissione",
+        "fee_zero": "zero",
+        "fee_standard": "standard"
+      },
+      "tier_progress": {
+        "label": "avanzamento livello",
+        "remaining_prefix": "mancano",
+        "remaining_suffix": "per il livello {tier}"
+      },
+      "receive": {
+        "title": "Ricevi EAV7",
+        "description_before": "Condividi il tuo indirizzo",
+        "description_after": "— la rete lo mappa automaticamente al tuo E7 nativo.",
+        "close": "chiudi"
+      },
+      "activity": {
+        "title": "Attività recente",
+        "sent": "Inviato",
+        "received": "Ricevuto",
+        "empty": "No recent transactions."
+      },
+      "addresses": {
+        "hint": "usa questo 0x per ricevere (standard EAVM/MetaMask)",
+        "colFormat": "Format",
+        "colAddress": "Address"
+      },
+      "tokens": {
+        "title": "Token EAV20"
+      },
+      "footer": {
+        "quantum": "post-quantistica · secp256k1 + ML-DSA-44",
+        "logout": "esci / cambia"
+      },
+      "wipe": {
+        "title": "Eliminare questo wallet?",
+        "description_before": "Il wallet cifrato verrà rimosso",
+        "description_bold": "da questo browser",
+        "description_after": ". Puoi ripristinarlo solo con il backup della chiave privata — non esiste il recupero della password.",
+        "warning_before": "Conferma di avere il",
+        "warning_bold": "backup della chiave",
+        "warning_after": "prima di eliminare.",
+        "download_backup": "Scarica backup (.json)",
+        "cancel": "Annulla",
+        "confirm": "Elimina wallet"
+      },
+      "nav": {
+        "portfolio": "Portfolio",
+        "activity": "Activity",
+        "addresses": "Addresses",
+        "security": "Security",
+        "logout": "Sign out"
+      },
+      "portfolio": {
+        "title": "Portfolio",
+        "totalValue": "Total value",
+        "walletLabel": "Wallet",
+        "composition": "Composition",
+        "available": "Available",
+        "staked": "Staked"
+      },
+      "security": {
+        "lockTitle": "Lock session",
+        "lockDesc": "Keeps the wallet encrypted in this browser until the next password.",
+        "quantumTitle": "Post-quantum signature",
+        "quantumDesc": "secp256k1 + ML-DSA-44"
+      }
+    }
+  }
+}

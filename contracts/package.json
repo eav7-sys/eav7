@@ -1,0 +1,10 @@
+{
+  "name": "eav7-contracts",
+  "private": true,
+  "scripts": {
+    "compile:public": "node scripts/compile-public.mjs"
+  },
+  "devDependencies": {
+    "solc": "0.8.20"
+  }
+}

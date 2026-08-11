@@ -1,0 +1,837 @@
+{
+  "namespace": "docs_hero",
+  "translations": {
+    "pt": {
+      "sobre": {
+        "stat_block_time": "tempo de bloco",
+        "stat_validators_value": "até 51",
+        "stat_validators_label": "validadores DPoS",
+        "stat_supply_value": "100 bi",
+        "stat_supply_label": "suprimento EAV7",
+        "stat_reward_label": "EAV7 por bloco",
+        "stat_quantum_value": "híbrida",
+        "stat_quantum_label": "pós-quântica",
+        "pillars_title": "pilares do protocolo",
+        "pillar_consensus": "Consenso DPoS",
+        "pillar_token_standard": "Padrão EAV20",
+        "pillar_bridge": "Ponte cross-chain",
+        "pillar_security": "Segurança & IA",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "padrão EAV20",
+        "title": "Tokens nativos, sem máquina virtual",
+        "description": "Tokens EAV20 / nativos do protocolo: vivem direto no estado da cadeia e se movem por transações assinadas — rápido, barato e verificável.",
+        "cta": "Ver tokens da rede"
+      },
+      "consenso": {
+        "badge": "consenso DPoS",
+        "title": "Um bloco novo a cada segundo",
+        "description": "Os validadores se revezam por rodízio: a cada slot de 1s, um produtor esperado assina o próximo bloco. Sem grinding, sem espera.",
+        "slot_now": "slot agora",
+        "slot_offset": "slot +{n}",
+        "fact_election_label": "Eleição",
+        "fact_election_value": "51 maiores por peso (stake + votos, ≥ 1.000 EAV7)",
+        "fact_production_label": "Produção",
+        "fact_production_value": "validators[slot % N] · round-robin",
+        "fact_fork_choice_label": "Fork choice",
+        "fact_fork_choice_value": "cadeia válida mais longa",
+        "cta": "Ver validadores ao vivo"
+      },
+      "ponte": {
+        "title": "Como a ponte move valor entre redes",
+        "arrow_pays": "paga",
+        "node_external": "Rede externa",
+        "step_bridge_out": "trava EAV7/token e registra o destino externo",
+        "step_relayer": "observa a saída e paga na cadeia externa",
+        "step_bridge_settle": "marca a saída como paga on-chain (idempotente)",
+        "step_bridge_in": "libera fundos mediante prova do comitê de origem (quórum M-de-N), dedupe por sourceTxHash"
+      },
+      "seguranca": {
+        "badge_hybrid": "assinatura híbrida",
+        "title_hybrid": "Pós-quântica por design",
+        "verify_both": "verificação exige as duas",
+        "hybrid_description": "Toda carteira, transação e bloco carrega as duas assinaturas — ECDSA (maturidade) e ML-DSA-44 (FIPS 204, resistente a quântico). Forjar exigiria quebrar as duas primitivas ao mesmo tempo.",
+        "badge_ai": "camada de IA",
+        "title_ai": "Camada de IA em 6 fases",
+        "sentinel_title": "Sentinela de segurança · 24h",
+        "sentinel_description": "Um processo monitora a rede continuamente — reorganizações e rollbacks, transferências gigantes, rajadas, mempool, concentração de produtores, saúde de validadores e recomendações de governança — gravando pareceres no feed de segurança.",
+        "sentinel_cta": "Ver na mineração",
+        "phase1": "reputação",
+        "phase2": "quórum",
+        "phase3": "desafio + júri",
+        "phase4": "marketplace",
+        "phase5": "privado",
+        "phase6": "atestação TEE/zk",
+        "ai_description": "Oráculos on-chain que evoluem em 6 fases: da reputação e do quórum com commit-reveal à janela de desafio com júri, ao marketplace por leilão reverso, aos resultados privados por hash e à atestação TEE/zk que liquida na hora como verificado."
+      },
+      "staking": {
+        "tier_fee_title": "Taxa zero",
+        "tier_fee_desc": "Trave 100+ EAV7 e suas transações passam a ter taxa zero — a energia (bandwidth) é gerada pelo freeze e regenera com o tempo.",
+        "tier_mine_title": "Minere blocos",
+        "tier_mine_desc": "Trave 1.000+ EAV7 e entre na eleição DPoS. Ao produzir um bloco você recebe 16 EAV7 + as taxas do bloco, integralmente.",
+        "reward_title": "Recompensa e unstake",
+        "reward_desc": "A recompensa vai integralmente ao produtor do bloco. O unstake libera o valor de volta ao saldo — só não é permitido esvaziar o último validador da rede.",
+        "cta_lock": "Travar EAV7",
+        "cta_mining": "Ver mineração"
+      },
+      "tier_mine_desc": "Trave 1.000+ EAV7 e entre na eleição DPoS. Ao produzir um bloco, o produtor fica com a comissão (padrão 20%) e o restante é partilhado com os eleitores — sem votos, leva os 16 EAV7 + taxas por inteiro."
+    },
+    "en": {
+      "sobre": {
+        "stat_block_time": "block time",
+        "stat_validators_value": "up to 51",
+        "stat_validators_label": "DPoS validators",
+        "stat_supply_value": "100B",
+        "stat_supply_label": "EAV7 supply",
+        "stat_reward_label": "EAV7 per block",
+        "stat_quantum_value": "hybrid",
+        "stat_quantum_label": "post-quantum",
+        "pillars_title": "protocol pillars",
+        "pillar_consensus": "DPoS Consensus",
+        "pillar_token_standard": "EAV20 Standard",
+        "pillar_bridge": "Cross-chain Bridge",
+        "pillar_security": "Security & AI",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "EAV20 standard",
+        "title": "Native tokens, no virtual machine",
+        "description": "EAV20 / native protocol tokens: they live directly in chain state and move through signed transactions — fast, cheap, and verifiable.",
+        "cta": "View network tokens"
+      },
+      "consenso": {
+        "badge": "DPoS consensus",
+        "title": "A new block every second",
+        "description": "Validators take turns in rotation: every 1s slot, an expected producer signs the next block. No grinding, no waiting.",
+        "slot_now": "slot now",
+        "slot_offset": "slot +{n}",
+        "fact_election_label": "Election",
+        "fact_election_value": "top 51 by weight (stake + votes, ≥ 1,000 EAV7)",
+        "fact_production_label": "Production",
+        "fact_production_value": "validators[slot % N] · round-robin",
+        "fact_fork_choice_label": "Fork choice",
+        "fact_fork_choice_value": "longest valid chain",
+        "cta": "View live validators"
+      },
+      "ponte": {
+        "title": "How the bridge moves value between networks",
+        "arrow_pays": "pays",
+        "node_external": "External network",
+        "step_bridge_out": "locks EAV7/token and records the external destination",
+        "step_relayer": "watches the outgoing bridge and pays on the external chain",
+        "step_bridge_settle": "marks the outflow as paid on-chain (idempotent)",
+        "step_bridge_in": "releases funds via a source-chain committee proof (M-of-N quorum), deduped by sourceTxHash"
+      },
+      "seguranca": {
+        "badge_hybrid": "hybrid signature",
+        "title_hybrid": "Post-quantum by design",
+        "verify_both": "verification requires both",
+        "hybrid_description": "Every wallet, transaction, and block carries both signatures — ECDSA (maturity) and ML-DSA-44 (FIPS 204, quantum-resistant). Forging would require breaking both primitives at once.",
+        "badge_ai": "AI layer",
+        "title_ai": "A 6-phase AI layer",
+        "sentinel_title": "Security sentinel · 24h",
+        "sentinel_description": "A process continuously monitors the network — reorgs and rollbacks, giant transfers, bursts, mempool, producer concentration, validator health and governance advisories — logging findings to the security feed.",
+        "sentinel_cta": "View in mining",
+        "phase1": "reputation",
+        "phase2": "quorum",
+        "phase3": "challenge + jury",
+        "phase4": "marketplace",
+        "phase5": "private",
+        "phase6": "TEE/zk attestation",
+        "ai_description": "On-chain oracles that evolve across 6 phases: from reputation and commit-reveal quorum to a challenge window with a jury, a reverse-auction marketplace, private hash-only results and TEE/zk attestation that settles instantly as verified."
+      },
+      "staking": {
+        "tier_fee_title": "Zero fees",
+        "tier_fee_desc": "Lock 100+ EAV7 and your transactions get zero fees — energy (bandwidth) is generated by the freeze and regenerates over time.",
+        "tier_mine_title": "Mine blocks",
+        "tier_mine_desc": "Lock 1,000+ EAV7 and enter the DPoS election. When you produce a block you receive 16 EAV7 plus the block fees, in full.",
+        "reward_title": "Reward and unstake",
+        "reward_desc": "The reward goes in full to the block producer. Unstaking releases the amount back to your balance — the network's last validator can't be emptied out.",
+        "cta_lock": "Lock EAV7",
+        "cta_mining": "View mining"
+      },
+      "tier_mine_desc": "Lock 1,000+ EAV7 and enter the DPoS election. When you produce a block, the producer keeps the commission (default 20%) and the rest is shared with voters — with no votes, you get the full 16 EAV7 plus fees."
+    },
+    "es": {
+      "sobre": {
+        "stat_block_time": "tiempo de bloque",
+        "stat_validators_value": "hasta 51",
+        "stat_validators_label": "validadores DPoS",
+        "stat_supply_value": "100 mil M",
+        "stat_supply_label": "suministro EAV7",
+        "stat_reward_label": "EAV7 por bloque",
+        "stat_quantum_value": "híbrida",
+        "stat_quantum_label": "poscuántica",
+        "pillars_title": "pilares del protocolo",
+        "pillar_consensus": "Consenso DPoS",
+        "pillar_token_standard": "Estándar EAV20",
+        "pillar_bridge": "Puente cross-chain",
+        "pillar_security": "Seguridad & IA",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "estándar EAV20",
+        "title": "Tokens nativos, sin máquina virtual",
+        "description": "Tokens EAV20 / nativos del protocolo: viven directamente en el estado de la cadena y se mueven mediante transacciones firmadas — rápido, económico y verificable.",
+        "cta": "Ver tokens de la red"
+      },
+      "consenso": {
+        "badge": "consenso DPoS",
+        "title": "Un bloque nuevo cada segundo",
+        "description": "Los validadores se turnan por rotación: en cada slot de 1s, un productor esperado firma el próximo bloque. Sin grinding, sin espera.",
+        "slot_now": "slot ahora",
+        "slot_offset": "slot +{n}",
+        "fact_election_label": "Elección",
+        "fact_election_value": "los 51 mayores por stake (≥ 1.000 EAV7)",
+        "fact_production_label": "Producción",
+        "fact_production_value": "validators[slot % N] · round-robin",
+        "fact_fork_choice_label": "Fork choice",
+        "fact_fork_choice_value": "cadena válida más larga",
+        "cta": "Ver validadores en vivo"
+      },
+      "ponte": {
+        "title": "Cómo el puente mueve valor entre redes",
+        "arrow_pays": "paga",
+        "node_external": "Red externa",
+        "step_bridge_out": "bloquea EAV7/token y registra el destino externo",
+        "step_relayer": "observa la salida y paga en la cadena externa",
+        "step_bridge_settle": "marca la salida como pagada on-chain (idempotente)",
+        "step_bridge_in": "libera fondos desde afuera, deduplicado por sourceTxHash"
+      },
+      "seguranca": {
+        "badge_hybrid": "firma híbrida",
+        "title_hybrid": "Poscuántica por diseño",
+        "verify_both": "la verificación exige ambas",
+        "hybrid_description": "Cada billetera, transacción y bloque lleva ambas firmas — ECDSA (madurez) y ML-DSA-44 (FIPS 204, resistente a lo cuántico). Falsificar exigiría romper ambas primitivas a la vez.",
+        "badge_ai": "capa de IA",
+        "title_ai": "Oráculos con escrow on-chain",
+        "sentinel_title": "Centinela de seguridad · 24h",
+        "sentinel_description": "Un proceso monitorea la red continuamente — reorganizaciones, transferencias gigantes, ráfagas de transacciones y concentración de productores — registrando informes en el feed de seguridad.",
+        "sentinel_cta": "Ver en la minería"
+      },
+      "staking": {
+        "tier_fee_title": "Comisión cero",
+        "tier_fee_desc": "Bloquea 100+ EAV7 y tus transacciones pasan a tener comisión cero — la energía (bandwidth) se genera al congelar y se regenera con el tiempo.",
+        "tier_mine_title": "Mina bloques",
+        "tier_mine_desc": "Bloquea 1.000+ EAV7 y entra en la elección DPoS. Al producir un bloque recibes 16 EAV7 más las comisiones del bloque, íntegramente.",
+        "reward_title": "Recompensa y unstake",
+        "reward_desc": "La recompensa va íntegramente al productor del bloque. El unstake libera el valor de vuelta a tu saldo — no está permitido vaciar al último validador de la red.",
+        "cta_lock": "Bloquear EAV7",
+        "cta_mining": "Ver minería"
+      }
+    },
+    "zh": {
+      "sobre": {
+        "stat_block_time": "出块时间",
+        "stat_validators_value": "最多51个",
+        "stat_validators_label": "DPoS 验证者",
+        "stat_supply_value": "1000亿",
+        "stat_supply_label": "EAV7 供应量",
+        "stat_reward_label": "每区块 EAV7",
+        "stat_quantum_value": "混合式",
+        "stat_quantum_label": "后量子",
+        "pillars_title": "协议支柱",
+        "pillar_consensus": "DPoS 共识",
+        "pillar_token_standard": "EAV20 标准",
+        "pillar_bridge": "跨链桥",
+        "pillar_security": "安全与AI",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "EAV20 标准",
+        "title": "原生代币,无需虚拟机",
+        "description": "EAV20 / 协议原生代币：代币直接存在于链状态中，通过签名交易转移 — 快速、低成本、可验证。",
+        "cta": "查看网络代币"
+      },
+      "consenso": {
+        "badge": "DPoS 共识",
+        "title": "每秒产生一个新区块",
+        "description": "验证者按轮次交替出块:每个1秒的时段,预期的出块者对下一个区块签名。无需算力竞争,无需等待。",
+        "slot_now": "当前时段",
+        "slot_offset": "+{n} 时段",
+        "fact_election_label": "选举",
+        "fact_election_value": "按质押排名前51名(≥ 1,000 EAV7)",
+        "fact_production_label": "出块",
+        "fact_production_value": "validators[slot % N] · 轮询制",
+        "fact_fork_choice_label": "分叉选择",
+        "fact_fork_choice_value": "最长有效链",
+        "cta": "查看实时验证者"
+      },
+      "ponte": {
+        "title": "跨链桥如何在网络间转移价值",
+        "arrow_pays": "支付",
+        "node_external": "外部网络",
+        "step_bridge_out": "锁定 EAV7/代币并记录外部目标地址",
+        "step_relayer": "监测转出请求并在外部链上支付",
+        "step_bridge_settle": "在链上标记该转出为已支付(幂等)",
+        "step_bridge_in": "释放外部资金,按 sourceTxHash 去重"
+      },
+      "seguranca": {
+        "badge_hybrid": "混合签名",
+        "title_hybrid": "设计即后量子",
+        "verify_both": "验证需要两者兼备",
+        "hybrid_description": "每个钱包、交易和区块都携带两种签名 — ECDSA(成熟稳定)和 ML-DSA-44(FIPS 204,抗量子)。伪造需要同时破解两种加密原语。",
+        "badge_ai": "AI 层",
+        "title_ai": "带链上托管的预言机",
+        "sentinel_title": "安全哨兵 · 24小时",
+        "sentinel_description": "一个进程持续监控网络 — 重组、巨额转账、交易激增和出块者集中度 — 并将结果记录到安全动态中。",
+        "sentinel_cta": "在挖矿页查看"
+      },
+      "staking": {
+        "tier_fee_title": "零手续费",
+        "tier_fee_desc": "锁定100+ EAV7,你的交易将享受零手续费 — 能量(带宽)通过冻结产生,并随时间恢复。",
+        "tier_mine_title": "挖矿出块",
+        "tier_mine_desc": "锁定1,000+ EAV7即可参与DPoS选举。出块后你将全额获得16 EAV7加上该区块的手续费。",
+        "reward_title": "奖励与解锁",
+        "reward_desc": "奖励全额发放给出块者。解锁会将金额释放回你的余额 — 但不允许清空网络中最后一个验证者。",
+        "cta_lock": "锁定 EAV7",
+        "cta_mining": "查看挖矿"
+      }
+    },
+    "fr": {
+      "sobre": {
+        "stat_block_time": "temps de bloc",
+        "stat_validators_value": "jusqu'à 51",
+        "stat_validators_label": "validateurs DPoS",
+        "stat_supply_value": "100 Md",
+        "stat_supply_label": "offre EAV7",
+        "stat_reward_label": "EAV7 par bloc",
+        "stat_quantum_value": "hybride",
+        "stat_quantum_label": "post-quantique",
+        "pillars_title": "piliers du protocole",
+        "pillar_consensus": "Consensus DPoS",
+        "pillar_token_standard": "Norme EAV20",
+        "pillar_bridge": "Pont cross-chain",
+        "pillar_security": "Sécurité & IA",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "norme EAV20",
+        "title": "Tokens natifs, sans machine virtuelle",
+        "description": "Tokens EAV20 / natifs du protocole : ils vivent directement dans l'état de la chaîne et se déplacent via des transactions signées — rapide, économique et vérifiable.",
+        "cta": "Voir les tokens du réseau"
+      },
+      "consenso": {
+        "badge": "consensus DPoS",
+        "title": "Un nouveau bloc chaque seconde",
+        "description": "Les validateurs se relaient à tour de rôle : à chaque slot de 1s, un producteur attendu signe le prochain bloc. Sans grinding, sans attente.",
+        "slot_now": "slot actuel",
+        "slot_offset": "slot +{n}",
+        "fact_election_label": "Élection",
+        "fact_election_value": "les 51 plus gros par stake (≥ 1 000 EAV7)",
+        "fact_production_label": "Production",
+        "fact_production_value": "validators[slot % N] · round-robin",
+        "fact_fork_choice_label": "Fork choice",
+        "fact_fork_choice_value": "chaîne valide la plus longue",
+        "cta": "Voir les validateurs en direct"
+      },
+      "ponte": {
+        "title": "Comment le pont déplace de la valeur entre réseaux",
+        "arrow_pays": "paie",
+        "node_external": "Réseau externe",
+        "step_bridge_out": "verrouille EAV7/token et enregistre la destination externe",
+        "step_relayer": "surveille la sortie et paie sur la chaîne externe",
+        "step_bridge_settle": "marque la sortie comme payée on-chain (idempotent)",
+        "step_bridge_in": "libère les fonds venant de l'extérieur, dédupliqué par sourceTxHash"
+      },
+      "seguranca": {
+        "badge_hybrid": "signature hybride",
+        "title_hybrid": "Post-quantique par conception",
+        "verify_both": "la vérification exige les deux",
+        "hybrid_description": "Chaque portefeuille, transaction et bloc porte les deux signatures — ECDSA (maturité) et ML-DSA-44 (FIPS 204, résistante au quantique). Une falsification exigerait de casser les deux primitives à la fois.",
+        "badge_ai": "couche IA",
+        "title_ai": "Oracles avec séquestre on-chain",
+        "sentinel_title": "Sentinelle de sécurité · 24h",
+        "sentinel_description": "Un processus surveille le réseau en continu — réorganisations, transferts massifs, rafales de transactions et concentration des producteurs — en consignant ses constats dans le flux de sécurité.",
+        "sentinel_cta": "Voir dans le minage"
+      },
+      "staking": {
+        "tier_fee_title": "Frais zéro",
+        "tier_fee_desc": "Verrouillez 100+ EAV7 et vos transactions passent à des frais nuls — l'énergie (bandwidth) est générée par le gel et se régénère avec le temps.",
+        "tier_mine_title": "Miner des blocs",
+        "tier_mine_desc": "Verrouillez 1 000+ EAV7 et entrez dans l'élection DPoS. En produisant un bloc, vous recevez 16 EAV7 plus les frais du bloc, intégralement.",
+        "reward_title": "Récompense et unstake",
+        "reward_desc": "La récompense revient intégralement au producteur du bloc. L'unstake libère la valeur vers votre solde — il est interdit de vider le dernier validateur du réseau.",
+        "cta_lock": "Verrouiller EAV7",
+        "cta_mining": "Voir le minage"
+      }
+    },
+    "de": {
+      "sobre": {
+        "stat_block_time": "Blockzeit",
+        "stat_validators_value": "bis zu 51",
+        "stat_validators_label": "DPoS-Validatoren",
+        "stat_supply_value": "100 Mrd.",
+        "stat_supply_label": "EAV7-Angebot",
+        "stat_reward_label": "EAV7 pro Block",
+        "stat_quantum_value": "hybrid",
+        "stat_quantum_label": "post-quantum",
+        "pillars_title": "Säulen des Protokolls",
+        "pillar_consensus": "DPoS-Konsens",
+        "pillar_token_standard": "EAV20-Standard",
+        "pillar_bridge": "Cross-Chain-Bridge",
+        "pillar_security": "Sicherheit & KI",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "EAV20-Standard",
+        "title": "Native Tokens, ohne virtuelle Maschine",
+        "description": "EAV20- / native Protokoll-Tokens: Sie existieren direkt im Chain-State und bewegen sich durch signierte Transaktionen — schnell, günstig und verifizierbar.",
+        "cta": "Netzwerk-Tokens ansehen"
+      },
+      "consenso": {
+        "badge": "DPoS-Konsens",
+        "title": "Jede Sekunde ein neuer Block",
+        "description": "Validatoren wechseln sich im Rundlauf ab: In jedem 1-Sekunden-Slot signiert ein erwarteter Produzent den nächsten Block. Kein Grinding, kein Warten.",
+        "slot_now": "Slot jetzt",
+        "slot_offset": "Slot +{n}",
+        "fact_election_label": "Wahl",
+        "fact_election_value": "die 51 größten nach Stake (≥ 1.000 EAV7)",
+        "fact_production_label": "Produktion",
+        "fact_production_value": "validators[slot % N] · Round-Robin",
+        "fact_fork_choice_label": "Fork Choice",
+        "fact_fork_choice_value": "längste gültige Kette",
+        "cta": "Validatoren live ansehen"
+      },
+      "ponte": {
+        "title": "Wie die Bridge Werte zwischen Netzwerken bewegt",
+        "arrow_pays": "zahlt",
+        "node_external": "Externes Netzwerk",
+        "step_bridge_out": "sperrt EAV7/Token und speichert das externe Ziel",
+        "step_relayer": "beobachtet den Ausgang und zahlt auf der externen Chain",
+        "step_bridge_settle": "markiert den Ausgang als on-chain bezahlt (idempotent)",
+        "step_bridge_in": "gibt Gelder von außen frei, dedupliziert nach sourceTxHash"
+      },
+      "seguranca": {
+        "badge_hybrid": "hybride Signatur",
+        "title_hybrid": "Post-Quantum by Design",
+        "verify_both": "Verifizierung erfordert beide",
+        "hybrid_description": "Jede Wallet, Transaktion und jeder Block trägt beide Signaturen — ECDSA (Reife) und ML-DSA-44 (FIPS 204, quantenresistent). Eine Fälschung würde das Brechen beider Primitive gleichzeitig erfordern.",
+        "badge_ai": "KI-Schicht",
+        "title_ai": "Orakel mit On-Chain-Treuhand",
+        "sentinel_title": "Sicherheits-Sentinel · 24h",
+        "sentinel_description": "Ein Prozess überwacht das Netzwerk kontinuierlich — Reorganisationen, riesige Transfers, Transaktionsschübe und Produzenten-Konzentration — und protokolliert Befunde im Sicherheits-Feed.",
+        "sentinel_cta": "Im Mining ansehen"
+      },
+      "staking": {
+        "tier_fee_title": "Null Gebühren",
+        "tier_fee_desc": "Sperren Sie 100+ EAV7 und Ihre Transaktionen erhalten null Gebühren — Energie (Bandwidth) wird durch das Freeze erzeugt und regeneriert sich mit der Zeit.",
+        "tier_mine_title": "Blöcke minen",
+        "tier_mine_desc": "Sperren Sie 1.000+ EAV7 und nehmen Sie an der DPoS-Wahl teil. Beim Produzieren eines Blocks erhalten Sie 16 EAV7 plus die Blockgebühren, vollständig.",
+        "reward_title": "Belohnung und Unstake",
+        "reward_desc": "Die Belohnung geht vollständig an den Blockproduzenten. Unstake gibt den Betrag zurück auf Ihr Guthaben — den letzten Validator des Netzwerks zu leeren ist nicht erlaubt.",
+        "cta_lock": "EAV7 sperren",
+        "cta_mining": "Mining ansehen"
+      }
+    },
+    "ja": {
+      "sobre": {
+        "stat_block_time": "ブロック生成時間",
+        "stat_validators_value": "最大51",
+        "stat_validators_label": "DPoSバリデータ",
+        "stat_supply_value": "1000億",
+        "stat_supply_label": "EAV7供給量",
+        "stat_reward_label": "ブロックあたりEAV7",
+        "stat_quantum_value": "ハイブリッド",
+        "stat_quantum_label": "耐量子",
+        "pillars_title": "プロトコルの柱",
+        "pillar_consensus": "DPoSコンセンサス",
+        "pillar_token_standard": "EAV20規格",
+        "pillar_bridge": "クロスチェーンブリッジ",
+        "pillar_security": "セキュリティ&AI",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "EAV20規格",
+        "title": "仮想マシン不要のネイティブトークン",
+        "description": "EAV20 / プロトコルのネイティブトークン：トークンはチェーンの状態に直接存在し、署名付きトランザクションで移動します — 高速・低コスト・検証可能。",
+        "cta": "ネットワークのトークンを見る"
+      },
+      "consenso": {
+        "badge": "DPoSコンセンサス",
+        "title": "毎秒新しいブロックが生成",
+        "description": "バリデータは順番に交代します:1秒ごとのスロットで、予定されたプロデューサーが次のブロックに署名します。グラインディングも待機も不要です。",
+        "slot_now": "現在のスロット",
+        "slot_offset": "スロット +{n}",
+        "fact_election_label": "選出",
+        "fact_election_value": "ステーク上位51者(≥ 1,000 EAV7)",
+        "fact_production_label": "生成",
+        "fact_production_value": "validators[slot % N] · ラウンドロビン",
+        "fact_fork_choice_label": "フォーク選択",
+        "fact_fork_choice_value": "最長の有効チェーン",
+        "cta": "ライブでバリデータを見る"
+      },
+      "ponte": {
+        "title": "ブリッジがネットワーク間で価値を移動する仕組み",
+        "arrow_pays": "支払い",
+        "node_external": "外部ネットワーク",
+        "step_bridge_out": "EAV7/トークンをロックし、外部の送金先を記録",
+        "step_relayer": "出金を監視し、外部チェーンで支払う",
+        "step_bridge_settle": "出金をオンチェーンで支払い済みとしてマーク(冪等)",
+        "step_bridge_in": "外部からの資金を解放、sourceTxHashで重複排除"
+      },
+      "seguranca": {
+        "badge_hybrid": "ハイブリッド署名",
+        "title_hybrid": "設計段階から耐量子",
+        "verify_both": "検証には両方が必要",
+        "hybrid_description": "すべてのウォレット、トランザクション、ブロックには2つの署名が含まれます — ECDSA(成熟)とML-DSA-44(FIPS 204、耐量子)。偽造には両方のプリミティブを同時に破る必要があります。",
+        "badge_ai": "AIレイヤー",
+        "title_ai": "オンチェーンエスクロー付きオラクル",
+        "sentinel_title": "セキュリティ監視 · 24時間",
+        "sentinel_description": "プロセスがネットワークを継続的に監視します — リオーグ、巨額送金、トランザクションの急増、プロデューサーの集中 — 結果をセキュリティフィードに記録します。",
+        "sentinel_cta": "マイニングで見る"
+      },
+      "staking": {
+        "tier_fee_title": "手数料ゼロ",
+        "tier_fee_desc": "100 EAV7以上をロックすると取引手数料がゼロになります — エネルギー(帯域幅)はフリーズにより生成され、時間とともに回復します。",
+        "tier_mine_title": "ブロックをマイニング",
+        "tier_mine_desc": "1,000 EAV7以上をロックしてDPoS選出に参加します。ブロックを生成すると16 EAV7とそのブロックの手数料を全額受け取れます。",
+        "reward_title": "報酬とアンステーク",
+        "reward_desc": "報酬はブロック生成者に全額支払われます。アンステークすると残高に金額が戻ります — ネットワーク最後のバリデータを空にすることはできません。",
+        "cta_lock": "EAV7をロック",
+        "cta_mining": "マイニングを見る"
+      }
+    },
+    "ru": {
+      "sobre": {
+        "stat_block_time": "время блока",
+        "stat_validators_value": "до 51",
+        "stat_validators_label": "валидаторы DPoS",
+        "stat_supply_value": "100 млрд",
+        "stat_supply_label": "предложение EAV7",
+        "stat_reward_label": "EAV7 за блок",
+        "stat_quantum_value": "гибридная",
+        "stat_quantum_label": "постквантовая",
+        "pillars_title": "основы протокола",
+        "pillar_consensus": "Консенсус DPoS",
+        "pillar_token_standard": "Стандарт EAV20",
+        "pillar_bridge": "Кросс-чейн мост",
+        "pillar_security": "Безопасность и ИИ",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "стандарт EAV20",
+        "title": "Нативные токены без виртуальной машины",
+        "description": "Токены EAV20 / нативные токены протокола: живут прямо в состоянии цепи и перемещаются через подписанные транзакции — быстро, дёшево и проверяемо.",
+        "cta": "Смотреть токены сети"
+      },
+      "consenso": {
+        "badge": "консенсус DPoS",
+        "title": "Новый блок каждую секунду",
+        "description": "Валидаторы сменяют друг друга по очереди: в каждом слоте по 1с ожидаемый производитель подписывает следующий блок. Без грайндинга, без ожидания.",
+        "slot_now": "слот сейчас",
+        "slot_offset": "слот +{n}",
+        "fact_election_label": "Выборы",
+        "fact_election_value": "топ-51 по ставке (≥ 1000 EAV7)",
+        "fact_production_label": "Производство",
+        "fact_production_value": "validators[slot % N] · round-robin",
+        "fact_fork_choice_label": "Выбор форка",
+        "fact_fork_choice_value": "самая длинная валидная цепь",
+        "cta": "Смотреть валидаторов в реальном времени"
+      },
+      "ponte": {
+        "title": "Как мост перемещает ценность между сетями",
+        "arrow_pays": "платит",
+        "node_external": "Внешняя сеть",
+        "step_bridge_out": "блокирует EAV7/токен и фиксирует внешний адрес назначения",
+        "step_relayer": "отслеживает вывод и платит во внешней цепи",
+        "step_bridge_settle": "помечает вывод как оплаченный on-chain (идемпотентно)",
+        "step_bridge_in": "высвобождает средства извне, с дедупликацией по sourceTxHash"
+      },
+      "seguranca": {
+        "badge_hybrid": "гибридная подпись",
+        "title_hybrid": "Постквантовая по замыслу",
+        "verify_both": "проверка требует обе",
+        "hybrid_description": "Каждый кошелёк, транзакция и блок несут обе подписи — ECDSA (зрелость) и ML-DSA-44 (FIPS 204, устойчивая к квантовым атакам). Подделка потребовала бы взлома обеих примитивов одновременно.",
+        "badge_ai": "слой ИИ",
+        "title_ai": "Оракулы с эскроу on-chain",
+        "sentinel_title": "Страж безопасности · 24ч",
+        "sentinel_description": "Процесс непрерывно отслеживает сеть — реорганизации, крупные переводы, всплески транзакций и концентрацию производителей — записывая заключения в ленту безопасности.",
+        "sentinel_cta": "Смотреть в разделе майнинга"
+      },
+      "staking": {
+        "tier_fee_title": "Нулевая комиссия",
+        "tier_fee_desc": "Заблокируйте 100+ EAV7, и ваши транзакции станут бесплатными — энергия (bandwidth) генерируется заморозкой и восстанавливается со временем.",
+        "tier_mine_title": "Добывайте блоки",
+        "tier_mine_desc": "Заблокируйте 1000+ EAV7 и участвуйте в выборах DPoS. Произведя блок, вы получаете 16 EAV7 плюс комиссии блока целиком.",
+        "reward_title": "Награда и анстейк",
+        "reward_desc": "Награда полностью достаётся производителю блока. Анстейк возвращает сумму на баланс — опустошать последнего валидатора сети запрещено.",
+        "cta_lock": "Заблокировать EAV7",
+        "cta_mining": "Смотреть майнинг"
+      }
+    },
+    "ar": {
+      "sobre": {
+        "stat_block_time": "زمن الكتلة",
+        "stat_validators_value": "حتى 51",
+        "stat_validators_label": "مدققو DPoS",
+        "stat_supply_value": "100 مليار",
+        "stat_supply_label": "المعروض من EAV7",
+        "stat_reward_label": "EAV7 لكل كتلة",
+        "stat_quantum_value": "هجينة",
+        "stat_quantum_label": "ما بعد الكم",
+        "pillars_title": "ركائز البروتوكول",
+        "pillar_consensus": "إجماع DPoS",
+        "pillar_token_standard": "معيار EAV20",
+        "pillar_bridge": "الجسر عبر السلاسل",
+        "pillar_security": "الأمان والذكاء الاصطناعي",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "معيار EAV20",
+        "title": "رموز أصلية بلا آلة افتراضية",
+        "description": "رموز EAV20 / الرموز الأصلية للبروتوكول: تعيش مباشرة في حالة السلسلة وتنتقل عبر معاملات موقّعة — سريعة ورخيصة وقابلة للتحقق.",
+        "cta": "عرض رموز الشبكة"
+      },
+      "consenso": {
+        "badge": "إجماع DPoS",
+        "title": "كتلة جديدة كل ثانية",
+        "description": "يتناوب المدققون بالتناوب: في كل فترة مدتها ثانية واحدة، يوقّع منتج متوقع الكتلة التالية. بلا استنزاف حسابي وبلا انتظار.",
+        "slot_now": "الفترة الحالية",
+        "slot_offset": "الفترة +{n}",
+        "fact_election_label": "الانتخاب",
+        "fact_election_value": "أكبر 51 حسب الحصة (≥ 1000 EAV7)",
+        "fact_production_label": "الإنتاج",
+        "fact_production_value": "validators[slot % N] · بالتناوب",
+        "fact_fork_choice_label": "اختيار الفرع",
+        "fact_fork_choice_value": "أطول سلسلة صالحة",
+        "cta": "عرض المدققين مباشرة"
+      },
+      "ponte": {
+        "title": "كيف ينقل الجسر القيمة بين الشبكات",
+        "arrow_pays": "يدفع",
+        "node_external": "شبكة خارجية",
+        "step_bridge_out": "يقفل EAV7/الرمز ويسجل الوجهة الخارجية",
+        "step_relayer": "يراقب الخروج ويدفع على السلسلة الخارجية",
+        "step_bridge_settle": "يضع علامة على الخروج كمدفوع على السلسلة (متكرر بأمان)",
+        "step_bridge_in": "يحرر الأموال القادمة من الخارج، مع إزالة التكرار حسب sourceTxHash"
+      },
+      "seguranca": {
+        "badge_hybrid": "توقيع هجين",
+        "title_hybrid": "مقاوم للكم بالتصميم",
+        "verify_both": "يتطلب التحقق كليهما",
+        "hybrid_description": "تحمل كل محفظة ومعاملة وكتلة التوقيعين معًا — ECDSA (النضج) و ML-DSA-44 (FIPS 204، مقاوم للكم). سيتطلب التزوير كسر كلا الأساسين في آن واحد.",
+        "badge_ai": "طبقة الذكاء الاصطناعي",
+        "title_ai": "أوراكل مع ضمان على السلسلة",
+        "sentinel_title": "حارس الأمان · 24 ساعة",
+        "sentinel_description": "تراقب عملية الشبكة باستمرار — إعادة التنظيم، والتحويلات الضخمة، وطفرات المعاملات، وتركّز المنتجين — وتسجل النتائج في موجز الأمان.",
+        "sentinel_cta": "عرض في التعدين"
+      },
+      "staking": {
+        "tier_fee_title": "رسوم صفرية",
+        "tier_fee_desc": "اقفل 100+ EAV7 وستصبح معاملاتك بلا رسوم — تُولَّد الطاقة (bandwidth) بالتجميد وتتجدد مع الوقت.",
+        "tier_mine_title": "عدّن الكتل",
+        "tier_mine_desc": "اقفل 1000+ EAV7 وادخل انتخاب DPoS. عند إنتاج كتلة تحصل على 16 EAV7 بالإضافة إلى رسوم الكتلة كاملة.",
+        "reward_title": "المكافأة وإلغاء التقييد",
+        "reward_desc": "تذهب المكافأة بالكامل إلى منتج الكتلة. يحرر إلغاء التقييد القيمة إلى رصيدك — لا يُسمح بتفريغ آخر مدقق في الشبكة.",
+        "cta_lock": "اقفل EAV7",
+        "cta_mining": "عرض التعدين"
+      }
+    },
+    "hi": {
+      "sobre": {
+        "stat_block_time": "ब्लॉक समय",
+        "stat_validators_value": "51 तक",
+        "stat_validators_label": "DPoS वैलिडेटर",
+        "stat_supply_value": "100 अरब",
+        "stat_supply_label": "EAV7 आपूर्ति",
+        "stat_reward_label": "प्रति ब्लॉक EAV7",
+        "stat_quantum_value": "हाइब्रिड",
+        "stat_quantum_label": "पोस्ट-क्वांटम",
+        "pillars_title": "प्रोटोकॉल के स्तंभ",
+        "pillar_consensus": "DPoS सर्वसम्मति",
+        "pillar_token_standard": "EAV20 मानक",
+        "pillar_bridge": "क्रॉस-चेन ब्रिज",
+        "pillar_security": "सुरक्षा और AI",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "EAV20 मानक",
+        "title": "बिना वर्चुअल मशीन के नेटिव टोकन",
+        "description": "EAV20 / नेटिव प्रोटोकॉल टोकन: टोकन सीधे चेन की स्थिति में रहते हैं और हस्ताक्षरित लेनदेन के माध्यम से चलते हैं — तेज़, सस्ता और सत्यापन योग्य।",
+        "cta": "नेटवर्क टोकन देखें"
+      },
+      "consenso": {
+        "badge": "DPoS सर्वसम्मति",
+        "title": "हर सेकंड एक नया ब्लॉक",
+        "description": "वैलिडेटर बारी-बारी से बदलते हैं: हर 1 सेकंड के स्लॉट में, एक अपेक्षित प्रोड्यूसर अगले ब्लॉक पर हस्ताक्षर करता है। कोई ग्राइंडिंग नहीं, कोई इंतज़ार नहीं।",
+        "slot_now": "अभी का स्लॉट",
+        "slot_offset": "स्लॉट +{n}",
+        "fact_election_label": "चुनाव",
+        "fact_election_value": "स्टेक के अनुसार शीर्ष 51 (≥ 1,000 EAV7)",
+        "fact_production_label": "उत्पादन",
+        "fact_production_value": "validators[slot % N] · राउंड-रॉबिन",
+        "fact_fork_choice_label": "फोर्क चॉइस",
+        "fact_fork_choice_value": "सबसे लंबी वैध चेन",
+        "cta": "लाइव वैलिडेटर देखें"
+      },
+      "ponte": {
+        "title": "ब्रिज नेटवर्कों के बीच मूल्य कैसे स्थानांतरित करता है",
+        "arrow_pays": "भुगतान करता है",
+        "node_external": "बाहरी नेटवर्क",
+        "step_bridge_out": "EAV7/टोकन को लॉक करता है और बाहरी गंतव्य दर्ज करता है",
+        "step_relayer": "आउटगोइंग को देखता है और बाहरी चेन पर भुगतान करता है",
+        "step_bridge_settle": "आउटफ्लो को ऑन-चेन भुगतान किया गया चिह्नित करता है (इडेम्पोटेंट)",
+        "step_bridge_in": "बाहर से धन जारी करता है, sourceTxHash द्वारा डुप्लिकेट हटाकर"
+      },
+      "seguranca": {
+        "badge_hybrid": "हाइब्रिड हस्ताक्षर",
+        "title_hybrid": "डिज़ाइन से ही पोस्ट-क्वांटम",
+        "verify_both": "सत्यापन के लिए दोनों आवश्यक",
+        "hybrid_description": "हर वॉलेट, लेनदेन और ब्लॉक दोनों हस्ताक्षर रखता है — ECDSA (परिपक्वता) और ML-DSA-44 (FIPS 204, क्वांटम-प्रतिरोधी)। जालसाजी के लिए दोनों प्रिमिटिव को एक साथ तोड़ना पड़ेगा।",
+        "badge_ai": "AI परत",
+        "title_ai": "ऑन-चेन एस्क्रो के साथ ऑरेकल",
+        "sentinel_title": "सुरक्षा सेंटिनल · 24घंटे",
+        "sentinel_description": "एक प्रक्रिया नेटवर्क की लगातार निगरानी करती है — पुनर्गठन, विशाल ट्रांसफर, लेनदेन की बाढ़ और प्रोड्यूसर संकेंद्रण — और निष्कर्षों को सुरक्षा फ़ीड में दर्ज करती है।",
+        "sentinel_cta": "माइनिंग में देखें"
+      },
+      "staking": {
+        "tier_fee_title": "शून्य शुल्क",
+        "tier_fee_desc": "100+ EAV7 लॉक करें और आपके लेनदेन पर शुल्क शून्य हो जाएगा — ऊर्जा (बैंडविड्थ) फ्रीज़ से उत्पन्न होती है और समय के साथ पुनर्जीवित होती है।",
+        "tier_mine_title": "ब्लॉक माइन करें",
+        "tier_mine_desc": "1,000+ EAV7 लॉक करें और DPoS चुनाव में प्रवेश करें। ब्लॉक बनाने पर आपको 16 EAV7 और ब्लॉक शुल्क पूरी तरह मिलते हैं।",
+        "reward_title": "पुरस्कार और अनस्टेक",
+        "reward_desc": "पुरस्कार पूरी तरह ब्लॉक प्रोड्यूसर को जाता है। अनस्टेक राशि को आपके बैलेंस में वापस करता है — नेटवर्क के अंतिम वैलिडेटर को खाली करने की अनुमति नहीं है।",
+        "cta_lock": "EAV7 लॉक करें",
+        "cta_mining": "माइनिंग देखें"
+      }
+    },
+    "ko": {
+      "sobre": {
+        "stat_block_time": "블록 시간",
+        "stat_validators_value": "최대 51개",
+        "stat_validators_label": "DPoS 검증자",
+        "stat_supply_value": "1,000억",
+        "stat_supply_label": "EAV7 공급량",
+        "stat_reward_label": "블록당 EAV7",
+        "stat_quantum_value": "하이브리드",
+        "stat_quantum_label": "포스트 퀀텀",
+        "pillars_title": "프로토콜의 기둥",
+        "pillar_consensus": "DPoS 합의",
+        "pillar_token_standard": "EAV20 표준",
+        "pillar_bridge": "크로스체인 브리지",
+        "pillar_security": "보안 & AI",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "EAV20 표준",
+        "title": "가상 머신 없는 네이티브 토큰",
+        "description": "EAV20 / 프로토콜 네이티브 토큰: 토큰은 체인 상태에 직접 존재하며 서명된 트랜잭션으로 이동합니다 — 빠르고, 저렴하며, 검증 가능합니다.",
+        "cta": "네트워크 토큰 보기"
+      },
+      "consenso": {
+        "badge": "DPoS 합의",
+        "title": "매초 새로운 블록",
+        "description": "검증자는 순환 방식으로 교대합니다: 1초 슬롯마다 예정된 생산자가 다음 블록에 서명합니다. 그라인딩도, 대기도 없습니다.",
+        "slot_now": "현재 슬롯",
+        "slot_offset": "슬롯 +{n}",
+        "fact_election_label": "선출",
+        "fact_election_value": "스테이크 기준 상위 51명(≥ 1,000 EAV7)",
+        "fact_production_label": "생성",
+        "fact_production_value": "validators[slot % N] · 라운드로빈",
+        "fact_fork_choice_label": "포크 선택",
+        "fact_fork_choice_value": "가장 긴 유효 체인",
+        "cta": "실시간 검증자 보기"
+      },
+      "ponte": {
+        "title": "브리지가 네트워크 간 가치를 이동시키는 방법",
+        "arrow_pays": "지급",
+        "node_external": "외부 네트워크",
+        "step_bridge_out": "EAV7/토큰을 잠그고 외부 목적지를 기록",
+        "step_relayer": "출금을 감시하고 외부 체인에서 지급",
+        "step_bridge_settle": "출금을 온체인에서 지급 완료로 표시(멱등)",
+        "step_bridge_in": "외부에서 온 자금을 해제, sourceTxHash로 중복 제거"
+      },
+      "seguranca": {
+        "badge_hybrid": "하이브리드 서명",
+        "title_hybrid": "설계부터 포스트 퀀텀",
+        "verify_both": "검증에는 둘 다 필요",
+        "hybrid_description": "모든 지갑, 트랜잭션, 블록은 두 서명을 모두 포함합니다 — ECDSA(성숙도)와 ML-DSA-44(FIPS 204, 양자 저항). 위조하려면 두 프리미티브를 동시에 깨야 합니다.",
+        "badge_ai": "AI 레이어",
+        "title_ai": "온체인 에스크로가 있는 오라클",
+        "sentinel_title": "보안 센티널 · 24시간",
+        "sentinel_description": "프로세스가 네트워크를 지속적으로 모니터링합니다 — 재구성, 대규모 전송, 트랜잭션 급증, 생산자 집중 — 그리고 결과를 보안 피드에 기록합니다.",
+        "sentinel_cta": "마이닝에서 보기"
+      },
+      "staking": {
+        "tier_fee_title": "수수료 제로",
+        "tier_fee_desc": "100+ EAV7을 잠그면 거래 수수료가 제로가 됩니다 — 에너지(대역폭)는 프리즈로 생성되며 시간이 지나면 재생됩니다.",
+        "tier_mine_title": "블록 채굴",
+        "tier_mine_desc": "1,000+ EAV7을 잠그고 DPoS 선출에 참여하세요. 블록을 생성하면 16 EAV7과 블록 수수료를 전액 받습니다.",
+        "reward_title": "보상 및 언스테이크",
+        "reward_desc": "보상은 전액 블록 생산자에게 돌아갑니다. 언스테이크는 금액을 잔액으로 되돌립니다 — 네트워크의 마지막 검증자를 비우는 것은 허용되지 않습니다.",
+        "cta_lock": "EAV7 잠그기",
+        "cta_mining": "마이닝 보기"
+      }
+    },
+    "it": {
+      "sobre": {
+        "stat_block_time": "tempo di blocco",
+        "stat_validators_value": "fino a 51",
+        "stat_validators_label": "validatori DPoS",
+        "stat_supply_value": "100 mld",
+        "stat_supply_label": "offerta EAV7",
+        "stat_reward_label": "EAV7 per blocco",
+        "stat_quantum_value": "ibrida",
+        "stat_quantum_label": "post-quantistica",
+        "pillars_title": "pilastri del protocollo",
+        "pillar_consensus": "Consenso DPoS",
+        "pillar_token_standard": "Standard EAV20",
+        "pillar_bridge": "Bridge cross-chain",
+        "pillar_security": "Sicurezza & IA",
+        "pillar_eavm": "EAVM · MetaMask"
+      },
+      "token": {
+        "badge": "standard EAV20",
+        "title": "Token nativi, senza macchina virtuale",
+        "description": "Token EAV20 / nativi del protocollo: vivono direttamente nello stato della catena e si spostano tramite transazioni firmate — veloce, economico e verificabile.",
+        "cta": "Vedi i token della rete"
+      },
+      "consenso": {
+        "badge": "consenso DPoS",
+        "title": "Un nuovo blocco ogni secondo",
+        "description": "I validatori si alternano a rotazione: in ogni slot di 1s, un produttore atteso firma il blocco successivo. Senza grinding, senza attesa.",
+        "slot_now": "slot attuale",
+        "slot_offset": "slot +{n}",
+        "fact_election_label": "Elezione",
+        "fact_election_value": "i 51 maggiori per stake (≥ 1.000 EAV7)",
+        "fact_production_label": "Produzione",
+        "fact_production_value": "validators[slot % N] · round-robin",
+        "fact_fork_choice_label": "Fork choice",
+        "fact_fork_choice_value": "catena valida più lunga",
+        "cta": "Vedi i validatori in diretta"
+      },
+      "ponte": {
+        "title": "Come il bridge sposta valore tra le reti",
+        "arrow_pays": "paga",
+        "node_external": "Rete esterna",
+        "step_bridge_out": "blocca EAV7/token e registra la destinazione esterna",
+        "step_relayer": "osserva l'uscita e paga sulla catena esterna",
+        "step_bridge_settle": "segna l'uscita come pagata on-chain (idempotente)",
+        "step_bridge_in": "rilascia i fondi dall'esterno, deduplicato per sourceTxHash"
+      },
+      "seguranca": {
+        "badge_hybrid": "firma ibrida",
+        "title_hybrid": "Post-quantistica per progettazione",
+        "verify_both": "la verifica richiede entrambe",
+        "hybrid_description": "Ogni wallet, transazione e blocco porta entrambe le firme — ECDSA (maturità) e ML-DSA-44 (FIPS 204, resistente al quantico). Falsificare richiederebbe di violare entrambe le primitive contemporaneamente.",
+        "badge_ai": "livello IA",
+        "title_ai": "Oracoli con escrow on-chain",
+        "sentinel_title": "Sentinella di sicurezza · 24h",
+        "sentinel_description": "Un processo monitora la rete continuamente — riorganizzazioni, trasferimenti enormi, ondate di transazioni e concentrazione di produttori — registrando i risultati nel feed di sicurezza.",
+        "sentinel_cta": "Vedi nel mining"
+      },
+      "staking": {
+        "tier_fee_title": "Zero commissioni",
+        "tier_fee_desc": "Blocca 100+ EAV7 e le tue transazioni avranno commissioni zero — l'energia (bandwidth) è generata dal freeze e si rigenera nel tempo.",
+        "tier_mine_title": "Estrai blocchi",
+        "tier_mine_desc": "Blocca 1.000+ EAV7 ed entra nell'elezione DPoS. Producendo un blocco ricevi 16 EAV7 più le commissioni del blocco, per intero.",
+        "reward_title": "Ricompensa e unstake",
+        "reward_desc": "La ricompensa va interamente al produttore del blocco. L'unstake libera il valore di nuovo sul tuo saldo — non è consentito svuotare l'ultimo validatore della rete.",
+        "cta_lock": "Blocca EAV7",
+        "cta_mining": "Vedi il mining"
+      }
+    }
+  }
+}

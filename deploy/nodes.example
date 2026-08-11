@@ -1,0 +1,15 @@
+# Inventário de deploy — copie para nodes.env e preencha.
+#   cp deploy/nodes.example deploy/nodes.env
+#
+# Formato: pares "nome ip" separados por espaço (um ou vários).
+# nodes.env é gitignored — não coloque IPs reais neste arquivo de exemplo.
+
+EAV7_SSH_KEY="${EAV7_SSH_KEY:-$HOME/.ssh/eav7_deploy}"
+EAV7_SSH_USER="${EAV7_SSH_USER:-ubuntu}"
+EAV7_REMOTE_NODE_DIR="${EAV7_REMOTE_NODE_DIR:-/opt/eav7}"
+EAV7_REMOTE_WEB_DIR="${EAV7_REMOTE_WEB_DIR:-/opt/eav7-web}"
+EAV7_PUBLIC_URL="${EAV7_PUBLIC_URL:-https://eavscan.com}"
+
+# Exemplo (substitua pelos IPs reais só em nodes.env):
+# EAV7_NODES="node1 203.0.113.10 node2 203.0.113.11 node3 203.0.113.12"
+EAV7_NODES="node1 203.0.113.10 node2 203.0.113.11 node3 203.0.113.12"

@@ -1,0 +1,25 @@
+{
+  "namespace": "page_names",
+  "translations": {
+    "pt": {
+      "metaTitle": "EAV-NS · Nomes · EAV7 Scan",
+      "eyebrow": "serviço de nomes",
+      "title": "EAV-NS",
+      "subtitle": "Nomes legíveis que resolvem para um endereço E7 (register, update, transfer, release)",
+      "colName": "Nome",
+      "colTarget": "Resolve para",
+      "colOwner": "Dono",
+      "empty": "Nenhum nome registrado ainda"
+    },
+    "en": {
+      "metaTitle": "EAV-NS · Names · EAV7 Scan",
+      "eyebrow": "name service",
+      "title": "EAV-NS",
+      "subtitle": "Human-readable names that resolve to an E7 address (register, update, transfer, release)",
+      "colName": "Name",
+      "colTarget": "Resolves to",
+      "colOwner": "Owner",
+      "empty": "No name registered yet"
+    }
+  }
+}

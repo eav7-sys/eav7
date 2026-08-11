@@ -1,0 +1,113 @@
+{
+  "namespace": "wallet_addNet",
+  "translations": {
+    "pt": {
+      "title": "Usar na MetaMask / Trust",
+      "description": "Adicione a rede EAV7 (chain 72020) na sua carteira EVM.",
+      "adding": "adicionando…",
+      "added": "✓ adicionada",
+      "addButton": "Adicionar rede",
+      "noWallet": "MetaMask não detectada neste navegador.",
+      "error": "não foi possível adicionar a rede."
+    },
+    "en": {
+      "title": "Use in MetaMask / Trust",
+      "description": "Add the EAV7 network (chain 72020) to your EVM wallet.",
+      "adding": "adding…",
+      "added": "✓ added",
+      "addButton": "Add network",
+      "noWallet": "MetaMask not detected in this browser.",
+      "error": "could not add the network."
+    },
+    "es": {
+      "title": "Usar en MetaMask / Trust",
+      "description": "Agrega la red EAV7 (chain 72020) a tu billetera EVM.",
+      "adding": "agregando…",
+      "added": "✓ agregada",
+      "addButton": "Agregar red",
+      "noWallet": "MetaMask no detectada en este navegador.",
+      "error": "no se pudo agregar la red."
+    },
+    "zh": {
+      "title": "在 MetaMask / Trust 中使用",
+      "description": "将 EAV7 网络(链 72020)添加到您的 EVM 钱包。",
+      "adding": "添加中…",
+      "added": "✓ 已添加",
+      "addButton": "添加网络",
+      "noWallet": "此浏览器未检测到 MetaMask。",
+      "error": "无法添加该网络。"
+    },
+    "fr": {
+      "title": "Utiliser avec MetaMask / Trust",
+      "description": "Ajoutez le réseau EAV7 (chaîne 72020) à votre portefeuille EVM.",
+      "adding": "ajout en cours…",
+      "added": "✓ ajouté",
+      "addButton": "Ajouter le réseau",
+      "noWallet": "MetaMask non détecté dans ce navigateur.",
+      "error": "impossible d'ajouter le réseau."
+    },
+    "de": {
+      "title": "In MetaMask / Trust verwenden",
+      "description": "Fügen Sie das EAV7-Netzwerk (Chain 72020) zu Ihrer EVM-Wallet hinzu.",
+      "adding": "wird hinzugefügt…",
+      "added": "✓ hinzugefügt",
+      "addButton": "Netzwerk hinzufügen",
+      "noWallet": "MetaMask in diesem Browser nicht erkannt.",
+      "error": "das Netzwerk konnte nicht hinzugefügt werden."
+    },
+    "ja": {
+      "title": "MetaMask / Trust で使用",
+      "description": "EAV7 ネットワーク(チェーン 72020)を EVM ウォレットに追加します。",
+      "adding": "追加中…",
+      "added": "✓ 追加済み",
+      "addButton": "ネットワークを追加",
+      "noWallet": "このブラウザでは MetaMask が検出されませんでした。",
+      "error": "ネットワークを追加できませんでした。"
+    },
+    "ru": {
+      "title": "Использовать в MetaMask / Trust",
+      "description": "Добавьте сеть EAV7 (chain 72020) в свой EVM-кошелёк.",
+      "adding": "добавление…",
+      "added": "✓ добавлено",
+      "addButton": "Добавить сеть",
+      "noWallet": "MetaMask не обнаружен в этом браузере.",
+      "error": "не удалось добавить сеть."
+    },
+    "ar": {
+      "title": "الاستخدام في MetaMask / Trust",
+      "description": "أضف شبكة EAV7 (السلسلة 72020) إلى محفظة EVM الخاصة بك.",
+      "adding": "جارٍ الإضافة…",
+      "added": "✓ تمت الإضافة",
+      "addButton": "إضافة الشبكة",
+      "noWallet": "لم يتم اكتشاف MetaMask في هذا المتصفح.",
+      "error": "تعذّرت إضافة الشبكة."
+    },
+    "hi": {
+      "title": "MetaMask / Trust में उपयोग करें",
+      "description": "अपने EVM वॉलेट में EAV7 नेटवर्क (चेन 72020) जोड़ें।",
+      "adding": "जोड़ा जा रहा है…",
+      "added": "✓ जोड़ी गई",
+      "addButton": "नेटवर्क जोड़ें",
+      "noWallet": "इस ब्राउज़र में MetaMask नहीं मिला।",
+      "error": "नेटवर्क जोड़ा नहीं जा सका।"
+    },
+    "ko": {
+      "title": "MetaMask / Trust에서 사용",
+      "description": "EAV7 네트워크(체인 72020)를 EVM 지갑에 추가하세요.",
+      "adding": "추가하는 중…",
+      "added": "✓ 추가됨",
+      "addButton": "네트워크 추가",
+      "noWallet": "이 브라우저에서 MetaMask가 감지되지 않았습니다.",
+      "error": "네트워크를 추가할 수 없습니다."
+    },
+    "it": {
+      "title": "Usa con MetaMask / Trust",
+      "description": "Aggiungi la rete EAV7 (chain 72020) al tuo wallet EVM.",
+      "adding": "aggiunta in corso…",
+      "added": "✓ aggiunta",
+      "addButton": "Aggiungi rete",
+      "noWallet": "MetaMask non rilevata in questo browser.",
+      "error": "impossibile aggiungere la rete."
+    }
+  }
+}

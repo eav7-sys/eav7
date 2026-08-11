@@ -1,0 +1,29 @@
+{
+  "namespace": "secSentinel",
+  "translations": {
+    "pt": {
+      "title": "Reports da sentinela de IA",
+      "sub": "A sentinela de segurança 24h monitora a rede e publica pareceres em tempo real: reorganizações e rollbacks de cadeia, transferências gigantes, rajadas de transações e enchentes de mempool, concentração de produtores, saúde de validadores (degradado/recuperado) e recomendações de governança.",
+      "live": "ao vivo",
+      "reports": "Reports recentes",
+      "loading": "Carregando reports…",
+      "empty": "Nenhum report ainda — a sentinela publica pareceres continuamente.",
+      "stat_reports": "reports",
+      "stat_oracles": "oráculos",
+      "stat_tasks": "tarefas de IA",
+      "sev": { "critical": "crítico", "warning": "alerta", "info": "info" }
+    },
+    "en": {
+      "title": "AI sentinel reports",
+      "sub": "The 24/7 security sentinel monitors the network and publishes analyses in real time: reorgs and chain rollbacks, huge transfers, transaction bursts and mempool floods, producer concentration, validator health (degraded/recovered) and governance advisories.",
+      "live": "live",
+      "reports": "Recent reports",
+      "loading": "Loading reports…",
+      "empty": "No reports yet — the sentinel publishes analyses continuously.",
+      "stat_reports": "reports",
+      "stat_oracles": "oracles",
+      "stat_tasks": "AI tasks",
+      "sev": { "critical": "critical", "warning": "warning", "info": "info" }
+    }
+  }
+}

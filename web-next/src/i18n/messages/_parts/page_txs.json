@@ -1,0 +1,17 @@
+{
+  "namespace": "page_txs",
+  "translations": {
+    "pt": { "metaTitle": "Transações · EAV7 Scan" },
+    "en": { "metaTitle": "Transactions · EAV7 Scan" },
+    "es": { "metaTitle": "Transacciones · EAV7 Scan" },
+    "zh": { "metaTitle": "交易 · EAV7 Scan" },
+    "fr": { "metaTitle": "Transactions · EAV7 Scan" },
+    "de": { "metaTitle": "Transaktionen · EAV7 Scan" },
+    "ja": { "metaTitle": "トランザクション · EAV7 Scan" },
+    "ru": { "metaTitle": "Транзакции · EAV7 Scan" },
+    "ar": { "metaTitle": "المعاملات · EAV7 Scan" },
+    "hi": { "metaTitle": "लेनदेन · EAV7 Scan" },
+    "ko": { "metaTitle": "거래 내역 · EAV7 Scan" },
+    "it": { "metaTitle": "Transazioni · EAV7 Scan" }
+  }
+}

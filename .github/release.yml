@@ -1,0 +1,26 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
+    - title: Protocol & Consensus
+      labels:
+        - consensus
+        - protocol
+    - title: Node & Core
+      labels:
+        - node
+        - core
+    - title: Explorer & SDK
+      labels:
+        - explorer
+        - sdk
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Other Changes
+      labels:
+        - "*"

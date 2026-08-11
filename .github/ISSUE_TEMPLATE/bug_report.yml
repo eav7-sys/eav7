@@ -1,0 +1,49 @@
+name: Bug report
+description: Something is broken in the node, Core, SDK, or explorer.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. For **security** issues, follow [SECURITY.md](../SECURITY.md) instead.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - eav7 (consensus library)
+        - eav7-node
+        - eav7-core
+        - eav7-sdk / wasm
+        - web-next (explorer)
+        - deploy / CI
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened vs what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      placeholder: v0.1.0 or git SHA
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / stack traces
+      render: shell

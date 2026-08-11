@@ -1,0 +1,89 @@
+{
+  "namespace": "ui_copy",
+  "translations": {
+    "pt": {
+      "default_value": "valor",
+      "aria_label": "Copiar {label}",
+      "copied": "copiado ✓",
+      "copy_label": "copiar {label}",
+      "copy": "copiar"
+    },
+    "en": {
+      "default_value": "value",
+      "aria_label": "Copy {label}",
+      "copied": "copied ✓",
+      "copy_label": "copy {label}",
+      "copy": "copy"
+    },
+    "es": {
+      "default_value": "valor",
+      "aria_label": "Copiar {label}",
+      "copied": "copiado ✓",
+      "copy_label": "copiar {label}",
+      "copy": "copiar"
+    },
+    "zh": {
+      "default_value": "值",
+      "aria_label": "复制{label}",
+      "copied": "已复制 ✓",
+      "copy_label": "复制{label}",
+      "copy": "复制"
+    },
+    "fr": {
+      "default_value": "valeur",
+      "aria_label": "Copier {label}",
+      "copied": "copié ✓",
+      "copy_label": "copier {label}",
+      "copy": "copier"
+    },
+    "de": {
+      "default_value": "Wert",
+      "aria_label": "{label} kopieren",
+      "copied": "kopiert ✓",
+      "copy_label": "{label} kopieren",
+      "copy": "kopieren"
+    },
+    "ja": {
+      "default_value": "値",
+      "aria_label": "{label}をコピー",
+      "copied": "コピーしました ✓",
+      "copy_label": "{label}をコピー",
+      "copy": "コピー"
+    },
+    "ru": {
+      "default_value": "значение",
+      "aria_label": "Копировать {label}",
+      "copied": "скопировано ✓",
+      "copy_label": "копировать {label}",
+      "copy": "копировать"
+    },
+    "ar": {
+      "default_value": "القيمة",
+      "aria_label": "نسخ {label}",
+      "copied": "تم النسخ ✓",
+      "copy_label": "نسخ {label}",
+      "copy": "نسخ"
+    },
+    "hi": {
+      "default_value": "मान",
+      "aria_label": "{label} कॉपी करें",
+      "copied": "कॉपी हो गया ✓",
+      "copy_label": "{label} कॉपी करें",
+      "copy": "कॉपी करें"
+    },
+    "ko": {
+      "default_value": "값",
+      "aria_label": "{label} 복사",
+      "copied": "복사됨 ✓",
+      "copy_label": "{label} 복사",
+      "copy": "복사"
+    },
+    "it": {
+      "default_value": "valore",
+      "aria_label": "Copia {label}",
+      "copied": "copiato ✓",
+      "copy_label": "copia {label}",
+      "copy": "copia"
+    }
+  }
+}

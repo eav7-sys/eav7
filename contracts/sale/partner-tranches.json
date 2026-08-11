@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "goal": "private-partner-4-tranches-owner-wallet",
+  "bucket": {
+    "name": "strategic-partner-private",
+    "shareOfGenesis": 0.1,
+    "tokensEav7": "10000000000",
+    "genesisDestination": "PartnerTrancheVault",
+    "mode": "private-owner-native-wallet"
+  },
+  "auth": {
+    "rule": "msg.sender == owner",
+    "ui": "web-next /wallet — unlock native vault; button only if account.evm == PARTNER_OWNER_EVM",
+    "signing": "browser signs EAVM tx with owner private key (no relayer)",
+    "networkGuard": "releaseTo rejects to==owner and to==vault (anti self-deal)"
+  },
+  "tranches": {
+    "count": 4,
+    "eachEav7": "2500000000",
+    "delivery": "liquid-on-releaseTo",
+    "cooldownBlocks": 31536000,
+    "cooldownHuman": "12 months between releases"
+  },
+  "managerFlow": [
+    "deploy PartnerTrancheVault(ownerEvm) — owner = sua carteira nativa",
+    "genesis credits 10B to vault",
+    "unlock /wallet with owner key",
+    "Armar (1×) → arm(10B)",
+    "colar 0x do parceiro → Liberar com minha chave → releaseTo",
+    "wait 12m → repeat (max 4)"
+  ],
+  "env": {
+    "NEXT_PUBLIC_PARTNER_TRANCHE_VAULT": "0x…",
+    "NEXT_PUBLIC_PARTNER_OWNER_EVM": "0x… same as constructor owner"
+  }
+}

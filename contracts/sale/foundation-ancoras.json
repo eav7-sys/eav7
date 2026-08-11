@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "role": "foundation-launch-anchors",
+  "count": 7,
+  "planRef": "docs/plano/17-set-51-banco-101.md (launch 5–7)",
+  "treasury": {
+    "e7": "E7F2906EA4B2CD23D20180C8E813F2D126",
+    "role": "foundation-vesting-beneficiary",
+    "note": "Receives foundation remainder after 7×GENESIS_STAKE. Same as payment-rails eav7 address.",
+    "source": "contracts/sale/payment-rails.json"
+  },
+  "stakeEachEav7": "10000",
+  "stakeEachE7Atomic": "10000000000",
+  "stakeSource": "foundation-bucket (30.25%)",
+  "totalStakeFromFoundationEav7": "70000",
+  "foundationBucketEav7": "30250000000",
+  "foundationVestedEav7": "30249930000",
+  "math": {
+    "foundation": "30250000000",
+    "minus7xStake": "70000",
+    "equalsVestedToTreasury": "30249930000",
+    "unit": "EAV7 (6 decimals)"
+  },
+  "anchors": [
+    {
+      "id": 1,
+      "e7": "E76644FFF98DBF12571E67155D6788186A",
+      "evmDest": "0xe70000006644fff98dbf12571e67155d6788186a",
+      "walletFile": "ancora-1.json",
+      "genesisStakeEav7": "10000"
+    },
+    {
+      "id": 2,
+      "e7": "E78EBD37FC1A8964B2F2245FDE82E19EAB",
+      "evmDest": "0xe70000008ebd37fc1a8964b2f2245fde82e19eab",
+      "walletFile": "ancora-2.json",
+      "genesisStakeEav7": "10000"
+    },
+    {
+      "id": 3,
+      "e7": "E7E567446FD914923AD830446E8DC33E18",
+      "evmDest": "0xe7000000e567446fd914923ad830446e8dc33e18",
+      "walletFile": "ancora-3.json",
+      "genesisStakeEav7": "10000"
+    },
+    {
+      "id": 4,
+      "e7": "E7C4538A43860450E267ED312EC272D479",
+      "evmDest": "0xe7000000c4538a43860450e267ed312ec272d479",
+      "walletFile": "ancora-4.json",
+      "genesisStakeEav7": "10000"
+    },
+    {
+      "id": 5,
+      "e7": "E7AEF730EC1F2339DE04D31BD48F5294C9",
+      "evmDest": "0xe7000000aef730ec1f2339de04d31bd48f5294c9",
+      "walletFile": "ancora-5.json",
+      "genesisStakeEav7": "10000"
+    },
+    {
+      "id": 6,
+      "e7": "E72FED2595FFEE4B31610CD08DF94E7C4B",
+      "evmDest": "0xe70000002fed2595ffee4b31610cd08df94e7c4b",
+      "walletFile": "ancora-6.json",
+      "genesisStakeEav7": "10000"
+    },
+    {
+      "id": 7,
+      "e7": "E7E759D86792C884E686014919C3C1EF58",
+      "evmDest": "0xe7000000e759d86792c884e686014919c3c1ef58",
+      "walletFile": "ancora-7.json",
+      "genesisStakeEav7": "10000"
+    }
+  ],
+  "secrets": {
+    "path": "secrets/foundation-ancoras/",
+    "gitignored": true,
+    "rule": "Copy offline / HSM. Never commit wallet JSON."
+  },
+  "genesis": {
+    "stakes": "each anchor gets GENESIS_STAKE (10000 EAV7)",
+    "bridgeRelayers": [],
+    "bridgeNote": "Launch Anchors are NOT bridge relayers. Enable bridge committee later via governance.",
+    "vestingFoundation": {
+      "beneficiary": "E7F2906EA4B2CD23D20180C8E813F2D126",
+      "totalEav7": "30249930000",
+      "cliffBlocks": 31536000,
+      "durationBlocks": 157680000,
+      "schedule": "cliff 12m + linear 48m"
+    }
+  }
+}
