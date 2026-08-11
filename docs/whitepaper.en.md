@@ -6,7 +6,7 @@ Protocol `eav20` · Symbol `EAV7` · EAVM Chain ID `72020` (mainnet) / `72021` (
 
 ---
 
-> **Preliminary notice.** This document describes a protocol at pre-mainnet stage. Section 13 (Maturity Status) separates what is implemented and active, what is implemented but gated behind a fork height, and what is roadmap. Section 14 (Risk Factors) and Section 15 (Legal Disclaimer) are integral parts of this document and must not be read in isolation. Nothing in this whitepaper constitutes an offer, an investment recommendation, or a guarantee of outcome.
+> **Preliminary notice.** This document describes the EAV7 mainnet in operation as of August 11, 2026. Section 13 (Maturity Status) separates what is live on the network, what remains gated operationally or behind a fork height, and what is roadmap. Section 14 (Risk Factors) and Section 15 (Legal Disclaimer) are integral parts of this document and must not be read in isolation. Nothing in this whitepaper constitutes an offer, an investment recommendation, or a guarantee of outcome.
 
 ---
 
@@ -115,7 +115,7 @@ Peer-to-peer traffic runs over HTTP with a small message set: `POST /tx` for tra
 
 Outbound peer URLs pass an anti-SSRF filter that normalizes non-canonical IPv4 forms — decimal, octal, and hexadecimal encodings all resolve to the same address — before classifying them as private or public. Without that normalization, a peer could steer the node into loopback or cloud metadata services. Private-range peers are rejected unless explicitly allowed, which is the intended configuration for local testnets only.
 
-The transport itself is not authenticated or encrypted at the protocol layer. Production deployments are expected to place validators behind a reverse proxy or tunnel and never expose the administrative API. Authenticated P2P is a roadmap item (Section 13.3).
+The transport itself is not authenticated or encrypted at the protocol layer. Production deployments are expected to place validators behind a reverse proxy or tunnel and never expose the administrative API. Authenticated P2P is a roadmap item (Section 13.5).
 
 ---
 
@@ -131,9 +131,9 @@ validators[ slot mod N ]
 
 where `validators` is the ordered active set. There is no lottery, VRF, or auction: given the clock and the validator set, the producer of any slot is a pure, universally computable function.
 
-The active set is derived from state at every block: accounts with `staked ≥ MIN_VALIDATOR_STAKE` (1,000 EAV7), ranked by **weight = self-stake + votes received** in descending order, ties broken by ascending address, truncated at `MAX_VALIDATORS` (51 in the delivery launch profile). The next 50 ranked eligible accounts form the standby bank, so the ranked ecosystem comprises the top 101. Only active Anchors produce blocks and vote; standby accounts are candidates for promotion, not block producers. EAVM-managed accounts are excluded by construction, since they hold no hybrid keypair and therefore cannot sign blocks.
+The active set is derived from state at every block: accounts with `staked ≥ MIN_VALIDATOR_STAKE` (1,000 EAV7), ranked by **weight = self-stake + votes received** in descending order, ties broken by ascending address, truncated at `MAX_VALIDATORS` (51 on mainnet). The next 50 ranked eligible accounts form the standby bank, so the ranked ecosystem comprises the top 101. Only active Anchors produce blocks and vote; standby accounts are candidates for promotion, not block producers. EAVM-managed accounts are excluded by construction, since they hold no hybrid keypair and therefore cannot sign blocks.
 
-The network may begin with five to seven foundation-operated Anchors and fill toward 51 as independent operators qualify. Every launch Anchor uses a cold owner M-of-N authority and a separate hot witness; the witness signs blocks without acquiring authority over governance, stake, commission, or owner permissions.
+Mainnet operates with **seven** foundation Anchors from height 0 (one producer per VM, full mesh) and is expected to fill toward 51 as independent operators qualify. Every launch Anchor uses a cold owner M-of-N authority and a separate hot witness; the witness signs blocks without acquiring authority over governance, stake, commission, or owner permissions.
 
 ### 4.2 Block admission rules
 
@@ -267,7 +267,7 @@ burn            = max(0, weighted_bytes − remaining_quota) × BURN_PER_BYTE
 
 Both hybrid signature fields are excluded from useful bytes. This **free-signature** rule prevents the large, variable PQ signature from becoming a fee surface and preserves transaction identifier anti-malleability; public keys remain included in useful bytes. An account within quota burns nothing. `DELEGATE_RESOURCE` / `UNDELEGATE_RESOURCE` continue to increase the recipient's effective resource stake and therefore its GB quota without transferring voting power.
 
-The legacy separate energy-and-bandwidth accounting remains valid below `GB_FEE_HEIGHT`. In local and pre-delivery builds that height stays distant; the delivery server sets the launch profile at genesis, where the GB rule applies from height zero. That configuration is not a casual local default and does not mean a mainnet is already live.
+The legacy separate energy-and-bandwidth accounting remains valid below `GB_FEE_HEIGHT`. On mainnet (`GENESIS_ACTIVE` / height-zero profile), GB · Free Signature applies from genesis. Local builds without that overlay may still use distant heights.
 
 ### 7.2 Full fee burning
 
@@ -297,7 +297,7 @@ EAV7 holders allocate voting power (equal to stake) to candidates, across up to 
 
 The block reward is split in the following order: first the treasury share (`TREASURY_PCT`, **0% by default**, governable up to 50%); then, if the producer has received votes, it retains its commission (20% default, adjustable per validator with a delay of `COMMISSION_DELAY_BLOCKS` = 21,600 blocks) and the remainder is distributed pro rata to voters through a fixed-precision accumulator that makes claiming O(1). If the producer received no votes, it retains the whole.
 
-In the delivery launch profile, voting is active from genesis, so ranking uses self-stake plus votes from the outset. The active set has up to 51 Anchors; the next 50 eligible accounts are the standby bank. The bank does not vote or produce blocks until promoted.
+On mainnet, voting is active from genesis, so ranking uses self-stake plus votes from the outset. The active set has up to 51 Anchors; the next 50 eligible accounts are the standby bank. The bank does not vote or produce blocks until promoted.
 
 ### 8.3 On-chain governance
 
@@ -323,13 +323,13 @@ An **anti-brick rail** automatically reverts any change to `MIN_VALIDATOR_STAKE`
 
 The protocol implements **double-sign** slashing: two valid blocks, same producer, same height, different hashes. The penalty is 10% of the amount at risk — active stake **plus** funds in unbonding, closing the escape of unstaking after the offence — of which 10% goes to the reporter and 90% is burned. A nullifier keyed on `offender:height` prevents double punishment for the same evidence, and cheap checks precede the two expensive hybrid verifications to avoid DoS amplification.
 
-The delivery launch profile activates double-sign slashing from genesis. It must not be inferred that this configuration has been deployed to mainnet: local and pre-delivery builds retain their guarded fork settings until the delivery server generates the launch genesis.
+On mainnet, double-sign slashing is active from height 0. Local builds without the `GENESIS_ACTIVE` overlay may still retain distant heights.
 
 ---
 
 ## 9. EAVM — Virtual Machine and Wallet Compatibility
 
-The EAVM is EAV7's virtual machine. It executes EVM bytecode, meters gas, and indexes logs and receipts. The delivery launch profile activates contract deployment, execution, and value-carrying EAVM transactions from genesis.
+The EAVM is EAV7's virtual machine. It executes EVM bytecode, meters gas, and indexes logs and receipts. On mainnet, contract deployment, execution, and value-carrying EAVM transactions are active from genesis.
 
 Precompiles `0x01`–`0x09` are implemented, including `modexp`, the BN254 curve operations (`ecAdd`, `ecMul`, `ecPairing`), and `blake2f`, with gas metering charged before execution so that a hostile input cannot buy computation it has not paid for. Gas is bounded at `MAX_EAVM_GAS` = 5,190,000 per transaction; contract size is capped at 24,576 bytes (EIP-170) and calldata at 3,072 bytes.
 
@@ -392,7 +392,7 @@ There is no code path by which any AI component signs or submits a transaction. 
 
 The base flow: `ORACLE_REGISTER` (oracle registers an endpoint and locks stake ≥ 500 EAV7) → `AI_TASK` (requester escrows the reward) → `AI_RESULT` (oracle delivers) → settlement. Each oracle's reputation starts at 50 and evolves on-chain: **+4** for successful delivery, **−12** for an overturned result or non-delivery, **−8** for committing without revealing, **+2/−4** for jurors voting with or against the majority.
 
-On the delivery launch profile, the five base guarantee mechanisms are active from genesis. TEE/ZK attestation remains separately gated:
+On mainnet, the five base guarantee mechanisms are active from genesis. TEE/ZK attestation remains separately gated (`AI_TEE_HEIGHT` stays distant):
 
 **Accountability.** Failing to deliver within the deadline, the oracle is penalized 10 EAV7 taken from its locked stake and credited to the requester as compensation, in addition to a full refund of the reward.
 
@@ -462,7 +462,7 @@ The purpose is to convert a total-drain scenario — compromised committee or re
 
 **Trust was relocated, not eliminated.** It moved from the relayer set to the origin-chain committee's key set, which is a real and substantial improvement. But a committee compromised at quorum can still mint, limited only by the circuit breaker.
 
-**The bridge is not a launch claim by default.** The protocol defines an adapter interface and is chain-agnostic by construction. A real adapter, a constituted committee, an active breaker, and the operational checklist are required before it can custody value; a loopback adapter is only a test component. A light client remains roadmap work.
+**The bridge does not custody economic value on mainnet by default.** The protocol defines an adapter interface and is chain-agnostic by construction. A real adapter, a constituted committee, an active breaker, and the operational checklist are required before it can custody value; a loopback adapter is only a test component. A light client remains roadmap work.
 
 ---
 
@@ -491,34 +491,36 @@ Genesis distribution prioritizes the open market: the public share is **45%**, w
 
 | Bucket | **EAV7** | Tokens | Launch destination |
 |---|---|---|---|
-| **Public distribution** | **45.00%** | 45,000,000,000 | `PublicVault` — liquid at TGE / LBP |
-| **Foundation / Treasury** | **30.25%** | 30,250,000,000 | Protocol vesting + Anchor stakes |
-| **Private sale** | **14.75%** | 14,750,000,000 | `SaleVault` — 12m cliff + 24m linear |
-| **Strategic partner** | **10.00%** | 10,000,000,000 | `PartnerTrancheVault` — four private tranches |
+| **Public distribution** | **45.00%** | 45,000,000,000 | Published custody / `PublicVault` — liquid at TGE / LBP |
+| **Foundation / Treasury** | **30.25%** | 30,250,000,000 | Anchor stakes + 12-part schedule (1/12 liquid; 11 vestings) |
+| **Private sale** | **14.75%** | 14,750,000,000 | Published custody / `SaleVault` — 12m cliff + 24m linear |
+| **Strategic partner** | **10.00%** | 10,000,000,000 | Published custody / `PartnerTrancheVault` — four private tranches |
 | **Total** | **100.00%** | **100,000,000,000** | — |
 
 The insider-controlled share (Foundation, private sale, and partner) totals **55.00%**.
 
-#### Custody and delivery (launch profile)
+#### Custody and delivery (mainnet)
 
-Buckets do **not** mint into a single operational wallet. The delivery genesis fragment materializes:
+Buckets do **not** mint into a single operational wallet. On the live genesis, day-1 custody uses the published addresses below until vault contracts are deployed; the intended product path remains `PublicVault` / `SaleVault` / `PartnerTrancheVault` / protocol vesting.
 
-| Bucket | On-chain custody | Release |
+| Bucket | Day-1 custody (published) | Release |
 |---|---|---|
-| Public (45%) | `PublicVault` | Buyers receive **liquid** EAV7 via relayer `grant` after rail payment; after the window, `finalizeToLp` moves remaining balance (+ LP reserve) to `TimelockLpSeeder` |
-| Private (14.75%) | `SaleVault` | Relayer confirms payment and creates on-contract vesting; the buyer calls `release`. Grants are capped by `saleAllocated`, vesting defaults freeze after `openSale`, and public HTTP manual confirm is **disabled** (ops token / payment watcher only) |
-| Foundation (30.25%) | Protocol vesting + stakes | **Seven** launch Anchors each receive `GENESIS_STAKE` = **10,000 EAV7** staked (debited from this bucket). The remainder (**30,249,930,000 EAV7** with seven Anchors) vests to the foundation treasury (`E7F2906EA4B2CD23D20180C8E813F2D126` in the published operational profile): 12-month cliff + 48-month linear |
-| Partner (10%) | `PartnerTrancheVault` | Four equal **2.5B** EAV7 tranches. Only the **owner** (unlocked native wallet) may call `releaseTo(address)`. **12-month** cooldown between releases. The owner **cannot** be the recipient (anti self-deal); neither can the vault itself |
+| Public (45%) | `E7AADB9206205894E8C8D7A9B6FE6C8320` | Liquid destination for public distribution / LBP; `PublicVault` remains the product path once deployed |
+| Private (14.75%) | `E7C66510442208FEA89FAFC30BE666CCB0` | Sale custody until `SaleVault`; Launch tier **$0.005** (USD-raised tiers through Last call $0.015), locked at intent |
+| Foundation (30.25%) | Protocol vesting + stakes → treasury `E7F2906EA4B2CD23D20180C8E813F2D126` | **Seven** Anchors each receive `GENESIS_STAKE` = **10,000 EAV7** staked. The remainder (**30,249,930,000 EAV7**) is split into **12 equal parts**: **1/12 liquid on day 1**; the other **11** as vestings with `cliff == duration` at **12, 18, 24, 30, 36, 42, 48, 54, 60, 66, and 72 months** (lump unlock at each tranche maturity — **not** “12-month cliff + 48-month linear”) |
+| Partner (10%) | `E72F728E69D24CFB91C167A805C6472D40` | Custody until `PartnerTrancheVault` (four **2.5B** tranches, 12-month cooldown between releases; anti self-deal) |
 
 Private-sale product pricing uses USD-raised tiers (e.g. Launch $0.005 → … → Last call $0.015), with the price **locked at intent creation**. Tier scarcity counts only `paid`/`granted` intents (`pending` does not move the ladder).
 
-**On-contract vesting.** After the cliff, release is linear over `(duration − cliff)`, not a lump sum at the cliff instant. The same rule applies to `SaleVault` grants and related on-contract schedules.
+**On-contract vesting (product).** In sale vaults, after the cliff, release is linear over `(duration − cliff)`, not a lump sum at the cliff instant. The **foundation** mainnet schedule, however, is the **12-part** schedule above (`cliff == duration` per tranche).
 
-**Bridge at genesis.** `bridgeRelayers` starts **empty**. Launch Anchors are **not** the bridge committee on day one; the committee is enabled later through governance once adapter, quorum, and breaker readiness are met.
+**Bridge at genesis.** `bridgeRelayers` starts **empty**. Launch Anchors are **not** the bridge committee on day one; even where bridge fork heights are 0 under the `GENESIS_ACTIVE` overlay, the economic bridge remains gated until a real adapter, committee, and operational checklist are in place.
 
-**On the legacy generator.** Local builds may still use a generator that concentrates supply in one wallet for development. The **delivery** path uses the bucket fragment (`alocacoes_buckets_whitepaper` / `genesis-buckets.mjs`) described above. Materializing that fragment on the delivery server remains a production prerequisite. See Section 13.
+**Names at genesis.** Anchor EAV-NS names were re-registered on day 0; AI oracle registration is available (minimum stake 500 EAV7).
 
-**On vesting.** Every non-public bucket carries a minimum 12-month cliff (or an equivalent 12-month tranche cooldown for the partner vault).
+**On local builds.** Local builds may still use a generator that concentrates supply in one wallet for development. Mainnet materialized the bucket fragment (§12.2) with seven Anchors and the foundation vesting schedule described above. See Section 13.
+
+**On vesting.** Every non-public bucket carries a minimum 12-month cliff (or an equivalent 12-month tranche cooldown for the partner vault), except the foundation’s liquid 1/12 on day 1.
 
 ### 12.3 Treasury
 
@@ -532,38 +534,36 @@ This section exists so that no reader must infer what is ready. The classificati
 
 ### 13.1 Present posture
 
-EAV7 is **pre-mainnet**. The Rust client is the production client: the consensus library, the full node, and the `eav7-core` operator binary build and run on Linux, macOS, and Windows, with tagged releases publishing archives and SHA-256 digests for Linux x64, Linux arm64, macOS arm64, and Windows x64. Continuous integration runs on GitHub Actions over the workspace, and conformance fixtures in `vectors/` pin canonical serialization, cryptography, state leaves, state roots, and EAVM behaviour.
+EAV7 is on a **live mainnet**. The Rust client is the production client: the consensus library, the full node, and the `eav7-core` operator binary build and run on Linux, macOS, and Windows, with tagged releases publishing archives and SHA-256 digests for Linux x64, Linux arm64, macOS arm64, and Windows x64. Continuous integration runs on GitHub Actions over the workspace, and conformance fixtures in `vectors/` pin canonical serialization, cryptography, state leaves, state roots, and EAVM behaviour.
 
-The source is held in a private repository (`eav7-sys/eav7`) under the MIT licence. The public explorer deployment may be offline pending redeployment; explorer availability is an operational property and has no bearing on consensus.
+The source is public at [github.com/eav7-sys/eav7](https://github.com/eav7-sys/eav7) under the MIT licence. The public explorer is at [eavscan.com](https://eavscan.com). Genesis hash: `7aa09afcd542e6ec8fd4b977658ed522143991f20a8ce48aab8aca9aeb80e5fb`. Seven foundation Anchors produce from height 0 (one producer per VM, full mesh). The `GENESIS_ACTIVE` / height-zero profile **is** the live mainnet profile.
 
 **Test coverage.** Approximately 1,000 test functions across 68 files in the Rust workspace, including determinism-by-replay of a multi-validator chain and conformance against the frozen vectors.
 
-### 13.2 Implemented for the launch profile
+### 13.2 Live on mainnet from height 0
 
-The codebase implements DPoS deterministic rotation and one production per slot · BFT finality as a reorganization floor · `eav7-hybrid-1` signatures on wallets, transactions, and blocks · malleability-immune block and transaction identifiers · state roots and account inclusion proofs · GB · Free Signature accounting with delegation · staking and unbonding · 51 active validator seats plus a 50-account standby bank · per-account permissions and multisig · owner-authorized Anchor governance with timelock and anti-brick rail · treasury · vesting-capable genesis · meta-transactions · EAVM execution, precompiles `0x01`–`0x09`, receipts, and logs · the EAV20/EAV20Managed/EAV20Factory contracts · launch contracts `SaleVault`, `PublicVault`, `PartnerTrancheVault`, and `TimelockLpSeeder` · genesis bucket fragment (§12.2) · the base AI oracle phases · bridge committee and breaker primitives · resilient block storage · and `eav7-core` operator modes, including `ancora-init`.
+Live from genesis on mainnet: DPoS rotation and BFT finality · strict producer, state root, and double-sign slashing · `eav7-hybrid-1` signatures and malleability-immune identifiers · GB · Free Signature accounting with delegation · staking, unbonding, voting, permissions v2, and owner-authorized Anchor governance (`GOVERNANCE_HEIGHT=0`) · treasury, vesting, and meta-transactions · value-carrying EAVM execution · base AI oracle phases (`AI_ACCOUNTABILITY` / `QUORUM` / `CHALLENGE` / `MARKET` / `PRIVATE` = 0) · EAV-NS names (including Anchor re-registration on day 0) · resilient block storage · and `eav7-core` operator modes, including `ancora-init`.
 
-This is an implementation and delivery-profile statement, **not** a claim that a mainnet is live. The repository's local/pre-delivery configuration retains distant fork heights for safety. The delivery server, after the launch prerequisites are complete, generates the dedicated launch genesis (buckets + seven Anchors + foundation vesting) and sets the closed launch rules at height zero. `GENESIS_ACTIVE` and zeroed heights must not be treated as a casual local development default.
+Product contracts `SaleVault`, `PublicVault`, `PartnerTrancheVault`, and `TimelockLpSeeder` / EAV20Factory remain the intended path; until deployment, day-1 custody uses the published addresses in Section 12.2. `GENESIS_ACTIVE` and zeroed heights describe mainnet; local builds without that overlay may still use distant heights.
 
-### 13.3 Delivery gates and roadmap
-
-The following items remain gated or roadmap rather than assumptions of a live public network:
+### 13.3 Operationally gated and roadmap
 
 | Feature | Status and activation condition |
 |---|---|
-| **TEE/ZK attestation of AI results** | Gated until an actual attester is registered through Anchor governance; on-chain verification remains registered-signature verification, not native enclave or SNARK verification. |
-| **Bridge with economic value** | Gated or off until a real adapter, committee of at least three members, an active fail-closed breaker, confirmation policy, pause process, and end-to-end testing are in place. It remains committee-attested, not trustless. |
-| **Skip/miss and downtime rules** | Future consensus upgrade. Strict scheduled production, state roots, and double-sign slashing are launch rules; skip/miss do not block launch. |
-| **Hybrid epoch certificates** | Phase 2 for light-client and bridge consumers; not required to start the chain. |
+| **TEE/ZK attestation of AI results** | Gated: `AI_TEE_HEIGHT` remains distant (100,000,000) until an actual attester is registered through Anchor governance. On-chain verification remains registered-signature verification, not native enclave or SNARK verification. |
+| **Bridge with economic value** | Operationally gated: `bridgeRelayers: []` at genesis; no production adapter or committee. Even where bridge fork heights are 0 under the overlay, the economic bridge is **not** open until a real adapter, committee of at least three, an active fail-closed breaker, confirmation policy, pause process, and end-to-end testing are in place. It remains committee-attested, not trustless. |
+| **Skip/miss and downtime rules** | Future consensus upgrade. Strict scheduled production, state roots, and double-sign slashing are already live; skip/miss do not block current operation. |
+| **Hybrid epoch certificates** | Phase 2 for light-client and bridge consumers; not required for the running network. |
 
-Fork heights are consensus data. The delivery build verifies its genesis mode against its runtime environment and refuses a mismatch, converting a silent divergence risk into a loud startup failure.
+Fork heights are consensus data. The mainnet binary verifies its genesis mode against its runtime environment and refuses a mismatch.
 
-### 13.4 Decentralization posture at launch
+### 13.4 Decentralization posture
 
-The validator set at launch will be **small and foundation-operated**, targeted at **seven Anchors** (accepted range: five to seven), each with `GENESIS_STAKE` debited from the Foundation bucket, until external operators stake and are elected toward the 51 active seats. This is a present fact, not a criticism of the design: deterministic rotation, voting, the 50-account standby bank, and operator tooling exist, but stake distribution is what makes them meaningful, and stake distribution has not happened yet. Launch Anchors are **not** seeded as `bridgeRelayers`.
+The active set on mainnet is **seven foundation-operated Anchors**, producing from height 0, until external operators stake and are elected toward the 51 active seats. Deterministic rotation, voting, the 50-account standby bank, and operator tooling exist, but stake distribution is what makes them meaningful. Anchors are **not** seeded as `bridgeRelayers`.
 
-The path out is explicit and measurable. The project's internal targets include at least ten externally operated listener Cores, at least fifteen independently staked candidates in the top 101, and a majority of the active set controlled outside the founding operator group. The active-set ceiling is 51 at launch; raising it toward the governable ceiling of 101 requires a substantially filled, independently operated set and measured PQ finality performance.
+The project's internal targets include at least ten externally operated listener Cores, at least fifteen independently staked candidates in the top 101, and a majority of the active set controlled outside the founding operator group. The active-set ceiling is 51; raising it toward the governable ceiling of 101 requires a substantially filled, independently operated set and measured PQ finality performance.
 
-### 13.5 Roadmap — not implemented
+### 13.5 Roadmap — not implemented or outside product scope
 
 - **Incremental state root.** Current cost is O(|state|) per block. Replacing it with a persistent tree, sparse Merkle tree, or copy-on-write state is a prerequisite for meaningful state scale.
 - **Remaining JSON-RPC surface.** `eth_getStorageAt`, `eth_getProof`, `eth_subscribe`, and filter methods.
@@ -574,7 +574,7 @@ The path out is explicit and measurable. The project's internal targets include 
 - **Block format compaction.** Base64/PEM key material in every block is expensive on disk for operators; a binary format with public-key references is a planned fork.
 - **Public seed infrastructure.** Stable DNS seeds and verifiable bootstrap snapshots, so a new operator does not synchronize from genesis.
 - **Mobile voter wallet.** Staking and voting from a phone; block production stays on the Core.
-- **EAV721 and EAV-NS as launch products.** They are outside the default launch scope unless their product and explorer paths are completed; they are not part of the EAV20 launch claim.
+- **EAV721 as a product.** The EAV-NS name protocol exists on mainnet (including Anchor names); EAV721 remains a product/explorer roadmap item and is not part of the EAV20 claim.
 - **Independent external audit.** See Section 14.
 
 ---
@@ -593,11 +593,11 @@ Potential consequences include prior registration requirements, restrictions on 
 
 ### 14.2 Centralization risk at launch
 
-The network starts with a small, foundation-operated validator set — typically three to seven nodes (Section 13.4). At N = 3, the BFT finality quorum is 3, meaning finality depends on every operator participating and the unavailability of a single one degrades the network. A set this small offers no meaningful resistance to collusion, coercion, or correlated infrastructure failure, and the entity operating it can in practice determine block production.
+Mainnet operates with a validator set of **seven foundation-operated Anchors** (Section 13.4), toward 51. At N = 7, the BFT finality quorum is 5; operator unavailability still degrades the network, and a set this small offers no meaningful resistance to collusion, coercion, or correlated infrastructure failure. The entity operating it can in practice determine block production.
 
-**EAV7 is not a decentralized network today.** Progressive decentralization is a stated objective with defined success criteria, but it is an objective, not a present state, and readers should treat governance outcomes on the early network as decisions of the founding operator.
+**EAV7 is not a decentralized network today.** Progressive decentralization is a stated objective with defined success criteria, but it is an objective, not a present state, and readers should treat governance outcomes on the current network as decisions of the founding operator.
 
-Slashing is height-gated (Section 13.3), so double-signing by a validator will not be economically punished until the mechanism is hardened and activated.
+Double-sign slashing **is active from height 0** (Section 13.2): the offence is economically punished on mainnet.
 
 ### 14.3 Bridge risk
 
@@ -659,7 +659,7 @@ Values are those declared in `rust/src/config.rs`, the canonical source of conse
 | Future slot tolerance | 400 ms |
 | Reorganization window | 5,000 blocks |
 | Snapshot interval | 5,000 blocks |
-| Active validators | 51 at launch (governable, ceiling 101) |
+| Active validators | 51 on mainnet (governable, ceiling 101) |
 | Standby bank | Next 50 eligible accounts; top 101 ranked in total |
 | Minimum validator stake | 1,000 EAV7 (governable) |
 | Minimum validators for finality | 3 |
@@ -720,9 +720,9 @@ Values are those declared in `rust/src/config.rs`, the canonical source of conse
 | Bridge breaker cap | 30% of pool (governable, 1%–100%) |
 | Bridge minimum attestations | 1 |
 
-### A.4 Delivery launch heights
+### A.4 Active heights on mainnet
 
-These are the intended delivery-server genesis settings, not a claim that they are active on a mainnet or a direction to change ordinary local builds. `GENESIS_ACTIVE` and the height-zero profile are applied only when the dedicated delivery server creates the launch genesis after the relevant prerequisites and tests are complete.
+These are the live mainnet `GENESIS_ACTIVE` / height-zero profile settings. Local builds without that overlay may still use distant heights. The economic bridge remains operationally gated even where bridge heights are 0 (see Section 13.3).
 
 | Height | Fork |
 |---|---|
@@ -730,9 +730,9 @@ These are the intended delivery-server genesis settings, not a claim that they a
 | 0 | `VOTING_HEIGHT` · `PERMISSIONS_V2_HEIGHT` · `GOVERNANCE_HEIGHT` |
 | 0 | `GB_FEE_HEIGHT` — GB · Free Signature replaces legacy energy/bandwidth |
 | 0 | `EAVM_CONTRACTS_HEIGHT` · `EAVM_VALUE_HEIGHT` · `EAVM_OSAKA_HEIGHT` |
-| 0, if the AI oracle is a launch product | `AI_ACCOUNTABILITY_HEIGHT` · `AI_QUORUM_HEIGHT` · `AI_CHALLENGE_HEIGHT` · `AI_MARKET_HEIGHT` · `AI_PRIVATE_HEIGHT` |
-| 0, only if the bridge checklist is complete | `BRIDGE_PROOF_HEIGHT` · `BRIDGE_BREAKER_HEIGHT`; otherwise bridge remains gated/off |
-| Distant until attester readiness | `AI_TEE_HEIGHT` |
+| 0 | `AI_ACCOUNTABILITY_HEIGHT` · `AI_QUORUM_HEIGHT` · `AI_CHALLENGE_HEIGHT` · `AI_MARKET_HEIGHT` · `AI_PRIVATE_HEIGHT` |
+| 0 | `BRIDGE_QUORUM_HEIGHT` · `BRIDGE_PROOF_HEIGHT` · `BRIDGE_BREAKER_HEIGHT` — heights active; economic bridge still gated until adapter/committee |
+| 100,000,000 | `AI_TEE_HEIGHT` — distant until a real attester |
 
 ---
 

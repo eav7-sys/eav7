@@ -6,7 +6,7 @@ Protocolo `eav20` · Símbolo `EAV7` · EAVM Chain ID `72020` (mainnet) / `72021
 
 ---
 
-> **Aviso preliminar.** Este documento descreve um protocolo em estágio pré-mainnet. A Seção 13 (Estado de Maturidade) separa o que está implementado e ativo, o que está implementado porém condicionado a uma altura de fork, e o que é roadmap. A Seção 14 (Fatores de Risco) e a Seção 15 (Aviso Legal) são partes integrantes deste documento e não devem ser lidas isoladamente. Nenhuma parte deste whitepaper constitui oferta, recomendação de investimento ou garantia de resultado.
+> **Aviso preliminar.** Este documento descreve a mainnet EAV7 em operação a partir de 11 de agosto de 2026. A Seção 13 (Estado de Maturidade) separa o que está ativo na rede ao vivo, o que permanece condicionado operacionalmente ou por altura de fork, e o que é roadmap. A Seção 14 (Fatores de Risco) e a Seção 15 (Aviso Legal) são partes integrantes deste documento e não devem ser lidas isoladamente. Nenhuma parte deste whitepaper constitui oferta, recomendação de investimento ou garantia de resultado.
 
 ---
 
@@ -131,9 +131,9 @@ validators[ slot mod N ]
 
 onde `validators` é o conjunto ativo ordenado. Não há sorteio, VRF ou leilão: dado o relógio e o conjunto de validadores, o produtor de qualquer slot é uma função pura e universalmente computável.
 
-O conjunto ativo é derivado do estado a cada bloco: contas com `staked ≥ MIN_VALIDATOR_STAKE` (1.000 EAV7), ordenadas por **peso = stake próprio + votos recebidos** em ordem decrescente, desempate por endereço ascendente, truncado em `MAX_VALIDATORS` (51 no perfil de lançamento do servidor de entrega). As 50 contas elegíveis seguintes formam o banco; o ecossistema ranqueado totaliza top 101. Só Âncoras ativas produzem blocos e votam; o banco é candidato à promoção. Contas gerenciadas pela EAVM são excluídas por construção, pois não possuem par de chaves híbrido e portanto não conseguem assinar blocos.
+O conjunto ativo é derivado do estado a cada bloco: contas com `staked ≥ MIN_VALIDATOR_STAKE` (1.000 EAV7), ordenadas por **peso = stake próprio + votos recebidos** em ordem decrescente, desempate por endereço ascendente, truncado em `MAX_VALIDATORS` (51 na mainnet). As 50 contas elegíveis seguintes formam o banco; o ecossistema ranqueado totaliza top 101. Só Âncoras ativas produzem blocos e votam; o banco é candidato à promoção. Contas gerenciadas pela EAVM são excluídas por construção, pois não possuem par de chaves híbrido e portanto não conseguem assinar blocos.
 
-A rede pode começar com cinco a sete Âncoras operadas pela fundação e preencher rumo a 51 conforme operadores independentes se qualifiquem. Cada Âncora de lançamento usa owner frio M-de-N e witness quente separada; a witness assina bloco sem ganhar autoridade sobre governança, stake, comissão ou permissões do owner.
+A mainnet opera com **sete Âncoras** da fundação desde a altura 0 (uma produtora por VM, malha completa) e deve preencher rumo a 51 conforme operadores independentes se qualifiquem. Cada Âncora de lançamento usa owner frio M-de-N e witness quente separada; a witness assina bloco sem ganhar autoridade sobre governança, stake, comissão ou permissões do owner.
 
 ### 4.2 Regras de admissão de bloco
 
@@ -267,7 +267,7 @@ queima            = max(0, bytes_ponderados − cota_restante) × BURN_PER_BYTE
 
 As assinaturas híbridas são excluídas dos bytes úteis. Essa regra de **assinatura livre** impede que a assinatura PQ, grande e variável, vire superfície de taxa e preserva a defesa contra maleabilidade; as chaves públicas continuam incluídas. Dentro da cota, a conta não queima nada. `DELEGATE_RESOURCE` / `UNDELEGATE_RESOURCE` continuam aumentando o stake efetivo de recurso do destinatário e, portanto, sua cota GB, sem transferir voto.
 
-A contabilidade legada de energia e largura de banda continua abaixo de `GB_FEE_HEIGHT`. Em builds locais e pré-entrega essa altura permanece distante; o servidor de entrega aplica o perfil GB desde o gênese. Isso não é default casual local nem significa que exista mainnet ativa.
+A contabilidade legada de energia e largura de banda continua abaixo de `GB_FEE_HEIGHT`. Na mainnet (`GENESIS_ACTIVE` / perfil de altura zero), o GB · Assinatura Livre aplica-se desde o gênese. Builds locais sem esse overlay podem ainda usar heights distantes.
 
 ### 7.2 Queima integral das taxas
 
@@ -297,7 +297,7 @@ Detentores de EAV7 alocam poder de voto (igual ao stake) a candidatos, em até 3
 
 A recompensa de bloco é repartida na seguinte ordem: primeiro a fração de tesouraria (`TREASURY_PCT`, **0% por padrão**, governável até 50%); em seguida, se o produtor recebeu votos, ele retém sua comissão (padrão 20%, ajustável por validador com atraso de `COMMISSION_DELAY_BLOCKS` = 21.600 blocos) e o restante é distribuído proporcionalmente aos eleitores por um acumulador de precisão fixa que torna o resgate O(1). Se o produtor não recebeu votos, retém a totalidade.
 
-No perfil de lançamento do servidor de entrega, a votação está ativa desde o gênese, de modo que a ordenação usa stake próprio mais votos desde o início. O conjunto ativo tem até 51 Âncoras; as 50 contas elegíveis seguintes formam o banco, que não vota nem produz até ser promovido.
+Na mainnet, a votação está ativa desde o gênese, de modo que a ordenação usa stake próprio mais votos desde o início. O conjunto ativo tem até 51 Âncoras; as 50 contas elegíveis seguintes formam o banco, que não vota nem produz até ser promovido.
 
 ### 8.3 Governança on-chain
 
@@ -323,13 +323,13 @@ Um **trilho anti-brick** reverte automaticamente qualquer alteração de `MIN_VA
 
 O protocolo implementa penalização por **dupla assinatura**: dois blocos válidos, mesmo produtor, mesma altura, hashes diferentes. A penalidade é 10% do valor em risco — stake ativo **mais** fundos em unbonding, fechando a fuga de fazer unstake após a ofensa —, da qual 10% vai ao denunciante e 90% é queimada. Um nulificador por `ofensor:altura` impede punição dupla pela mesma evidência, e as verificações baratas precedem as duas verificações híbridas caras para evitar amplificação de DoS.
 
-O perfil de lançamento do servidor de entrega ativa slashing por dupla assinatura desde o gênese. Isso não implica que a configuração esteja em mainnet: builds locais e pré-entrega mantêm seus guards até que o servidor de entrega gere o gênese de lançamento.
+Na mainnet, o slashing por dupla assinatura está ativo desde a altura 0. Builds locais sem o overlay `GENESIS_ACTIVE` podem ainda manter heights distantes.
 
 ---
 
 ## 9. EAVM — Máquina Virtual e Compatibilidade de Carteiras
 
-A EAVM é a máquina virtual da EAV7. Ela executa bytecode EVM, contabiliza gás e indexa logs e recibos. O perfil de lançamento do servidor de entrega ativa publicação, execução e transações EAVM com valor desde o gênese.
+A EAVM é a máquina virtual da EAV7. Ela executa bytecode EVM, contabiliza gás e indexa logs e recibos. Na mainnet, publicação, execução e transações EAVM com valor estão ativos desde o gênese.
 
 Os precompilados `0x01`–`0x09` estão implementados, incluindo `modexp`, as operações da curva BN254 (`ecAdd`, `ecMul`, `ecPairing`) e `blake2f`, com o gás cobrado antes da execução para que uma entrada hostil não compre computação que não pagou. O gás é limitado a `MAX_EAVM_GAS` = 5.190.000 por transação; o tamanho de contrato é limitado a 24.576 bytes (EIP-170) e o calldata a 3.072 bytes.
 
@@ -392,7 +392,7 @@ Não existe caminho de código pelo qual qualquer componente de IA assine ou sub
 
 O fluxo base: `ORACLE_REGISTER` (oráculo registra endpoint e trava stake ≥ 500 EAV7) → `AI_TASK` (solicitante deposita a recompensa em escrow) → `AI_RESULT` (oráculo entrega) → liquidação. A reputação de cada oráculo nasce em 50 e evolui on-chain: **+4** por entrega bem-sucedida, **−12** por resultado derrubado ou não entrega, **−8** por comprometer e não revelar, **+2/−4** para jurados conforme votem com ou contra a maioria.
 
-No perfil de lançamento do servidor de entrega, os cinco mecanismos-base de garantia estão ativos desde o gênese. A atestação TEE/ZK continua condicionada separadamente:
+Na mainnet, os cinco mecanismos-base de garantia estão ativos desde o gênese. A atestação TEE/ZK continua condicionada separadamente (`AI_TEE_HEIGHT` permanece distante):
 
 **Responsabilização.** Não entregando dentro do prazo, o oráculo é penalizado em 10 EAV7 retirados de seu stake travado e creditados ao solicitante como compensação, além do reembolso integral da recompensa.
 
@@ -462,7 +462,7 @@ O propósito é converter um cenário de dreno total — comitê ou relayer comp
 
 **A confiança foi deslocada, não eliminada.** Ela migrou do conjunto de relayers para o conjunto de chaves do comitê da cadeia de origem, o que é melhoria real e substancial. Mas um comitê comprometido em quórum ainda consegue cunhar, limitado apenas pelo disjuntor.
 
-**A ponte não é uma promessa de lançamento por padrão.** O protocolo define uma interface de adaptador e é agnóstico à cadeia por construção. Um adaptador real, comitê constituído, disjuntor ativo e checklist operacional são pré-requisitos para custodiar valor; adaptador de *loopback* é somente teste. Light client continua roadmap.
+**A ponte não custodia valor econômico na mainnet por padrão.** O protocolo define uma interface de adaptador e é agnóstico à cadeia por construção. Um adaptador real, comitê constituído, disjuntor ativo e checklist operacional são pré-requisitos para custodiar valor; adaptador de *loopback* é somente teste. Light client continua roadmap.
 
 ---
 
@@ -491,34 +491,36 @@ A distribuição do gênese prioriza o mercado aberto: a parcela pública é **4
 
 | Bucket | **EAV7** | Tokens | Destino no lançamento |
 |---|---|---|---|
-| **Distribuição pública** | **45,00%** | 45.000.000.000 | `PublicVault` — líquido no TGE / LBP |
-| **Fundação / Tesouraria** | **30,25%** | 30.250.000.000 | Vesting na tesouraria + stake das Âncoras |
-| **Venda privada** | **14,75%** | 14.750.000.000 | `SaleVault` — cliff 12m + linear 24m |
-| **Parceiro estratégico** | **10,00%** | 10.000.000.000 | `PartnerTrancheVault` — 4 tranches privadas |
+| **Distribuição pública** | **45,00%** | 45.000.000.000 | Custódia publicada / `PublicVault` — líquido no TGE / LBP |
+| **Fundação / Tesouraria** | **30,25%** | 30.250.000.000 | Stake das Âncoras + 12 partes (1/12 líquido; 11 vestings) |
+| **Venda privada** | **14,75%** | 14.750.000.000 | Custódia publicada / `SaleVault` — cliff 12m + linear 24m |
+| **Parceiro estratégico** | **10,00%** | 10.000.000.000 | Custódia publicada / `PartnerTrancheVault` — 4 tranches |
 | **Total** | **100,00%** | **100.000.000.000** | — |
 
 A parcela sob controle de insiders (Fundação, venda privada e parceiro) soma **55,00%**.
 
-#### Custódia e entrega (perfil de lançamento)
+#### Custódia e entrega (mainnet)
 
-Os buckets **não** nascem numa carteira operacional única. O fragmento de gênese de entrega materializa:
+Os buckets **não** nascem numa carteira operacional única. No gênese ao vivo, a custódia dia 1 usa endereços publicados até a implantação dos contratos de vault; o caminho de produto pretendido permanece `PublicVault` / `SaleVault` / `PartnerTrancheVault` / vesting de protocolo.
 
-| Bucket | Custódia on-chain | Liberação |
+| Bucket | Custódia dia 1 (publicada) | Liberação |
 |---|---|---|
-| Público (45%) | Contrato `PublicVault` | Compradores recebem **líquido** via `grant` do relayer após pagamento nas rails; ao fim da janela, `finalizeToLp` move saldo remanescente (+ reserva de LP) para `TimelockLpSeeder` |
-| Privada (14,75%) | Contrato `SaleVault` | Relayer confirma pagamento e cria vesting on-contract; o comprador chama `release`. Há teto `saleAllocated`, defaults de vesting congelados após `openSale`, e confirmação manual HTTP **não** é pública (ops com token / watcher) |
-| Fundação (30,25%) | Vesting de protocolo + stakes | **7 Âncoras** de lançamento recebem cada uma `GENESIS_STAKE` = **10.000 EAV7** em stake (debitado deste bucket). O restante (**30.249.930.000 EAV7** com sete Âncoras) vai em vesting para a tesouraria da fundação (`E7F2906EA4B2CD23D20180C8E813F2D126` no perfil operacional publicado): cliff 12 meses + linear 48 meses |
-| Parceiro (10%) | Contrato `PartnerTrancheVault` | Quatro partes iguais de **2,5B** EAV7. Só o **owner** (carteira nativa desbloqueada) chama `releaseTo(endereço)`. Cooldown de **12 meses** entre liberações. O owner **não** pode ser o destinatário (anti self-deal); o próprio vault também não |
+| Público (45%) | `E7AADB9206205894E8C8D7A9B6FE6C8320` | Destino líquido da distribuição pública / LBP; o contrato `PublicVault` é o caminho de produto quando implantado |
+| Privada (14,75%) | `E7C66510442208FEA89FAFC30BE666CCB0` | Custódia da venda até `SaleVault`; preço Launch **$0,005** (tiers por USD arrecadado até Last call $0,015), travado no intent |
+| Fundação (30,25%) | Vesting de protocolo + stakes → tesouraria `E7F2906EA4B2CD23D20180C8E813F2D126` | **7 Âncoras** recebem cada uma `GENESIS_STAKE` = **10.000 EAV7** em stake. O restante (**30.249.930.000 EAV7**) divide-se em **12 partes iguais**: **1/12 líquido no dia 1**; as **11** restantes em vestings com `cliff == duration` em **12, 18, 24, 30, 36, 42, 48, 54, 60, 66 e 72 meses** (liberação em lump no vencimento de cada tramo — **não** “cliff 12 + linear 48”) |
+| Parceiro (10%) | `E72F728E69D24CFB91C167A805C6472D40` | Custódia até `PartnerTrancheVault` (4 tranches de **2,5B**, cooldown de 12 meses entre liberações; anti self-deal) |
 
 Preço da venda privada no produto: patamares por USD arrecadado (ex.: Launch $0,005 → … → Last call $0,015), com preço **travado no intent**. A escassez de tier conta apenas intents `paid`/`granted` (pedidos `pending` não empurram o preço).
 
-**Vesting on-contract.** Após o cliff, a liberação é linear sobre `(duration − cliff)`, não um lump no instante do cliff. O mesmo critério vale para grants do `SaleVault` e do programa on-contract correlato.
+**Vesting on-contract (produto).** Nos vaults de venda, após o cliff a liberação é linear sobre `(duration − cliff)`, não um lump no instante do cliff. O schedule da **fundação** na mainnet, porém, é o de **12 partes** acima (`cliff == duration` por tramo).
 
-**Ponte no gênese.** `bridgeRelayers` nasce **vazio**. As Âncoras de lançamento **não** são comitê de ponte no dia 1; o committee é habilitado depois por governança, quando adaptador, quórum e disjuntor estiverem prontos.
+**Ponte no gênese.** `bridgeRelayers` nasce **vazio**. As Âncoras de lançamento **não** são comitê de ponte no dia 1; mesmo com heights de ponte em 0 no overlay `GENESIS_ACTIVE`, a ponte econômica permanece condicionada até adaptador real, comitê e checklist operacional.
 
-**Sobre o gerador legado.** Builds locais ainda podem usar um gerador que concentra supply numa única carteira para desenvolvimento. O caminho de **entrega** usa o fragmento de buckets (`alocacoes_buckets_whitepaper` / `genesis-buckets.mjs`) descrito acima. Materializar esse fragmento no servidor de entrega continua sendo pré-requisito de produção. Ver Seção 13.
+**Nomes no gênese.** Nomes EAV-NS das Âncoras foram re-registrados no dia 0; registro de oráculo de IA está disponível (stake mínimo 500 EAV7).
 
-**Sobre o vesting.** Todo bucket não público tem cliff mínimo de 12 meses (ou equivalente em tranches com cooldown de 12 meses, no caso do parceiro).
+**Sobre builds locais.** Builds locais ainda podem usar um gerador que concentra supply numa única carteira para desenvolvimento. A mainnet materializou o fragmento de buckets (§12.2) com sete Âncoras e o schedule de vesting da fundação descritos acima. Ver Seção 13.
+
+**Sobre o vesting.** Todo bucket não público tem cliff mínimo de 12 meses (ou equivalente em tranches com cooldown de 12 meses, no caso do parceiro), salvo a fração líquida de 1/12 da fundação no dia 1.
 
 ### 12.3 Tesouraria
 
@@ -532,36 +534,36 @@ Esta seção existe para que nenhum leitor precise inferir o que está pronto. A
 
 ### 13.1 Postura atual
 
-A EAV7 está **pré-mainnet**. O cliente Rust é o cliente de produção: a biblioteca de consenso, o nó completo e o binário de operador `eav7-core` compilam e rodam em Linux, macOS e Windows, com releases por tag publicando arquivos e digests SHA-256 para Linux x64, Linux arm64, macOS arm64 e Windows x64. A integração contínua roda no GitHub Actions sobre o workspace, e os vetores de conformidade em `vectors/` fixam serialização canônica, criptografia, folhas de estado, raízes de estado e comportamento da EAVM.
+A EAV7 está em **mainnet ao vivo**. O cliente Rust é o cliente de produção: a biblioteca de consenso, o nó completo e o binário de operador `eav7-core` compilam e rodam em Linux, macOS e Windows, com releases por tag publicando arquivos e digests SHA-256 para Linux x64, Linux arm64, macOS arm64 e Windows x64. A integração contínua roda no GitHub Actions sobre o workspace, e os vetores de conformidade em `vectors/` fixam serialização canônica, criptografia, folhas de estado, raízes de estado e comportamento da EAVM.
 
-O código-fonte está em repositório privado (`eav7-sys/eav7`) sob licença MIT. O deployment público do explorador pode estar fora do ar aguardando redeploy; a disponibilidade do explorador é propriedade operacional e não tem efeito sobre o consenso.
+O código-fonte é público em [github.com/eav7-sys/eav7](https://github.com/eav7-sys/eav7) sob licença MIT. O explorador público está em [eavscan.com](https://eavscan.com). Hash de gênese: `7aa09afcd542e6ec8fd4b977658ed522143991f20a8ce48aab8aca9aeb80e5fb`. Sete Âncoras da fundação produzem desde a altura 0 (uma produtora por VM, malha completa). O perfil `GENESIS_ACTIVE` / heights zero **é** o perfil da mainnet ao vivo.
 
 **Cobertura de testes.** Aproximadamente 1.000 funções de teste em 68 arquivos do workspace Rust, incluindo determinismo por replay de uma cadeia com múltiplos validadores e conformidade contra os vetores congelados.
 
-### 13.2 Implementado para o perfil de lançamento
+### 13.2 Ativo na mainnet desde a altura 0
 
-O código implementa rodízio DPoS e finalidade BFT · assinaturas híbridas e identificadores imunes a maleabilidade · raízes de estado e provas de conta · contabilidade GB · Assinatura Livre com delegação · staking, unbonding, 51 assentos ativos e banco de 50 · permissões, multisig e governança de Âncora autorizada por owner · tesouraria, vesting e meta-transações · execução EAVM e os contratos EAV20/EAV20Managed/EAV20Factory · contratos de lançamento `SaleVault`, `PublicVault`, `PartnerTrancheVault` e `TimelockLpSeeder` · fragmento de gênese por buckets (§12.2) · fases-base de oráculos de IA · primitivas de committee/breaker da ponte · armazenamento resiliente · e modos do `eav7-core`, inclusive `ancora-init`.
+Na mainnet estão ativos desde o gênese: rodízio DPoS e finalidade BFT · produtor estrito, raiz de estado e slashing por dupla assinatura · assinaturas híbridas e identificadores imunes a maleabilidade · contabilidade GB · Assinatura Livre com delegação · staking, unbonding, votação, permissões v2 e governança de Âncora autorizada por owner (`GOVERNANCE_HEIGHT=0`) · tesouraria, vesting e meta-transações · execução EAVM com valor · fases-base de oráculos de IA (`AI_ACCOUNTABILITY` / `QUORUM` / `CHALLENGE` / `MARKET` / `PRIVATE` = 0) · nomes EAV-NS (incluindo re-registro das Âncoras no dia 0) · armazenamento resiliente · e modos do `eav7-core`, inclusive `ancora-init`.
 
-Isto é declaração de implementação e perfil de entrega, **não** afirmação de mainnet viva. A configuração local/pré-entrega preserva heights distantes por segurança. Somente o servidor de entrega, após os pré-requisitos de lançamento, gera o gênese dedicado (buckets + sete Âncoras + vesting da fundação) e aplica as regras fechadas desde a altura zero. `GENESIS_ACTIVE` e heights zero não são defaults casuais de desenvolvimento.
+Os contratos de produto `SaleVault`, `PublicVault`, `PartnerTrancheVault` e `TimelockLpSeeder` / EAV20Factory permanecem o caminho pretendido; até a implantação, a custódia dia 1 usa os endereços publicados na Seção 12.2. `GENESIS_ACTIVE` e heights zero descrevem a mainnet; builds locais sem esse overlay podem ainda usar heights distantes.
 
-### 13.3 Gates de entrega e roadmap
+### 13.3 Condicionado operacionalmente e roadmap
 
 | Recurso | Estado e condição |
 |---|---|
-| **Atestação TEE/ZK de IA** | Condicionada até existir atestador real registrado pela governança de Âncoras; on-chain continua verificando assinatura registrada, não enclave ou SNARK nativo. |
-| **Ponte com valor econômico** | Condicionada ou desligada até adaptador real, committee ≥3, breaker fail-closed ativo, política de confirmação, pausa e testes e2e. Continua atestada por committee, não trustless. |
-| **Skip/miss e downtime** | Upgrade de consenso futuro. Produção estrita, state root e slashing por dupla assinatura são regras de lançamento; skip/miss não bloqueiam o lançamento. |
-| **Certificados de época híbridos** | Fase 2 para consumidores de light client/ponte; não são necessários para iniciar a rede. |
+| **Atestação TEE/ZK de IA** | Condicionada: `AI_TEE_HEIGHT` permanece distante (100.000.000) até existir atestador real registrado pela governança. On-chain continua verificando assinatura registrada, não enclave ou SNARK nativo. |
+| **Ponte com valor econômico** | Condicionada operacionalmente: `bridgeRelayers: []` no gênese; sem adaptador de produção nem comitê. Mesmo com heights de ponte em 0 no overlay, a ponte econômica **não** está aberta até adaptador real, committee ≥3, breaker fail-closed ativo, política de confirmação, pausa e testes e2e. Continua atestada por committee, não trustless. |
+| **Skip/miss e downtime** | Upgrade de consenso futuro. Produção estrita, state root e slashing por dupla assinatura já estão ativos; skip/miss não bloqueiam a operação atual. |
+| **Certificados de época híbridos** | Fase 2 para consumidores de light client/ponte; não são necessários para a rede em curso. |
 
-Heights de fork são dados de consenso. O build de entrega confere seu modo de gênese contra o ambiente e recusa divergência.
+Heights de fork são dados de consenso. O binário de mainnet confere seu modo de gênese contra o ambiente e recusa divergência.
 
-### 13.4 Postura de descentralização no lançamento
+### 13.4 Postura de descentralização
 
-O conjunto de validadores no lançamento será **pequeno e operado pela fundação**, com alvo de **sete Âncoras** (faixa aceita: cinco a sete), cada uma com `GENESIS_STAKE` debitado do bucket da Fundação, até que operadores externos ocupem rumo aos 51 assentos ativos. Rodízio, voto, banco de 50 e ferramental existem, mas é a distribuição de stake que lhes dá sentido. As Âncoras de lançamento **não** nascem como `bridgeRelayers`.
+O conjunto ativo na mainnet é de **sete Âncoras operadas pela fundação**, produzindo desde a altura 0, até que operadores externos ocupem rumo aos 51 assentos ativos. Rodízio, voto, banco de 50 e ferramental existem, mas é a distribuição de stake que lhes dá sentido. As Âncoras **não** nascem como `bridgeRelayers`.
 
-As metas incluem pelo menos dez Cores ouvintes externos, quinze candidatas com stake próprio no top 101 e maioria do conjunto ativo fora do grupo fundador. O teto ativo é 51 no lançamento; elevá-lo rumo ao teto governável de 101 exige conjunto preenchido, independente e desempenho PQ de finalidade medido.
+As metas incluem pelo menos dez Cores ouvintes externos, quinze candidatas com stake próprio no top 101 e maioria do conjunto ativo fora do grupo fundador. O teto ativo é 51; elevá-lo rumo ao teto governável de 101 exige conjunto preenchido, independente e desempenho PQ de finalidade medido.
 
-### 13.5 Roadmap — não implementado
+### 13.5 Roadmap — não implementado ou fora do escopo de produto
 
 - **Raiz de estado incremental.** O custo atual é O(|estado|) por bloco. Substituí-la por árvore persistente, árvore de Merkle esparsa ou estado com cópia sob escrita é pré-requisito para escala de estado relevante.
 - **Superfície JSON-RPC restante.** `eth_getStorageAt`, `eth_getProof`, `eth_subscribe` e métodos de filtro.
@@ -572,7 +574,7 @@ As metas incluem pelo menos dez Cores ouvintes externos, quinze candidatas com s
 - **Compactação do formato de bloco.** Material de chave em base64/PEM em todo bloco é caro em disco para o operador; um formato binário com referência de chave pública é um fork planejado.
 - **Infraestrutura pública de seeds.** Seeds DNS estáveis e snapshots de bootstrap verificáveis, para que um operador novo não precise sincronizar desde o gênese.
 - **Carteira móvel de eleitor.** Stake e voto pelo celular; a produção de blocos continua no Core.
-- **EAV721 e EAV-NS como produtos de lançamento.** Ficam fora do escopo padrão enquanto não tiverem caminho de produto e explorador; não fazem parte da promessa de lançamento EAV20.
+- **EAV721 como produto.** O protocolo de nomes EAV-NS existe na mainnet (incluindo nomes das Âncoras); EAV721 permanece roadmap de produto/explorador e não faz parte da promessa EAV20.
 - **Auditoria externa independente.** Ver Seção 14.
 
 ---
@@ -591,11 +593,11 @@ As consequências potenciais incluem exigência de registro prévio, restrição
 
 ### 14.2 Risco de centralização no lançamento
 
-A rede inicia com um conjunto de validadores pequeno e operado pela fundação — tipicamente de três a sete nós (Seção 13.4). Com N = 3, o quórum de finalidade BFT é 3, ou seja, a finalidade depende da participação de todos e a indisponibilidade de um único operador degrada a rede. Um conjunto tão pequeno não oferece resistência significativa a conluio, coerção ou falha correlacionada de infraestrutura, e a entidade que o opera pode, na prática, determinar a produção de blocos.
+A mainnet opera com um conjunto de validadores **de sete Âncoras operadas pela fundação** (Seção 13.4), rumo a 51. Com N = 7, o quórum de finalidade BFT é 5; a indisponibilidade de operadores ainda degrada a rede, e um conjunto tão pequeno não oferece resistência significativa a conluio, coerção ou falha correlacionada de infraestrutura. A entidade que o opera pode, na prática, determinar a produção de blocos.
 
-**A EAV7 não é hoje uma rede descentralizada.** A descentralização progressiva é objetivo declarado, com critérios de sucesso definidos, mas é objetivo, não estado presente, e o leitor deve tratar decisões de governança na rede inicial como decisões do operador fundador.
+**A EAV7 não é hoje uma rede descentralizada.** A descentralização progressiva é objetivo declarado, com critérios de sucesso definidos, mas é objetivo, não estado presente, e o leitor deve tratar decisões de governança na rede atual como decisões do operador fundador.
 
-O slashing está condicionado a altura de fork (Seção 13.3), de modo que a dupla assinatura por um validador não será economicamente punida até que o mecanismo seja endurecido e ativado.
+O slashing por dupla assinatura **está ativo desde a altura 0** (Seção 13.2): a ofensa é economicamente punida na mainnet.
 
 ### 14.3 Risco da ponte
 
@@ -657,7 +659,7 @@ Os valores são os declarados em `rust/src/config.rs`, fonte canônica dos parâ
 | Tolerância de slot futuro | 400 ms |
 | Janela de reorganização | 5.000 blocos |
 | Intervalo de snapshot | 5.000 blocos |
-| Validadores ativos | 51 no lançamento (governável, teto 101) |
+| Validadores ativos | 51 na mainnet (governável, teto 101) |
 | Banco standby | Próximas 50 contas elegíveis; top 101 ranqueado no total |
 | Stake mínimo de validador | 1.000 EAV7 (governável) |
 | Mínimo de validadores para finalidade | 3 |
@@ -718,9 +720,9 @@ Os valores são os declarados em `rust/src/config.rs`, fonte canônica dos parâ
 | Limite do disjuntor da ponte | 30% do pool (governável, 1%–100%) |
 | Atestações mínimas da ponte | 1 |
 
-### A.4 Alturas de lançamento no servidor de entrega
+### A.4 Alturas ativas na mainnet
 
-Estes são os settings pretendidos para o gênese no servidor de entrega, não uma afirmação de mainnet ativa nem instrução para alterar builds locais comuns. `GENESIS_ACTIVE` e o perfil de altura zero só são aplicados quando o servidor dedicado gera o gênese de lançamento após pré-requisitos e testes.
+Estas são as alturas do perfil `GENESIS_ACTIVE` / altura zero da mainnet ao vivo. Builds locais sem esse overlay podem ainda usar heights distantes. A ponte econômica permanece condicionada operacionalmente mesmo com heights de ponte em 0 (ver Seção 13.3).
 
 | Altura | Fork |
 |---|---|
@@ -728,9 +730,9 @@ Estes são os settings pretendidos para o gênese no servidor de entrega, não u
 | 0 | `VOTING_HEIGHT` · `PERMISSIONS_V2_HEIGHT` · `GOVERNANCE_HEIGHT` |
 | 0 | `GB_FEE_HEIGHT` — GB · Assinatura Livre substitui energia/largura de banda |
 | 0 | `EAVM_CONTRACTS_HEIGHT` · `EAVM_VALUE_HEIGHT` · `EAVM_OSAKA_HEIGHT` |
-| 0, se oráculo de IA for produto de lançamento | `AI_ACCOUNTABILITY_HEIGHT` · `AI_QUORUM_HEIGHT` · `AI_CHALLENGE_HEIGHT` · `AI_MARKET_HEIGHT` · `AI_PRIVATE_HEIGHT` |
-| 0, somente se checklist da ponte estiver completo | `BRIDGE_PROOF_HEIGHT` · `BRIDGE_BREAKER_HEIGHT`; caso contrário ponte fica condicionada/desligada |
-| Distante até existir atestador | `AI_TEE_HEIGHT` |
+| 0 | `AI_ACCOUNTABILITY_HEIGHT` · `AI_QUORUM_HEIGHT` · `AI_CHALLENGE_HEIGHT` · `AI_MARKET_HEIGHT` · `AI_PRIVATE_HEIGHT` |
+| 0 | `BRIDGE_QUORUM_HEIGHT` · `BRIDGE_PROOF_HEIGHT` · `BRIDGE_BREAKER_HEIGHT` — heights ativas; ponte econômica ainda condicionada até adaptador/comitê |
+| 100.000.000 | `AI_TEE_HEIGHT` — distante até atestador real |
 
 ---
 
