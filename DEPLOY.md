@@ -12,7 +12,7 @@ Runtime = **`eav7-core` / `eav7-node`** + explorador Next.
 ## Deste repositório
 
 ```bash
-bash bin/eav7-deploy-eavscan.sh --from-release v0.1.0
+bash bin/eav7-deploy-eavscan.sh --from-release v0.2.0
 ```
 
 Detalhe: [`docs/go-live.md`](docs/go-live.md).

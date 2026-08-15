@@ -64,5 +64,5 @@ npm run verificar
 [`go-live.md`](go-live.md):
 
 ```bash
-bash bin/eav7-deploy-eavscan.sh --from-release v0.1.0
+bash bin/eav7-deploy-eavscan.sh --from-release v0.2.0
 ```

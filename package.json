@@ -1,6 +1,6 @@
 {
   "name": "eav7-blockchain",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "EAV7 — blockchain DPoS (Rust Core + explorador Next); protocolo eav20",
   "private": true,
   "license": "MIT",

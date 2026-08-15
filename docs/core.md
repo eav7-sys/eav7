@@ -18,7 +18,7 @@ Release por tag (`v*`) ou **Actions → release-core → Run workflow**:
 publica tarball/zip + `.sha256` (Linux x64, Linux arm64, macOS arm64, **Windows x64**
 com `eav7-core.exe` / `eav7-node.exe`).
 
-Pacote só nesta máquina: `bash bin/eav7-package-core.sh 0.1.0` → `rust/dist/`.
+Pacote só nesta máquina: `bash bin/eav7-package-core.sh 0.2.0` → `rust/dist/`.
 Go-live completo: [go-live.md](go-live.md).
 
 ## Fluxo mínimo (ouvinte)

@@ -14,20 +14,20 @@ cd web-next && npm run build
 
 ## 1. Release
 
-https://github.com/eav7-sys/eav7/releases/tag/v0.1.0
+https://github.com/eav7-sys/eav7/releases/tag/v0.2.0
 
 Nova tag: `git tag vX.Y.Z && git push origin vX.Y.Z`
 
 ## 2. Deploy
 
 ```bash
-bash bin/eav7-deploy-eavscan.sh --from-release v0.1.0
+bash bin/eav7-deploy-eavscan.sh --from-release v0.2.0
 
 # Túnel ainda off:
-bash bin/eav7-deploy-eavscan.sh --from-release v0.1.0 --skip-public-health
+bash bin/eav7-deploy-eavscan.sh --from-release v0.2.0 --skip-public-health
 ```
 
-Só Core: `bash bin/eav7-deploy-core.sh --from-release v0.1.0`  
+Só Core: `bash bin/eav7-deploy-core.sh --from-release v0.2.0`  
 Só front: `bash bin/eav7-deploy-frontend.sh`
 
 ## 3. Servidores

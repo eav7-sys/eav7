@@ -1,6 +1,6 @@
 [package]
 name = "eav7-wasm"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.97"
 description = "EAV7 no navegador — a lib de consenso compilada para WASM, para que a carteira web não tenha a própria cópia da criptografia."

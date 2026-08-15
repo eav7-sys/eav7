@@ -1,6 +1,6 @@
 [package]
 name = "eav7"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.97"
 description = "EAV7 — protocolo eav20 (consenso, nó, SDK, Core, wasm)."
