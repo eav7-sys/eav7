@@ -698,21 +698,26 @@ pub async fn sync_once(
             })
         })
         .collect();
-    let mut ativos: Vec<(String, i64)> = Vec::new();
+    let mut ativos: Vec<(String, i64, Option<String>)> = Vec::new();
     for tarefa in tarefas {
         // peer inacessível (ou task abortada): silêncio, como o catch de p2p.js:155
         if let Ok((peer, Ok(status))) = tarefa.await
             && let Some(h) = status.get("height").and_then(|v| v.as_i64())
         {
-            ativos.push((peer, h));
+            let head = status
+                .get("headHash")
+                .and_then(|v| v.as_str())
+                .map(str::to_owned);
+            ativos.push((peer, h, head));
         }
     }
 
-    // FASE 2 (lenta): sincroniza de cada peer que esteja à frente. Cada peer tem
-    // seu próprio try/catch no JS (p2p.js:212) — aqui, o erro do helper é
-    // descartado e o laço segue para o próximo peer.
-    for (peer, peer_height) in ativos {
-        let _ = sync_with_peer(client, config, state, &peer, peer_height).await;
+    // FASE 2 (lenta): sincroniza de cada peer à frente OU com a mesma altura mas
+    // tip divergente (fork de topo). Cada peer tem seu próprio try/catch no JS
+    // (p2p.js:212) — aqui, o erro do helper é descartado e o laço segue.
+    for (peer, peer_height, peer_head) in ativos {
+        let _ = sync_with_peer(client, config, state, &peer, peer_height, peer_head.as_deref())
+            .await;
     }
 }
 
@@ -724,14 +729,29 @@ async fn sync_with_peer(
     state: &AppState,
     peer: &str,
     peer_height: i64,
+    peer_head: Option<&str>,
 ) -> Result<(), String> {
     // Fotografia da cadeia local — coletada sob o lock e solta antes do I/O.
-    let (altura, tem_genese) = {
+    let (altura, tem_genese, tip_local) = {
         let node = state.read().map_err(|_| "lock envenenado")?;
-        (node.blockchain.height(), node.blockchain.has_genesis())
+        let tip = node.blockchain.head().map(|b| b.hash.clone());
+        (node.blockchain.height(), node.blockchain.has_genesis(), tip)
     };
-    if peer_height <= altura {
-        return Ok(()); // peer não está à frente (p2p.js:162)
+    if peer_height < altura {
+        return Ok(()); // estamos à frente — não puxar
+    }
+    // Mesma altura: se a tip bate, nada a fazer. Se diverge, é fork de topo e
+    // TEMOS de reorganizar — o `<=` antigo engolia este caso e cada âncora
+    // ficava na própria cadeia (degradado / headHash distinto).
+    if peer_height == altura {
+        match (peer_head, tip_local.as_deref()) {
+            (Some(p), Some(l)) if p == l => return Ok(()),
+            (Some(_), Some(_)) => {
+                let _ = reorg_from_peer_window(client, config, state, peer, altura).await?;
+                return Ok(());
+            }
+            _ => return Ok(()), // sem hash para comparar — tenta no próximo ciclo
+        }
     }
 
     if tem_genese && altura >= 0 {
@@ -757,7 +777,8 @@ async fn sync_with_peer(
                         // Conversão OU consenso falhando = para no primeiro erro,
                         // ficando com o prefixo válido (p2p.js:170 — try/break).
                         let Ok(bloco) = block_from_json(cru) else { break };
-                        if node.blockchain.add_block(bloco, agora).is_err() {
+                        if let Err(e) = node.blockchain.add_block(bloco, agora) {
+                            eprintln!("[p2p] add_block recusou extensão de {peer}: {e}");
                             break;
                         }
                         aplicados += 1;
@@ -778,62 +799,10 @@ async fn sync_with_peer(
             // peer de uma vez (forks são recentes), acha o ancestral comum
             // LOCALMENTE e reorganiza a partir dele — O(janela), sem replay da
             // cadeia inteira (p2p.js:178-199).
-            let de = (altura - REORG_WINDOW as i64).max(0) as u64;
-            let janela = fetch_range(client, config, peer, de).await?;
-            let agora = agora_ms();
-            {
-                let mut guard = state.write().map_err(|_| "lock envenenado")?;
-                let node = &mut *guard;
-                let altura_atual = node.blockchain.height();
-                // Hashes locais da janela, para a busca pura do ancestral. Montado
-                // sob o MESMO lock que aplicará o reorg — a decisão e a aplicação
-                // veem a mesma cadeia.
-                let mut local: BTreeMap<u64, String> = BTreeMap::new();
-                if altura_atual >= 0 {
-                    for h in de..=(altura_atual as u64) {
-                        if let Some(hh) = node.blockchain.hash_at(h) {
-                            local.insert(h, hh);
-                        }
-                    }
-                }
-                let pares: Vec<(u64, String)> = janela
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, b)| {
-                        campo_str(b, "hash").map(|h| (de + i as u64, h.to_string()))
-                    })
-                    .collect();
-                if let Some(comum) = common_ancestor(&local, &pares)
-                    && (comum as i64) < altura_atual
-                {
-                    // O rabo novo começa logo acima do ancestral (p2p.js:189).
-                    let inicio = (comum - de + 1) as usize;
-                    let mut rabo: Vec<eav7::block::Block> = Vec::with_capacity(janela.len() - inicio);
-                    for cru in &janela[inicio..] {
-                        // Bloco malformado aqui = o reorg do JS lançaria na
-                        // validação → o catch por peer engole. Propaga o Err.
-                        rabo.push(block_from_json(cru)?);
-                    }
-                    match node.blockchain.reorg(comum as i64, rabo, agora)? {
-                        Reorg::Adotou(orfas) => {
-                            // Ordem do JS (p2p.js:192-194): poda primeiro, depois
-                            // re-submete as órfãs — transações dos blocos
-                            // descartados que a cadeia nova não contém; erros
-                            // individuais (obsoleta, nonce usado) são ignorados.
-                            node.mempool.prune(&node.blockchain.state, agora);
-                            for tx in orfas {
-                                let _ = node.submit_transaction(tx);
-                            }
-                            println!(
-                                "[p2p] reorg com {peer} a partir da altura {comum} (altura {})",
-                                node.blockchain.height()
-                            );
-                        }
-                        Reorg::Manteve => {}
-                    }
-                    return Ok(()); // o `continue` de p2p.js:197
-                }
+            if reorg_from_peer_window(client, config, state, peer, altura).await? {
+                return Ok(());
             }
+            // sem ancestral na janela → cai no fallback 2c
         }
     }
 
@@ -866,13 +835,72 @@ async fn sync_with_peer(
     Ok(())
 }
 
+/// Reorg de topo contra `peer` (janela `REORG_WINDOW` atrás da altura local).
+/// Devolve `true` se adotou a cadeia do peer.
+async fn reorg_from_peer_window(
+    client: &HttpClient,
+    config: &P2pConfig,
+    state: &AppState,
+    peer: &str,
+    altura: i64,
+) -> Result<bool, String> {
+    let de = (altura - REORG_WINDOW as i64).max(0) as u64;
+    let janela = fetch_range(client, config, peer, de).await?;
+    let agora = agora_ms();
+    let mut guard = state.write().map_err(|_| "lock envenenado")?;
+    let node = &mut *guard;
+    let altura_atual = node.blockchain.height();
+    let mut local: BTreeMap<u64, String> = BTreeMap::new();
+    if altura_atual >= 0 {
+        for h in de..=(altura_atual as u64) {
+            if let Some(hh) = node.blockchain.hash_at(h) {
+                local.insert(h, hh);
+            }
+        }
+    }
+    let pares: Vec<(u64, String)> = janela
+        .iter()
+        .enumerate()
+        .filter_map(|(i, b)| campo_str(b, "hash").map(|h| (de + i as u64, h.to_string())))
+        .collect();
+    if let Some(comum) = common_ancestor(&local, &pares)
+        && (comum as i64) < altura_atual
+    {
+        let inicio = (comum - de + 1) as usize;
+        let mut rabo: Vec<eav7::block::Block> = Vec::with_capacity(janela.len().saturating_sub(inicio));
+        for cru in &janela[inicio..] {
+            rabo.push(block_from_json(cru)?);
+        }
+        match node.blockchain.reorg(comum as i64, rabo, agora)? {
+            Reorg::Adotou(orfas) => {
+                node.mempool.prune(&node.blockchain.state, agora);
+                for tx in orfas {
+                    let _ = node.submit_transaction(tx);
+                }
+                println!(
+                    "[p2p] reorg com {peer} a partir da altura {comum} (altura {})",
+                    node.blockchain.height()
+                );
+                return Ok(true);
+            }
+            Reorg::Manteve => return Ok(false),
+        }
+    }
+    Ok(false)
+}
+
 // ---------------------------------------------------------------- start
 
 /// Sobe o transporte P2P: adota os seeds como peers CONFIÁVEIS (podem ser
 /// privados — são do operador), registra-se em cada um, roda um sync imediato e
 /// entra no laço periódico. Espelha o construtor (p2p.js:17) + `start`
 /// (p2p.js:221-225). Devolve o handle da task; abortá-lo é o `stop()`.
-pub fn start(state: AppState, config: P2pConfig, seeds: Vec<String>) -> tokio::task::JoinHandle<()> {
+pub fn start(
+    state: AppState,
+    config: P2pConfig,
+    seeds: Vec<String>,
+    boot_ready: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
+) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let client = make_client();
         let guarda = Arc::new(tokio::sync::Mutex::new(()));
@@ -891,6 +919,9 @@ pub fn start(state: AppState, config: P2pConfig, seeds: Vec<String>) -> tokio::t
             register(&client, &config, &state, peer).await;
         }
         sync_once(&client, &config, &state, &guarda).await;
+        if let Some(flag) = boot_ready.as_ref() {
+            flag.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
         // Laço periódico. `Delay` (e não o default Burst): se um sync demorar
         // mais que o período, NÃO dispara rajada de compensação — o setInterval
         // do JS também não compensa ticks perdidos.

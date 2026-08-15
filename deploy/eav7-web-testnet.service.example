@@ -1,0 +1,26 @@
+# systemd — Explorer Next da testnet (banner amarelo).
+# Porta 3001 · API origin 6170 · host testnet.eavscan.com via cloudflared.
+
+[Unit]
+Description=EAV7 Explorer Testnet (Next.js standalone)
+After=network-online.target eav7-core-testnet.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eav7
+Group=eav7
+WorkingDirectory=/opt/eav7-web-testnet
+Environment=NODE_ENV=production
+Environment=PORT=3001
+Environment=HOSTNAME=0.0.0.0
+Environment=EAV7_API_ORIGIN=http://127.0.0.1:6170
+Environment=NEXT_PUBLIC_API_BASE=/api
+Environment=NEXT_PUBLIC_NETWORK=testnet
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

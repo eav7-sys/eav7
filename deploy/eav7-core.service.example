@@ -14,6 +14,13 @@ User=eav7
 Group=eav7
 WorkingDirectory=/var/lib/eav7
 Environment=EAV7_NODE_BIN=/usr/local/bin/eav7-node
+# Camada de IA (opt-in). Descomente após criar/fundar a carteira do oráculo:
+# Environment=EAV7_ORACLE_WALLET=/var/lib/eav7/oracle-wallet.json
+# Environment=EAV7_SENTINEL=1
+# Âncoras (a2–a7): seguem a tip do hub — se o hub cair, PAUSAM produção (não bifurcam).
+# NÃO definir no hub (ele É o intermediário canónico / explorer).
+# Environment=EAV7_FOLLOW=http://10.10.10.11:6070
+# EnvironmentFile=-/etc/eav7/ai.env
 ExecStart=/usr/local/bin/eav7-core run --dir /var/lib/eav7
 Restart=on-failure
 RestartSec=5

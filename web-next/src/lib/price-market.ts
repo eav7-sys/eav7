@@ -1,13 +1,15 @@
 /**
  * Mercado EAV7 — preço oficial do explorador.
  *
- * Fonte primária: tier da venda privada (`sale-pricing` / intents).
- * Override: `EAV7_PRICE_USD` (número, ex. 0.008).
+ * Fonte primária: LBP pública só com status `lbp-open` no JSON de addresses;
+ * senão tier da venda privada (Launch $0.005).
+ * Override: `EAV7_PRICE_USD` (número, ex. 0.005).
  *
  * Histórico: arquivo local de snapshots (lazy), sem inventar candles de exchange.
  */
 import fs from "node:fs";
 import path from "node:path";
+import { isLbpOpen, loadPublicLbpAddresses } from "@/lib/public-lbp";
 import { buildSaleQuote, loadSaleAutoCfg } from "@/lib/sale-pricing";
 import { getSaleQuoteSnapshot } from "@/lib/sale-server";
 
@@ -26,6 +28,8 @@ export type MarketPrice = {
   tierId: string | null;
   tierLabel: string | null;
   circulating: string | null;
+  /** Base do circulating usado no mcap (free float on-chain ou query manual). */
+  circulatingBasis: "free-float" | "query" | null;
   marketCapUsd: number | null;
   volume24hUsd: null;
   quoteCurrency: "USD";
@@ -131,8 +135,9 @@ function resolveSpot(): {
     };
   }
 
+  const channel = isLbpOpen(loadPublicLbpAddresses()) ? "public" : "private";
   try {
-    const q = getSaleQuoteSnapshot("private");
+    const q = getSaleQuoteSnapshot(channel);
     return {
       priceUsd: q.priceUsdPerEav7,
       source: "sale-tier",
@@ -141,7 +146,7 @@ function resolveSpot(): {
       tierLabel: q.tierLabel,
     };
   } catch {
-    const cfg = loadSaleAutoCfg();
+    const cfg = loadSaleAutoCfg(channel);
     const q = buildSaleQuote([], cfg);
     return {
       priceUsd: q.priceUsdPerEav7,
@@ -185,7 +190,10 @@ export function usdValue(e7Amount: string | number | bigint, priceUsd: number): 
   return e7ToHuman(e7Amount) * priceUsd;
 }
 
-export function getMarketPrice(opts?: { circulatingE7?: string | null }): MarketPrice {
+export function getMarketPrice(opts?: {
+  circulatingE7?: string | null;
+  circulatingBasis?: "free-float" | "query" | null;
+}): MarketPrice {
   const spot = resolveSpot();
   maybeSnapshot(spot.priceUsd);
   const ch = change24h(spot.priceUsd);
@@ -206,6 +214,7 @@ export function getMarketPrice(opts?: { circulatingE7?: string | null }): Market
     tierId: spot.tierId,
     tierLabel: spot.tierLabel,
     circulating: circ,
+    circulatingBasis: circ != null ? (opts?.circulatingBasis ?? "query") : null,
     marketCapUsd: mcap,
     volume24hUsd: null,
     quoteCurrency: "USD",

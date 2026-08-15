@@ -31,6 +31,34 @@
 .scan-row + .scan-row { border-top: 1px solid var(--scan-border-soft); }
 .scan-row:hover { background: var(--scan-hover); }
 
+/* Sombra de rolagem horizontal para tabelas que estouram a largura do cartão.
+ * Técnica pura-CSS (Lea Verou): as "capas" rolam JUNTAS do conteúdo
+ * (attachment: local) e escondem a sombra da borda já alcançada; as sombras
+ * ficam presas às bordas do contêiner (attachment: scroll). Sem overflow, a
+ * capa cobre a sombra e nada aparece — não há como errar o estado.
+ * A capa precisa ser OPACA e da cor do cartão: no escuro é o composto de
+ * --scan-card (15% de cinza) sobre --ground; no claro o cartão já é branco. */
+.scan {
+  --scan-scroll-cover: color-mix(in srgb, var(--ground, #000) 85%, rgb(63, 63, 63));
+  --scan-scroll-shadow: rgba(0, 0, 0, 0.55);
+}
+:root[data-theme="light"] .scan {
+  --scan-scroll-cover: #ffffff;
+  --scan-scroll-shadow: rgba(23, 20, 31, 0.16);
+}
+.scan-scroll-x {
+  overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--scan-scroll-cover) 30%, transparent),
+    linear-gradient(to left, var(--scan-scroll-cover) 30%, transparent),
+    radial-gradient(farthest-side at 0 50%, var(--scan-scroll-shadow), transparent),
+    radial-gradient(farthest-side at 100% 50%, var(--scan-scroll-shadow), transparent);
+  background-repeat: no-repeat;
+  background-size: 44px 100%, 44px 100%, 12px 100%, 12px 100%;
+  background-position: 0 0, 100% 0, 0 0, 100% 0;
+  background-attachment: local, local, scroll, scroll;
+}
+
 @keyframes scanPulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
 .scan-live {
   width: 7px; height: 7px; border-radius: 4px;
@@ -294,7 +322,7 @@
   border: 1px solid rgba(159, 123, 255, 0.38);
   border-radius: 18px;
   padding: 11px;
-  box-shadow: 0 30px 90px -32px rgba(99, 54, 196, 0.7);
+  box-shadow: 0 16px 44px -24px rgba(99, 54, 196, 0.32);
 }
 
 .scan-ribbon {

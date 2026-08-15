@@ -1,0 +1,59 @@
+{
+  "priceUsdPerEav7": "0.008",
+  "btcUsdHint": "95000",
+  "pricingMode": "tiers-by-raised-usd",
+  "channel": "public",
+  "windowHours": 72,
+  "priceHintUsd": { "start": "0.008", "end": "0.015" },
+  "comment": "Public LBP scarcity ladder (Option A). Aligns public-distribution.json priceHintUsd 0.008→0.015. Tier locks on intent create; raisedUsd sums only paid|granted. Dutch time-decay can replace this later without changing PublicVault.",
+  "tiers": [
+    {
+      "id": "lbp-open",
+      "label": "LBP open",
+      "untilRaisedUsd": 750000,
+      "priceUsdPerEav7": "0.008"
+    },
+    {
+      "id": "lbp-early",
+      "label": "LBP early",
+      "untilRaisedUsd": 2500000,
+      "priceUsdPerEav7": "0.010"
+    },
+    {
+      "id": "lbp-mid",
+      "label": "LBP mid",
+      "untilRaisedUsd": 6000000,
+      "priceUsdPerEav7": "0.012"
+    },
+    {
+      "id": "lbp-late",
+      "label": "LBP late",
+      "untilRaisedUsd": 12000000,
+      "priceUsdPerEav7": "0.014"
+    },
+    {
+      "id": "lbp-final",
+      "label": "LBP final",
+      "untilRaisedUsd": null,
+      "priceUsdPerEav7": "0.015"
+    }
+  ],
+  "tierProgressCounts": ["paid", "granted"],
+  "minConfirmations": {
+    "ethereum": 12,
+    "bsc": 15,
+    "tron": 20,
+    "solana": 32,
+    "bitcoin": 3
+  },
+  "uniqueAmountMicros": true,
+  "bucketsE7": {
+    "lbp": "13500000000000000",
+    "lpSeed": "22500000000000000",
+    "buffer": "6750000000000000",
+    "incentives": "2250000000000000",
+    "totalPublic": "45000000000000000"
+  },
+  "lpLockMonths": 18,
+  "blocksPerHourHint": 3600
+}

@@ -20,4 +20,4 @@
 | [bridge-trustless-spec.md](bridge-trustless-spec.md) | Trustless bridge |
 | [scaling.md](scaling.md) | Growth / storage notes |
 | [rollout-forks.md](rollout-forks.md) | Coordinated fork heights |
-| [listing/](listing/) | Chain listing metadata |
+| [listing/](listing/) | Publicação / listagens (plano + Chainlist + metadados) |

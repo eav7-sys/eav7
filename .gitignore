@@ -49,4 +49,10 @@ playwright-report/
 contracts/sale/relayer/sale-state.json
 contracts/sale/relayer/sale-state-public.json
 contracts/sale/relayer/node_modules/
+contracts/sale/relayer/.secrets/
 contracts/node_modules/
+
+# rascunhos / artefatos locais de sessão
+tmp-*
+*.bak
+PROMPT-CURSOR-*.md

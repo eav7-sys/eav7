@@ -61,14 +61,6 @@ fn keccak(data: &[u8]) -> [u8; 32] {
     Keccak256::digest(data).into()
 }
 
-fn encode_ctor3(a: &str, b: &str, c: &str) -> Vec<u8> {
-    let mut out = Vec::new();
-    out.extend_from_slice(&pad32_addr(&parse_addr20(a)));
-    out.extend_from_slice(&pad32_addr(&parse_addr20(b)));
-    out.extend_from_slice(&pad32_addr(&parse_addr20(c)));
-    out
-}
-
 fn encode_ctor2(a: &str, b: &str) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(&pad32_addr(&parse_addr20(a)));
@@ -76,12 +68,11 @@ fn encode_ctor2(a: &str, b: &str) -> Vec<u8> {
     out
 }
 
-fn encode_set_buckets(lbp: u128, lp: u128, buffer: u128, incentives: u128) -> String {
-    let mut data = selector("setBuckets(uint128,uint128,uint128,uint128)").to_vec();
+fn encode_set_buckets(lbp: u128, lp: u128, buffer: u128) -> String {
+    let mut data = selector("setBuckets(uint128,uint128,uint128)").to_vec();
     data.extend_from_slice(&word_u128(lbp));
     data.extend_from_slice(&word_u128(lp));
     data.extend_from_slice(&word_u128(buffer));
-    data.extend_from_slice(&word_u128(incentives));
     format!("0x{}", hex::encode(data))
 }
 
@@ -98,17 +89,12 @@ fn encode_open_lbp(deadline: u64) -> String {
 }
 
 fn encode_grant(beneficiary: &str, amount: u128, payment_id: &[u8; 32], rail: &str) -> String {
-    let mut data = selector("grant(address,uint256,bytes32,string)").to_vec();
+    let rail_id = keccak(rail.as_bytes());
+    let mut data = selector("grant(address,uint256,bytes32,bytes32)").to_vec();
     data.extend_from_slice(&pad32_addr(&parse_addr20(beneficiary)));
     data.extend_from_slice(&word_u128(amount));
     data.extend_from_slice(payment_id);
-    data.extend_from_slice(&word_u64(128));
-    data.extend_from_slice(&word_u64(rail.len() as u64));
-    let mut padded = rail.as_bytes().to_vec();
-    while padded.len() % 32 != 0 {
-        padded.push(0);
-    }
-    data.extend_from_slice(&padded);
+    data.extend_from_slice(&rail_id);
     format!("0x{}", hex::encode(data))
 }
 
@@ -169,30 +155,27 @@ fn conta_rica(s: &mut State, de: &str) {
 fn public_vault_grant_liquido_e_finalize_lp() {
     let admin_e7 = "E7D91885C11BD3DAD3F2824FAD4E94BD9A";
     let buyer_e7 = derive_address_from("public-vault-buyer");
-    let sweep_e7 = derive_address_from("public-vault-sweep");
     let relayer_e7 = derive_address_from("public-vault-relayer");
     let admin_0x = encode_e7_dest(admin_e7).unwrap();
     let buyer_0x = encode_e7_dest(&buyer_e7).unwrap();
-    let sweep_0x = encode_e7_dest(&sweep_e7).unwrap();
     let relayer_0x = encode_e7_dest(&relayer_e7).unwrap();
 
     let amount = 100 * UNIT;
     let lbp = amount * 2;
     let lp_seed = amount * 3;
     let buffer = amount;
-    let incentives = amount;
     let height = EAVM_CONTRACTS_HEIGHT.max(EAVM_VALUE_HEIGHT);
     let mut s = State::new();
     conta_rica(&mut s, admin_e7);
     conta_rica(&mut s, &buyer_e7);
     conta_rica(&mut s, &relayer_e7);
 
-    // Deploy PublicVault
+    // Deploy PublicVault(admin, relayer)
     let mut creation = artifact_bin("PublicVault");
-    creation.extend_from_slice(&encode_ctor3(&admin_0x, &sweep_0x, &relayer_0x));
+    creation.extend_from_slice(&encode_ctor2(&admin_0x, &relayer_0x));
     let vault = apply_deploy(&mut s, admin_e7, 1, &creation, height, 1_900_000_000_000);
     let vault_e7 = eavm_to_e7(&vault).unwrap();
-    s.account_mut(&vault_e7).balance = lbp + lp_seed + buffer + incentives;
+    s.account_mut(&vault_e7).balance = lbp + lp_seed + buffer;
 
     // Deploy TimelockLpSeeder(admin, vault)
     let mut seeder_code = artifact_bin("TimelockLpSeeder");
@@ -217,7 +200,7 @@ fn public_vault_grant_liquido_e_finalize_lp() {
             admin_e7,
             4,
             &vault,
-            &encode_set_buckets(lbp, lp_seed, buffer, incentives),
+            &encode_set_buckets(lbp, lp_seed, buffer),
             height,
             1_900_000_000_003,
         )

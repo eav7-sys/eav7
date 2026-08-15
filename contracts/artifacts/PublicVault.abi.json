@@ -8,11 +8,6 @@
       },
       {
         "internalType": "address",
-        "name": "sweepTo_",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
         "name": "relayer_",
         "type": "address"
       }
@@ -21,181 +16,9 @@
     "type": "constructor"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previous",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "next",
-        "type": "address"
-      }
-    ],
-    "name": "AdminTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "lbp",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "lpSeed",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "buffer",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "incentives",
-        "type": "uint128"
-      }
-    ],
-    "name": "BucketsSet",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "paymentId",
-        "type": "bytes32"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "rail",
-        "type": "string"
-      }
-    ],
-    "name": "Granted",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "toLp",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "seeder",
-        "type": "address"
-      }
-    ],
-    "name": "LbpFinalized",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "deadline",
-        "type": "uint64"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "lbpAllocated",
-        "type": "uint128"
-      }
-    ],
-    "name": "LbpOpened",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "seeder",
-        "type": "address"
-      }
-    ],
-    "name": "LpSeederUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "paused",
-        "type": "bool"
-      }
-    ],
-    "name": "Paused",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "relayer",
-        "type": "address"
-      }
-    ],
-    "name": "RelayerUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "Released",
-    "type": "event"
+    "inputs": [],
+    "name": "X",
+    "type": "error"
   },
   {
     "inputs": [],
@@ -261,9 +84,9 @@
         "type": "bytes32"
       },
       {
-        "internalType": "string",
-        "name": "rail",
-        "type": "string"
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
       }
     ],
     "name": "grant",
@@ -279,16 +102,11 @@
         "type": "address"
       }
     ],
-    "name": "grants",
+    "name": "grantReleased",
     "outputs": [
       {
         "internalType": "uint128",
-        "name": "total",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "released",
+        "name": "",
         "type": "uint128"
       }
     ],
@@ -296,8 +114,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "incentivesAllocated",
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "grantTotal",
     "outputs": [
       {
         "internalType": "uint128",
@@ -400,19 +224,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "paused",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "bytes32",
@@ -452,19 +263,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "remainingLbp",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint128",
@@ -479,11 +277,6 @@
       {
         "internalType": "uint128",
         "name": "buffer_",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "incentives_",
         "type": "uint128"
       }
     ],
@@ -501,76 +294,6 @@
       }
     ],
     "name": "setLpSeeder",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bool",
-        "name": "v",
-        "type": "bool"
-      }
-    ],
-    "name": "setPaused",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "next",
-        "type": "address"
-      }
-    ],
-    "name": "setRelayer",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "sweepBuffer",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "sweepTo",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "next",
-        "type": "address"
-      }
-    ],
-    "name": "transferAdmin",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

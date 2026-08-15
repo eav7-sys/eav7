@@ -10,6 +10,7 @@ pub mod ai;
 pub mod api;
 pub mod boot;
 pub mod eavm_rpc;
+pub mod follow;
 pub mod gateway;
 pub mod governance_advisor;
 pub mod guard;

@@ -48,6 +48,19 @@ export function shortHash(h: string | null | undefined, head = 8, tail = 4): str
   return h.slice(0, head) + "…" + h.slice(-tail);
 }
 
+/**
+ * Camadas de truncamento do explorer. Sempre use estas em vez de `shortHash`
+ * com números avulsos: o mesmo tipo de dado corta no mesmo lugar em qualquer
+ * tela, e o olho aprende o padrão.
+ *
+ *   hashLink  (12…6)  hash de bloco/tx quando ele É o link principal da linha
+ *   addrLink  (10…6)  endereço-link em coluna de tabela
+ *   addrTight (8…5)   endereço em coluna estreita ou fluxo inline (de → para)
+ */
+export const hashLink = (h: string | null | undefined): string => shortHash(h, 12, 6);
+export const addrLink = (h: string | null | undefined): string => shortHash(h, 10, 6);
+export const addrTight = (h: string | null | undefined): string => shortHash(h, 8, 5);
+
 /** "há 3s" relativo, para feeds live. */
 export function ago(ts: number): string {
   const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
@@ -139,6 +152,13 @@ export function fmtNsName(name: string | null | undefined): string {
   const m = /^eav7-labs-ancora-(\d+)$/i.exec(name.trim());
   if (m) return `EAV7 Labs Âncora ${m[1]}`;
   return name;
+}
+
+/** Índice da Âncora no nome EAV-NS (`eav7-labs-ancora-3` → 3); senão `null`. */
+export function ancoraIndex(name: string | null | undefined): number | null {
+  if (!name) return null;
+  const m = /^eav7-labs-ancora-(\d+)$/i.exec(name.trim());
+  return m ? Number(m[1]) : null;
 }
 
 export const isE7Address = (s: string) => /^E7[0-9A-F]{32}$/.test(s);

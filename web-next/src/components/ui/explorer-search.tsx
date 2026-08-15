@@ -7,27 +7,86 @@ import { API_BASE } from "@/lib/api";
 
 type Hit = { kind: string; label: string; detail?: string | null; to: string };
 
-// Cores por tipo de resultado (badge por categoria).
-const KIND_STYLE: Record<string, string> = {
-  Endereço: "text-violet border-violet/40 bg-violet/10",
-  Conta: "text-violet border-violet/40 bg-violet/10",
-  Validador: "text-emerald-400 border-emerald-400/40 bg-emerald-400/10",
-  Transação: "text-sky-400 border-sky-400/40 bg-sky-400/10",
-  Bloco: "text-amber-400 border-amber-400/40 bg-amber-400/10",
-  Token: "text-fuchsia-400 border-fuchsia-400/40 bg-fuchsia-400/10",
-  Nome: "text-cyan-400 border-cyan-400/40 bg-cyan-400/10",
+/**
+ * Id estável da categoria, independente do idioma que a API usar no rótulo.
+ * A API do nó devolve `kind` em PT ("Endereço", "Transação", …); se um dia
+ * passar a devolver EN ou um id cru, o mapa continua resolvendo.
+ */
+type KindId =
+  | "address"
+  | "account"
+  | "validator"
+  | "tx"
+  | "block"
+  | "token"
+  | "name"
+  | "contract"
+  | "unknown";
+
+const KIND_ID_BY_LABEL: Record<string, KindId> = {
+  // ids crus
+  address: "address",
+  account: "account",
+  validator: "validator",
+  tx: "tx",
+  transaction: "tx",
+  block: "block",
+  token: "token",
+  name: "name",
+  contract: "contract",
+  // rótulos PT devolvidos pela API do nó
+  Endereço: "address",
+  MetaMask: "address",
+  Conta: "account",
+  Validador: "validator",
+  Transação: "tx",
+  Bloco: "block",
+  Token: "token",
+  Nome: "name",
+  Contrato: "contract",
+  // rótulos EN (caso a API mude)
+  Address: "address",
+  Account: "account",
+  Validator: "validator",
+  "Transaction": "tx",
+  Block: "block",
+  Name: "name",
+  Contract: "contract",
 };
 
+function kindIdOf(kind: string): KindId {
+  return KIND_ID_BY_LABEL[kind] ?? KIND_ID_BY_LABEL[kind.toLowerCase()] ?? "unknown";
+}
 
-const KIND_ICON: Record<string, string> = {
-  Endereço: "◈",
-  Conta: "◈",
-  Validador: "✓",
-  Transação: "⇄",
-  Bloco: "▣",
-  Token: "◉",
-  Nome: "@",
+// Cores por tipo de resultado (badge por categoria), indexadas pelo id estável.
+const KIND_STYLE: Record<KindId, string> = {
+  address: "text-violet border-violet/40 bg-violet/10",
+  account: "text-violet border-violet/40 bg-violet/10",
+  validator: "text-emerald-400 border-emerald-400/40 bg-emerald-400/10",
+  tx: "text-sky-400 border-sky-400/40 bg-sky-400/10",
+  block: "text-amber-400 border-amber-400/40 bg-amber-400/10",
+  token: "text-fuchsia-400 border-fuchsia-400/40 bg-fuchsia-400/10",
+  name: "text-cyan-400 border-cyan-400/40 bg-cyan-400/10",
+  contract: "text-cyan-400 border-cyan-400/40 bg-cyan-400/10",
+  unknown: "text-muted border-line-2 bg-white/5",
 };
+
+const KIND_ICON: Record<KindId, string> = {
+  address: "◈",
+  account: "◈",
+  validator: "✓",
+  tx: "⇄",
+  block: "▣",
+  token: "◉",
+  name: "@",
+  contract: "◉",
+  unknown: "•",
+};
+
+/** Rótulo do grupo: usa o `kind` da API se já for um id, senão o rótulo i18n. */
+function kindLabelKey(id: KindId): string {
+  return `ui_explorerSearch.kind${id[0].toUpperCase()}${id.slice(1)}`;
+}
 
 function Highlight({ text, q }: { text: string; q: string }) {
   const i = text.toLowerCase().indexOf(q.toLowerCase());
@@ -53,7 +112,7 @@ export function ExplorerSearch({
   className?: string;
   autoFocus?: boolean;
   onSubmitted?: () => void;
-  /** variante do hero da home: pill maior + botão "Explorar" com seta */
+  /** variante do hero da home: pill maior + botão de ação com seta */
   hero?: boolean;
   buttonLabel?: string;
 }) {
@@ -114,15 +173,23 @@ export function ExplorerSearch({
     onSubmitted?.();
   }
 
+  // Busca ampliada: cai na página /search, que varre mais índices que o
+  // autocomplete. É também a saída quando o autocomplete volta vazio.
+  function goSearch() {
+    const v = q.trim();
+    if (!v) return;
+    setOpen(false);
+    setQ("");
+    router.push(`/search?q=${encodeURIComponent(v)}`);
+    onSubmitted?.();
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (sel >= 0 && hits[sel]) return go(hits[sel]);
-    const v = q.trim();
-    if (!v) return;
+    if (!q.trim()) return;
     if (hits.length === 1) return go(hits[0]); // resultado único → vai direto
-    router.push(`/search?q=${encodeURIComponent(v)}`);
-    setOpen(false);
-    onSubmitted?.();
+    goSearch();
   }
 
   function onKey(e: React.KeyboardEvent) {
@@ -138,12 +205,13 @@ export function ExplorerSearch({
     }
   }
 
-  // agrupa por tipo mantendo a ordem do índice
-  const groups: [string, Hit[]][] = [];
+  // agrupa por id estável mantendo a ordem do índice
+  const groups: [KindId, Hit[]][] = [];
   for (const h of hits) {
-    const g = groups.find(([k]) => k === h.kind);
+    const id = kindIdOf(h.kind);
+    const g = groups.find(([k]) => k === id);
     if (g) g[1].push(h);
-    else groups.push([h.kind, [h]]);
+    else groups.push([id, [h]]);
   }
 
   return (
@@ -199,20 +267,42 @@ export function ExplorerSearch({
         <div className="search-suggest">
           <div className="search-suggest-scroll">
             {hits.length === 0 ? (
-              <div className="sug-empty">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="text-faint">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="M21 21l-4.3-4.3" />
-                </svg>
-                Nenhum resultado para “{q.trim()}”
-              </div>
+              <>
+                <div className="sug-empty">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="text-faint">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M21 21l-4.3-4.3" />
+                  </svg>
+                  {t("ui_explorerSearch.noResults", { q: q.trim() })}
+                </div>
+                {/* Saída acionável do estado vazio: a busca completa em /search
+                    cobre mais índices que o autocomplete. Enter faz o mesmo. */}
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    goSearch();
+                  }}
+                  className="sug-item"
+                >
+                  <span className={`sug-kind border ${KIND_STYLE.address}`}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+                      <circle cx="11" cy="11" r="7" />
+                      <path d="M21 21l-4.3-4.3" />
+                    </svg>
+                  </span>
+                  <span className="sug-label">
+                    <span className="truncate">{t("ui_explorerSearch.searchFor", { q: q.trim() })}</span>
+                  </span>
+                  <span className="sug-enter">↵</span>
+                </button>
+              </>
             ) : (
-              groups.map(([kind, list]) => (
-                <div key={kind}>
-                  <div className="sug-group">{kind}</div>
+              groups.map(([id, list]) => (
+                <div key={id}>
+                  <div className="sug-group">{t(kindLabelKey(id))}</div>
                   {list.map((h) => {
                     const idx = hits.indexOf(h);
-                    const st = KIND_STYLE[kind] ?? "text-muted border-line-2 bg-white/5";
                     return (
                       <button
                         key={h.to + h.label}
@@ -225,7 +315,7 @@ export function ExplorerSearch({
                         onMouseEnter={() => setSel(idx)}
                         className="sug-item"
                       >
-                        <span className={`sug-kind border ${st}`}>{KIND_ICON[kind] ?? "•"}</span>
+                        <span className={`sug-kind border ${KIND_STYLE[id]}`}>{KIND_ICON[id]}</span>
                         <span className="sug-label">
                           <span className="truncate">
                             <Highlight text={h.label} q={q.trim()} />
@@ -242,8 +332,11 @@ export function ExplorerSearch({
           </div>
           {hits.length > 0 && (
             <div className="sug-footer">
-              <span>↑↓ navegar · ↵ abrir · esc fechar</span>
-              <span>{hits.length} resultado{hits.length === 1 ? "" : "s"}</span>
+              <span>
+                ↑↓ {t("ui_explorerSearch.hintNavigate")} · ↵ {t("ui_explorerSearch.hintOpen")} · esc{" "}
+                {t("ui_explorerSearch.hintClose")}
+              </span>
+              <span>{t("ui_explorerSearch.resultCount", { n: hits.length })}</span>
             </div>
           )}
         </div>

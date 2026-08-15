@@ -29,10 +29,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const ROOT = path.resolve(__dirname, "../..");
 const rails = JSON.parse(fs.readFileSync(path.join(ROOT, "sale/payment-rails.json"), "utf8"));
-const autoCfg = JSON.parse(fs.readFileSync(path.join(ROOT, "sale/auto-delivery.json"), "utf8"));
 
 /** private = SaleVault (vesting) · public = PublicVault (líquido) */
 const SALE_MODE = (process.env.SALE_MODE || "private").toLowerCase() === "public" ? "public" : "private";
+
+/** private = auto-delivery.json · public = public-lbp-delivery.json (Option A ladder) */
+const autoCfgPath =
+  SALE_MODE === "public"
+    ? process.env.SALE_PUBLIC_AUTO_CFG || path.join(ROOT, "sale/public-lbp-delivery.json")
+    : process.env.SALE_AUTO_CFG || path.join(ROOT, "sale/auto-delivery.json");
+const autoCfg = JSON.parse(fs.readFileSync(autoCfgPath, "utf8"));
+
 const abiPath =
   SALE_MODE === "public"
     ? path.join(ROOT, "artifacts/PublicVault.abi.json")
@@ -327,7 +334,9 @@ async function submitGrant(intent) {
   const provider = new JsonRpcProvider(rpcUrl);
   const wallet = new Wallet(pk, provider);
   const c = new Contract(vault, abi, wallet);
-  const tx = await c.grant(intent.beneficiary0x, intent.e7Amount, intent.paymentId, intent.rail);
+  const { id } = require("ethers");
+  const railId = id(String(intent.rail || ""));
+  const tx = await c.grant(intent.beneficiary0x, intent.e7Amount, intent.paymentId, railId);
   const rec = await tx.wait();
   return rec.hash;
 }
@@ -504,6 +513,7 @@ function startServer() {
   server.listen(PORT, "127.0.0.1", () => {
     console.log(`sale relayer [${SALE_MODE}] http://127.0.0.1:${PORT}`);
     console.log("vault env", VAULT_ENV, "abi", path.basename(abiPath));
+    console.log("pricing", path.basename(autoCfgPath));
     console.log("watching…", STATE_PATH);
   });
 

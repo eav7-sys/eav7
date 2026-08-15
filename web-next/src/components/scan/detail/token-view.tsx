@@ -70,7 +70,7 @@ export function TokenView({
 
   return (
     <DetailPage wide>
-      <BackLink href="/tokens" label={t("scan_detail.back")} />
+      <BackLink href="/tokens" label={t("scanLists.titleTokens")} />
 
       <div className="mb-5 flex items-center gap-3.5">
         <span

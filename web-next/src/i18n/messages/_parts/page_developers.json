@@ -656,7 +656,15 @@
         "colParam": "Parâmetro",
         "colValue": "Valor",
         "forkTitle": "Alturas de fork são de build",
-        "forkBody": "Mudanças de consenso entram por altura (CHAIN.FORK_HEIGHTS) e o binário é compilado num modo só. Com EAV7_GENESIS_ACTIVE=1 todas nascem ativas no bloco 0 — o que a testnet local usa."
+        "forkBody": "Mudanças de consenso entram por altura (CHAIN.FORK_HEIGHTS) e o binário é compilado num modo só. Com EAV7_GENESIS_ACTIVE=1 todas nascem ativas no bloco 0 — o que a testnet local usa.",
+        "rowIcon": "Ícone",
+        "rowIconNote": "PNG 512×512 para carteiras e listagens (também /icon.png).",
+        "addKicker": "Carteira",
+        "addTitle": "Adicionar a rede",
+        "addIntro": "Um clique na MetaMask/Trust, ou os mesmos parâmetros para cadastro manual.",
+        "addManualLabel": "rede personalizada",
+        "addTrustTitle": "Trust Wallet e outras EVM",
+        "addTrustBody": "Use os mesmos campos (RPC, Chain ID 72020, símbolo EAV7, 18 decimais, explorador eavscan.com). Na Trust: Settings → Networks → Add custom network."
       },
       "accounts": {
         "eyebrow": "Conceitos",
@@ -2187,7 +2195,15 @@
         "colParam": "Parameter",
         "colValue": "Value",
         "forkTitle": "Fork heights are build-time",
-        "forkBody": "Consensus changes activate by height (CHAIN.FORK_HEIGHTS) and a binary is compiled in one mode only. With EAV7_GENESIS_ACTIVE=1 every fork is live at block 0 — which is what the local testnet uses."
+        "forkBody": "Consensus changes activate by height (CHAIN.FORK_HEIGHTS) and a binary is compiled in one mode only. With EAV7_GENESIS_ACTIVE=1 every fork is live at block 0 — which is what the local testnet uses.",
+        "rowIcon": "Icon",
+        "rowIconNote": "512×512 PNG for wallets and listings (also /icon.png).",
+        "addKicker": "Wallet",
+        "addTitle": "Add the network",
+        "addIntro": "One click in MetaMask/Trust, or the same parameters for manual setup.",
+        "addManualLabel": "custom network",
+        "addTrustTitle": "Trust Wallet and other EVM wallets",
+        "addTrustBody": "Use the same fields (RPC, Chain ID 72020, symbol EAV7, 18 decimals, explorer eavscan.com). In Trust: Settings → Networks → Add custom network."
       },
       "accounts": {
         "eyebrow": "Concepts",

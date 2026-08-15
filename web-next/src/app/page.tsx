@@ -1,4 +1,5 @@
 import { getStatus, getBlocks, getTxs, getNetworkStats, getNames } from "@/lib/api";
+import { getFreeFloatE7 } from "@/lib/circulating";
 import { getMarketPrice, getPriceHistory } from "@/lib/price-market";
 import { ScanHome } from "@/components/scan/home";
 
@@ -8,12 +9,13 @@ export default async function HomePage() {
   // Tudo em paralelo, e cada um falha por si: uma métrica indisponível não pode
   // levar o explorador inteiro junto — a busca é o que mais importa aqui, e ela
   // não depende de nenhuma destas chamadas.
-  const [status, stats, blocks, txs, nomes, price, hist] = await Promise.all([
+  const [status, stats, blocks, txs, nomes, freeFloat, price, hist] = await Promise.all([
     getStatus().catch(() => null),
     getNetworkStats().catch(() => null),
     getBlocks(30).catch(() => []),
     getTxs(12).catch(() => null),
     getNames().catch(() => []),
+    getFreeFloatE7().catch(() => null),
     Promise.resolve()
       .then(() => getMarketPrice())
       .catch(() => null),
@@ -31,7 +33,10 @@ export default async function HomePage() {
   }
 
   const priceWithMcap = price
-    ? getMarketPrice({ circulatingE7: status?.circulating != null ? String(status.circulating) : null })
+    ? getMarketPrice({
+        circulatingE7: freeFloat ?? (status?.circulating != null ? String(status.circulating) : null),
+        circulatingBasis: freeFloat ? "free-float" : status?.circulating != null ? "query" : null,
+      })
     : null;
 
   return (

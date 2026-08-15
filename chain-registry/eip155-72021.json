@@ -1,0 +1,22 @@
+{
+  "name": "eip155:72021",
+  "title": "EAV7 Testnet",
+  "shortName": "EAV7t",
+  "chainId": 72021,
+  "networkId": 72021,
+  "nativeCurrency": {
+    "name": "EAV7",
+    "symbol": "EAV7",
+    "decimals": 18
+  },
+  "rpc": ["https://rpc-testnet.eavscan.com"],
+  "explorers": [
+    {
+      "name": "EAVScan Testnet",
+      "url": "https://testnet.eavscan.com",
+      "standard": "none"
+    }
+  ],
+  "infoURL": "https://testnet.eavscan.com",
+  "icon": "eav7"
+}

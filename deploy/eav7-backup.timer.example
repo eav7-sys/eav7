@@ -1,0 +1,14 @@
+[Unit]
+Description=EAV7 — backup horário da cadeia
+
+[Timer]
+# De hora a hora. A cadeia é curta e o custo é baixo; quando crescer, passar a
+# OnCalendar=*-*-* *:00:00 mantém-se válido — o que muda é só o espaço dos diários.
+OnCalendar=hourly
+# Se a VM esteve desligada à hora marcada, corre no arranque seguinte.
+Persistent=true
+# Espalha os nós para não escreverem todos no mesmo segundo.
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

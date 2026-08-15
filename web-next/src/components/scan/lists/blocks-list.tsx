@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getBlocks, type Block } from "@/lib/api";
-import { ago, fmt, fmtBytes, num, shortHash } from "@/lib/format";
+import { addrLink, ago, fmt, fmtBytes, hashLink, num } from "@/lib/format";
 import { useT } from "@/i18n/provider";
 import { Cartao, ListaShell, Paginacao, Td, Th, Tr, Vazio, corDe } from "./table";
 
@@ -130,7 +130,7 @@ function LinhaBloco({
         </Link>
       </Td>
       <Td className="text-muted">
-        <span className="block truncate pr-4 font-mono">{shortHash(b.hash, 14, 8)}</span>
+        <span className="block truncate pr-4 font-mono">{hashLink(b.hash)}</span>
       </Td>
       <Td className="whitespace-nowrap text-muted">{ago(b.timestamp)}</Td>
       <Td>{num(b.txCount)}</Td>
@@ -145,7 +145,7 @@ function LinhaBloco({
             href={`/address/${b.producer}`}
             className={`truncate text-violet hover:underline ${nome ? "" : "font-mono text-[12.5px]"}`}
           >
-            {nome ?? shortHash(b.producer, 10, 6)}
+            {nome ?? addrLink(b.producer)}
           </Link>
         </span>
       </Td>

@@ -10,6 +10,10 @@ license = "MIT"
 name = "eav7-core"
 path = "src/main.rs"
 
+[features]
+default = []
+testnet = ["eav7/testnet"]
+
 [dependencies]
 eav7 = { path = ".." }
 eav7-sdk = { path = "../sdk" }

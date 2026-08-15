@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Copy } from "@/components/ui/copy";
 import { ExplorerSearch } from "@/components/ui/explorer-search";
+import { avatarTone, initials } from "@/components/scan/identity";
 import { fmt, fmtToken, shortHash } from "@/lib/format";
 import type { Tx } from "@/lib/api";
 import "../tokens.css";
@@ -10,19 +11,11 @@ import "./detail.css";
 /** Assinatura do tradutor — as telas são Server Components e recebem `t` por prop. */
 export type T = (k: string, v?: Record<string, string | number>) => string;
 
-/**
- * Cor estável derivada de um texto: o mesmo endereço recebe sempre o mesmo tom.
- * É DECORAÇÃO (o desenho usa avatares coloridos), não informação — por isso pode
- * ser sintetizada sem violar a regra de não inventar dado.
- */
-export function avatarBg(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360;
-  return `linear-gradient(135deg, hsl(${h} 62% 58%), hsl(${(h + 42) % 360} 56% 40%))`;
-}
+// Reexporta a identidade visual canônica para os call sites históricos `./shell`.
+export { avatarTone, initials };
 
-/** Duas letras para o círculo do token/exchange, como no desenho. */
-export const initials = (s: string) => (s || "?").replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
+/** Cor estável derivada de um texto: o mesmo endereço recebe sempre o mesmo tom. */
+export const avatarBg = avatarTone;
 
 /** Moldura das quatro telas: fundo com brilho, largura máxima e respiro. */
 export function DetailPage({ wide = false, children }: { wide?: boolean; children: ReactNode }) {

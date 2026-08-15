@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "EAV7 Scan",
-    locale: "pt_BR",
+    locale: "en_US",
   },
 };
 

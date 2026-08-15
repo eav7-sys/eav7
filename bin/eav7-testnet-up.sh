@@ -10,6 +10,9 @@ set -euo pipefail
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$RAIZ"
 
+# Binário atual é GENESIS_ACTIVE_BUILD=true — o nó recusa arrancar sem o env.
+export EAV7_GENESIS_ACTIVE=1
+
 ROOT="${EAV7_TESTNET_ROOT:-$RAIZ/data/testnet}"
 PIDS_FILE="$ROOT/testnet.pids"
 PORT0="${EAV7_TESTNET_PORT0:-6070}"
@@ -90,10 +93,12 @@ aguardar_status "$PORT1" "node1"
 aguardar_status "$PORT2" "node2"
 
 cat >"$ROOT/endpoints.env" <<EOF
+EAV7_GENESIS_ACTIVE=1
 EAV7_TESTNET_ROOT=$ROOT
 EAV7_NODE_URL=http://127.0.0.1:${PORT0}
 EAV7_CORE_DIR=$ROOT/node0
 EAV7_CORE_URL=http://127.0.0.1:${PORT0}
+EAV7_RPC=http://127.0.0.1:$((PORT0 + 1000))
 EOF
 
 echo

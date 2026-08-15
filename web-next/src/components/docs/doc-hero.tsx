@@ -15,6 +15,7 @@ import {
   IconEnergy,
   IconReward,
   IconWallet,
+  IconBlock,
 } from "@/components/icons";
 
 function Tile({
@@ -40,6 +41,7 @@ function SobreHero() {
   const t = useT();
   const pilares = [
     { href: "/docs/consenso", label: t("docs_hero.sobre.pillar_consensus"), icon: <IconValidator size={15} /> },
+    { href: "/whitepaper", label: "Whitepaper", icon: <IconBlock size={15} /> },
     { href: "/docs/token", label: t("docs_hero.sobre.pillar_token_standard"), icon: <IconToken size={15} /> },
     { href: "/docs/ponte", label: t("docs_hero.sobre.pillar_bridge"), icon: <IconBridge size={15} /> },
     { href: "/docs/seguranca", label: t("docs_hero.sobre.pillar_security"), icon: <IconQuantumKey size={15} /> },

@@ -6,7 +6,7 @@ import { ExplorerSearch } from "@/components/ui/explorer-search";
 import { useT } from "@/i18n/provider";
 import type { Block, NetworkStats, Status, Tx } from "@/lib/api";
 import { fmtCompact, num, numCompact } from "@/lib/format";
-import { TxChart, ActivityChart, PriceChart } from "./charts";
+import { TxChart, PriceChart } from "./charts";
 import { LatestBlocks, LatestTxs } from "./latest";
 import "./tokens.css";
 import type { MarketPrice, PriceHistoryPoint } from "@/lib/price-market";
@@ -32,17 +32,6 @@ export function ScanHome({
   priceHistory?: PriceHistoryPoint[];
 }) {
   const t = useT();
-
-  const blocosPorHora = (() => {
-    if (blocks.length < 2) return [];
-    const agora = Date.now();
-    const baldes = new Array(24).fill(0);
-    for (const b of blocks) {
-      const h = Math.floor((agora - b.timestamp) / 3_600_000);
-      if (h >= 0 && h < 24) baldes[23 - h] += 1;
-    }
-    return baldes;
-  })();
 
   const tps = (() => {
     const v = stats?.tps ?? 0;
@@ -187,11 +176,10 @@ export function ScanHome({
           <div className="scan-ribbon__div" />
           <div className="scan-ribbon__cell">
             <div className="scan-ribbon__label">TPS</div>
-            <div className="mt-2 flex items-baseline gap-1.5">
-              <span className="scan-ribbon__value !mt-0">{tps}</span>
-              <span className="text-[11px] text-faint">/500</span>
+            <div className="scan-ribbon__value">
+              {tps} <span className="text-[11px] font-medium text-faint">/500</span>
             </div>
-            <div className="mt-1.5 h-1 overflow-hidden rounded bg-[var(--input-bg)]">
+            <div className="mt-2 h-1 overflow-hidden rounded bg-[var(--input-bg)]">
               <div
                 className="h-full rounded bg-gradient-to-r from-violet-deep to-violet transition-[width] duration-700"
                 style={{ width: `${tpsPct}%` }}
@@ -201,17 +189,15 @@ export function ScanHome({
         </div>
 
         <div className="scan-charts">
-          {price && (priceHistory?.length ?? 0) >= 2 ? (
-            <PriceChart
-              points={priceHistory ?? []}
-              priceUsd={price.priceUsd}
-              changePct={price.change24hPct}
-              priceFmt={price.priceUsdFormatted}
-              changeFmt={price.change24hFormatted}
-            />
-          ) : (
-            <ActivityChart series={blocosPorHora} />
-          )}
+          {/* Slot esquerdo é SEMPRE o de mercado: sem preço, o próprio
+              PriceChart renderiza o estado vazio (SemDados). */}
+          <PriceChart
+            points={priceHistory ?? []}
+            priceUsd={price?.priceUsd}
+            changePct={price?.change24hPct}
+            priceFmt={price?.priceUsdFormatted}
+            changeFmt={price?.change24hFormatted}
+          />
           <TxChart series={stats?.txSeries ?? []} />
         </div>
 
@@ -318,7 +304,7 @@ function HeartbeatSvg() {
     <svg
       viewBox="0 0 1200 120"
       preserveAspectRatio="none"
-      className="mt-2 block h-[132px] w-full origin-bottom"
+      className="mt-2 block h-[72px] w-full origin-bottom"
       style={{ transform: "perspective(900px) rotateX(26deg)" }}
       aria-hidden
     >

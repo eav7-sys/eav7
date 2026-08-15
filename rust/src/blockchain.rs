@@ -502,6 +502,33 @@ pub enum Reorg {
     Adotou(Vec<Tx>),
 }
 
+/// Política de descarte no boot a partir de `blocks.jsonl`.
+///
+/// Default: no máximo **1** bloco (rabo típico de crash no append). Qualquer
+/// descarte maior exige flag/env explícita no nó — senão o boot ABORTA e o
+/// arquivo fica intacto.
+#[derive(Debug, Clone, Copy)]
+pub struct LoadFromDiskOpts {
+    pub max_auto_discard: u64,
+}
+
+impl Default for LoadFromDiskOpts {
+    fn default() -> Self {
+        Self {
+            max_auto_discard: 1,
+        }
+    }
+}
+
+impl LoadFromDiskOpts {
+    /// Operador assume o risco: permite truncar rabo arbitrário (após backup).
+    pub fn force_discard_tail() -> Self {
+        Self {
+            max_auto_discard: u64::MAX,
+        }
+    }
+}
+
 /// A cadeia em memória.
 ///
 /// Os campos são públicos, como na referência: a própria `reorg` monta uma cadeia
@@ -737,7 +764,10 @@ impl Blockchain {
     /// lote, que é detalhe de implementação e não pode influenciar o que fica
     /// gravado em disco.
     fn aplicar_lote(&mut self, lote: Vec<Block>, now: i64) -> Result<(), ChainError> {
-        let (verificados, erro) = Self::verificar_lote(lote);
+        // `producer_keys` da cadeia (já aplicados) sementeia o lote: com
+        // `COMPACT_BLOCK_HEIGHT` e LOTE=512, o 1.º bloco do lote seguinte omite
+        // pubs e depende das chaves vistas nos lotes anteriores.
+        let (verificados, erro) = Self::verificar_lote(lote, &self.producer_keys);
         for bloco in verificados {
             self.add_block_verificado(bloco, now)?;
         }
@@ -765,7 +795,14 @@ impl Blockchain {
     /// que alguém aplique bloco não verificado por engano.
     /// Devolve o PREFIXO que passou e o primeiro erro, se houve — nunca só o erro:
     /// os blocos anteriores ao ruim são válidos e têm de entrar na cadeia.
-    fn verificar_lote(mut blocos: Vec<Block>) -> (Vec<BlocoVerificado>, Option<ChainError>) {
+    ///
+    /// `chaves_conhecidas` é a semente de produtores já vistos (tipicamente
+    /// `self.producer_keys`). Sem ela, lotes sucessivos com blocos compactos
+    /// falhariam no primeiro bloco de cada lote.
+    fn verificar_lote(
+        mut blocos: Vec<Block>,
+        chaves_conhecidas: &BTreeMap<String, (String, String)>,
+    ) -> (Vec<BlocoVerificado>, Option<ChainError>) {
         let nucleos = std::thread::available_parallelism().map_or(1, |n| n.get());
         // Cada posição recebe o erro daquele bloco (ou `None`). Guardar POR POSIÇÃO,
         // e não "o primeiro que chegou", é o que torna o resultado determinístico:
@@ -780,7 +817,7 @@ impl Blockchain {
             .any(|b| b.public_key.is_none() || b.pq_public_key.is_none());
 
         if precisa_seq || nucleos <= 1 || blocos.len() < 8 {
-            let mut keys: BTreeMap<String, (String, String)> = BTreeMap::new();
+            let mut keys = chaves_conhecidas.clone();
             for (i, b) in blocos.iter().enumerate() {
                 let known = keys.get(&b.producer).map(|(a, c)| (a.as_str(), c.as_str()));
                 falhas[i] = verify_block_integrity_ex(b, known).err();
@@ -1489,12 +1526,14 @@ impl Blockchain {
     /// otimização posterior; este é o caminho-fonte-de-verdade que ele sempre
     /// pode cair de volta.
     ///
-    /// Semântica de recuperação, idêntica à referência:
+    /// Semântica de recuperação:
     /// • linha 0 → `adopt_genesis`; demais → `add_block` (a contiguidade de altura
     ///   que o `add_block` exige é o que garante linha N == altura N);
-    /// • bloco INVÁLIDO (JSON legível que não aplica) → o prefixo válido fica, o
-    ///   resto é TRUNCADO do arquivo e o nó re-sincroniza da rede. "O arquivo é
-    ///   cache; a rede é a fonte de verdade";
+    /// • bloco INVÁLIDO no fim → o prefixo válido fica; o rabo só é TRUNCADO se
+    ///   couber em [`LoadFromDiskOpts::max_auto_discard`] (default **1**, tipicamente
+    ///   crash no último append). Descartar milhares de blocos **aborta o boot** e
+    ///   **não** altera o arquivo — evita o incidente em que todos os nós
+    ///   truncavam a tip e a rede ficava sem fonte de verdade;
     /// • JSON ilegível no MEIO do arquivo → fatal (`LinhaCorrompida`) — corrupção
     ///   real não se mascara;
     /// • última linha rasgada (crash no append) → truncada pela varredura.
@@ -1502,8 +1541,18 @@ impl Blockchain {
     /// Devolve quantos blocos foram descartados do fim (0 = arquivo íntegro).
     pub fn load_from_disk(
         &mut self,
+        store: crate::blockstore::BlockStore,
+        now: i64,
+    ) -> Result<u64, ChainError> {
+        self.load_from_disk_with(store, now, LoadFromDiskOpts::default())
+    }
+
+    /// Como [`Self::load_from_disk`], com política explícita de descarte.
+    pub fn load_from_disk_with(
+        &mut self,
         mut store: crate::blockstore::BlockStore,
         now: i64,
+        opts: LoadFromDiskOpts,
     ) -> Result<u64, ChainError> {
         self.loading = true;
         let mut ruim: Option<String> = None;
@@ -1560,11 +1609,32 @@ impl Blockchain {
 
         let mut descartados = 0u64;
         if let Some(e) = ruim {
-            // O prefixo válido termina na altura atual; tudo além é lixo de crash
-            // ou de bug antigo. Truncar mantém a invariante "o arquivo é um
-            // prefixo contíguo 0..count-1 da cadeia".
+            // O prefixo válido termina na altura atual; tudo além seria descartado.
             let manter = usize::try_from(self.height() + 1).unwrap_or(0);
             descartados = relatorio.count.saturating_sub(manter) as u64;
+            if descartados > opts.max_auto_discard {
+                // NÃO truncar: o arquivo permanece intacto para forense / restore.
+                return Err(format!(
+                    "boot abortado: replay falhou na altura {} ({e}); \
+                     {descartados} bloco(s) seguintes NÃO foram descartados \
+                     (limite auto-discard={}). \
+                     O blocks.jsonl permanece intacto. \
+                     Com backup e peers que tenham a tip, use \
+                     EAV7_FORCE_DISCARD_INVALID_TAIL=1. \
+                     Sem isso, restaure de backup — não suba o nó a truncar a cadeia.",
+                    self.height(),
+                    opts.max_auto_discard
+                ));
+            }
+            if descartados > 0 {
+                let bak = store
+                    .backup_before_truncate("pre-discard")
+                    .map_err(|err| format!("falha ao backup antes do discard ({e}): {err}"))?;
+                eprintln!(
+                    "[cadeia] backup pré-discard: {} ({descartados} bloco(s); causa: {e})",
+                    bak.display()
+                );
+            }
             store
                 .truncate_from(manter)
                 .map_err(|err| format!("falha ao truncar rabo inválido ({e}): {err}"))?;
@@ -1641,6 +1711,11 @@ impl Blockchain {
         // As duas coincidem enquanto o arquivo for um prefixo contíguo, mas anotar
         // o mapa aqui dispensa depender disso para localizar um bloco.
         let mut linha_por_altura: BTreeMap<u64, usize> = BTreeMap::new();
+        // Blocos compactos (COMPACT_BLOCK_HEIGHT=0) omitem pubs; o sync P2P
+        // precisa das chaves já vistas. O replay via add_block as enche — o
+        // boot por snap tem de as recolher NA MESMA varredura, senão o nó fica
+        // mudo à frente de peers (add_block rejeita, sync engole o erro).
+        let mut producer_keys: BTreeMap<String, (String, String)> = BTreeMap::new();
         let mut ilegivel: Option<String> = None;
 
         let scan = store.scan_json(0, |altura, v| {
@@ -1651,6 +1726,11 @@ impl Blockchain {
                     return false;
                 }
             };
+            if let (Some(pk), Some(pq)) = (&bloco.public_key, &bloco.pq_public_key) {
+                if !pk.is_empty() && !pq.is_empty() {
+                    producer_keys.insert(bloco.producer.clone(), (pk.clone(), pq.clone()));
+                }
+            }
             hashes.insert(bloco.height, bloco.hash.clone());
             hash_index.insert(bloco.hash.clone(), bloco.height);
             linha_por_altura.insert(bloco.height, altura);
@@ -1706,19 +1786,43 @@ impl Blockchain {
             );
             return Ok(None);
         }
-        // O bloco da altura do snapshot precisa estar na janela para o rabo ser
-        // reaplicado; fora dela, o replay completo é o caminho.
+        // A janela em RAM só guarda ~REORG_WINDOW blocos. O snap pode estar atrás
+        // disso (ex.: tip 93k, snap 86k, janela começa em ~88k). Antes isto caía
+        // em replay completo desde o génese. Agora lemos o bloco do snap (e o
+        // delta) do disco — O(tip−snap), não O(tip).
         let inicio_janela = cabeca.height + 1 - tail.len() as u64;
-        if snap.altura < inicio_janela {
-            eprintln!(
-                "[cadeia] snapshot na altura {} está fora da janela em RAM — replay completo",
-                snap.altura
-            );
-            return Ok(None);
-        }
-        let Some(bloco_do_snapshot) = tail.get((snap.altura - inicio_janela) as usize).cloned()
-        else {
-            return Ok(None);
+        let bloco_do_snapshot = if snap.altura >= inicio_janela {
+            match tail.get((snap.altura - inicio_janela) as usize).cloned() {
+                Some(b) => b,
+                None => return Ok(None),
+            }
+        } else {
+            let Some(linha) = linha_por_altura.get(&snap.altura).copied() else {
+                eprintln!(
+                    "[cadeia] snapshot na altura {} sem bloco no store — replay completo",
+                    snap.altura
+                );
+                return Ok(None);
+            };
+            let Some(jv) = store
+                .get_json(linha)
+                .map_err(|e| format!("ler bloco do snapshot: {e}"))?
+            else {
+                eprintln!(
+                    "[cadeia] snapshot na altura {} ausente no store — replay completo",
+                    snap.altura
+                );
+                return Ok(None);
+            };
+            match crate::block::block_from_json(&jv) {
+                Ok(b) => b,
+                Err(e) => {
+                    eprintln!(
+                        "[cadeia] bloco do snapshot ilegível ({e}) — replay completo"
+                    );
+                    return Ok(None);
+                }
+            }
         };
         if bloco_do_snapshot.hash != snap.head_hash {
             // Checagem BARATA antes da cara: hash diferente = outra cadeia, e nem
@@ -1743,11 +1847,51 @@ impl Blockchain {
 
         // REAPLICA o rabo: do bloco seguinte ao do snapshot até a ponta. Blocos já
         // validados, mesmo caminho determinístico do reorg — não há assinatura a
-        // reverificar aqui, só estado a avançar.
-        let primeiro = (snap.altura + 1 - inicio_janela) as usize;
-        for bloco in tail.iter().skip(primeiro) {
-            if let Err(e) = self.apply_block_to(&mut estado, bloco) {
-                eprintln!("[cadeia] rabo do snapshot não reaplica no bloco {} ({e}) — replay completo", bloco.height);
+        // reverificar aqui, só estado a avançar. Fora da janela RAM = ler do disco.
+        if snap.altura < inicio_janela {
+            eprintln!(
+                "[cadeia] snapshot na altura {} atrás da janela ({inicio_janela}) — reaplicando delta do disco",
+                snap.altura
+            );
+        }
+        for h in (snap.altura + 1)..=cabeca.height {
+            let bloco = if h >= inicio_janela {
+                match tail.get((h - inicio_janela) as usize) {
+                    Some(b) => b.clone(),
+                    None => {
+                        eprintln!(
+                            "[cadeia] falta bloco {h} na janela ao reaplicar rabo — replay completo"
+                        );
+                        return Ok(None);
+                    }
+                }
+            } else {
+                let Some(linha) = linha_por_altura.get(&h).copied() else {
+                    eprintln!(
+                        "[cadeia] falta bloco {h} no store ao reaplicar rabo — replay completo"
+                    );
+                    return Ok(None);
+                };
+                let Some(jv) = store
+                    .get_json(linha)
+                    .map_err(|e| format!("ler bloco {h}: {e}"))?
+                else {
+                    eprintln!("[cadeia] bloco {h} ausente no store — replay completo");
+                    return Ok(None);
+                };
+                match crate::block::block_from_json(&jv) {
+                    Ok(b) => b,
+                    Err(e) => {
+                        eprintln!("[cadeia] bloco {h} ilegível ({e}) — replay completo");
+                        return Ok(None);
+                    }
+                }
+            };
+            if let Err(e) = self.apply_block_to(&mut estado, &bloco) {
+                eprintln!(
+                    "[cadeia] rabo do snapshot não reaplica no bloco {} ({e}) — replay completo",
+                    bloco.height
+                );
                 return Ok(None);
             }
         }
@@ -1783,41 +1927,217 @@ impl Blockchain {
         // Sem âncora não há reorganização possível dentro da janela, e o
         // `slide_tail` não tem de onde partir: por isso, âncora que não prova
         // derruba o boot rápido inteiro em vez de virar `None`.
-        let tail_start = snap.tail_start;
-        if tail_start > snap.altura || tail_start < inicio_janela {
+        //
+        // Caso comum (lab): o snap foi gravado na altura H com tail_start=H−janela;
+        // no boot a ponta já é B>H e a janela em RAM começa depois do tail_start
+        // antigo. Antes isto forçava replay completo (~minutos). Agora avançamos a
+        // âncora até `inicio_janela` reaplicando do disco os blocos entretanto
+        // deslizados — O(intervalo), tipicamente <1 s.
+        let mut tail_start = snap.tail_start;
+        if tail_start > snap.altura {
             eprintln!(
-                "[cadeia] janela do snapshot ({tail_start}) incompatível com a relida — replay completo"
+                "[cadeia] janela do snapshot ({tail_start}) inválida (acima da altura do snap) — replay completo"
             );
             return Ok(None);
         }
-        // "Existe bloco antes da janela?" é pergunta sobre o ARQUIVO, não sobre a
-        // altura zero: uma cadeia cujo arquivo comece acima do gênese (nó que
-        // sincronizou de um ponto, fixture de teste) tem `tail_start > 0` e mesmo
-        // assim não tem nada atrás. Perguntar `tail_start == 0` recusaria o boot
-        // rápido nesses casos por um motivo que não existe.
+
         let primeira_no_arquivo = linha_por_altura.keys().next().copied();
-        let ha_bloco_antes = primeira_no_arquivo.is_some_and(|p| tail_start > p);
-        let base_state = match (ha_bloco_antes, snap.base_estado.as_ref()) {
-            (false, _) => None,
-            (_, None) => {
-                eprintln!("[cadeia] snapshot sem âncora para a janela — replay completo");
-                return Ok(None);
-            }
-            (true, Some(v)) => {
-                let anterior = linha_por_altura
-                    .get(&(tail_start - 1))
-                    .and_then(|linha| store.get_json(*linha).ok().flatten())
-                    .and_then(|v| crate::block::block_from_json(&v).ok());
-                let raiz_anterior = anterior.as_ref().and_then(|b| b.state_root.clone());
-                match crate::snapshot::Snapshot::estado_verificado(
-                    v,
-                    tail_start - 1,
-                    raiz_anterior.as_deref(),
+
+        let base_state = if tail_start < inicio_janela {
+            // Âncora velha: avançar até ao início da janela relida.
+            if inicio_janela == 0 {
+                None
+            } else if snap.base_estado.is_none() {
+                // Snap sem baseEstado (Null): NÃO bootar sem âncora — `slide_tail`
+                // panica em "âncora ausente". Reconstruímos a âncora a partir do
+                // estado do snap (provado acima).
+                let mut base = match crate::snapshot::Snapshot::estado_verificado(
+                    &snap.estado,
+                    snap.altura,
+                    bloco_do_snapshot.state_root.as_deref(),
                 ) {
-                    Ok(s) => Some(s),
+                    Ok(s) => s,
                     Err(e) => {
-                        eprintln!("[cadeia] âncora do snapshot não confere ({e}) — replay completo");
+                        eprintln!("[cadeia] estado do snap inválido ao reconstruir âncora ({e}) — replay completo");
                         return Ok(None);
+                    }
+                };
+                if snap.altura >= cabeca.height {
+                    eprintln!(
+                        "[cadeia] snapshot na ponta sem baseEstado — replay completo"
+                    );
+                    return Ok(None);
+                }
+                if snap.altura < inicio_janela {
+                    for h in (snap.altura + 1)..inicio_janela {
+                        let Some(linha) = linha_por_altura.get(&h).copied() else {
+                            eprintln!(
+                                "[cadeia] falta bloco {h} ao reconstruir âncora — replay completo"
+                            );
+                            return Ok(None);
+                        };
+                        let Some(jv) = store
+                            .get_json(linha)
+                            .map_err(|e| format!("ler bloco {h}: {e}"))?
+                        else {
+                            eprintln!("[cadeia] bloco {h} ausente no store — replay completo");
+                            return Ok(None);
+                        };
+                        let bloco = match crate::block::block_from_json(&jv) {
+                            Ok(b) => b,
+                            Err(e) => {
+                                eprintln!(
+                                    "[cadeia] bloco {h} ilegível ({e}) — replay completo"
+                                );
+                                return Ok(None);
+                            }
+                        };
+                        if let Err(e) = self.apply_block_to(&mut base, &bloco) {
+                            eprintln!(
+                                "[cadeia] falha ao reconstruir âncora no bloco {h} ({e}) — replay completo"
+                            );
+                            return Ok(None);
+                        }
+                    }
+                    let anterior = linha_por_altura
+                        .get(&(inicio_janela - 1))
+                        .and_then(|linha| store.get_json(*linha).ok().flatten())
+                        .and_then(|jv| crate::block::block_from_json(&jv).ok());
+                    if let Some(raiz) = anterior.as_ref().and_then(|b| b.state_root.as_deref()) {
+                        let obtida = crate::stateroot::compute_state_root(
+                            &base
+                                .state_leaves()
+                                .map_err(|e| format!("estado não codificável: {e}"))?,
+                        );
+                        if obtida != raiz {
+                            eprintln!(
+                                "[cadeia] âncora reconstruída não confere na altura {} — replay completo",
+                                inicio_janela - 1
+                            );
+                            return Ok(None);
+                        }
+                    }
+                    eprintln!(
+                        "[cadeia] snapshot: âncora reconstruída do estado do snap → {inicio_janela} (boot rápido)"
+                    );
+                    tail_start = inicio_janela;
+                } else {
+                    // Snap dentro da janela RAM: âncora = estado do snap; janela de
+                    // reorg encurtada até a cadeia crescer (melhor que panic).
+                    eprintln!(
+                        "[cadeia] snapshot sem baseEstado — âncora @{} (reorg até a cadeia andar)",
+                        snap.altura
+                    );
+                    tail_start = snap.altura + 1;
+                }
+                Some(base)
+            } else {
+                let mut base = match snap.base_estado.as_ref() {
+                    Some(v) if tail_start == 0 => {
+                        eprintln!("[cadeia] snapshot inconsistente (base com tail_start=0) — replay completo");
+                        return Ok(None);
+                    }
+                    Some(v) => {
+                        let anterior = linha_por_altura
+                            .get(&(tail_start - 1))
+                            .and_then(|linha| store.get_json(*linha).ok().flatten())
+                            .and_then(|jv| crate::block::block_from_json(&jv).ok());
+                        let raiz_anterior = anterior.as_ref().and_then(|b| b.state_root.clone());
+                        match crate::snapshot::Snapshot::estado_verificado(
+                            v,
+                            tail_start - 1,
+                            raiz_anterior.as_deref(),
+                        ) {
+                            Ok(s) => s,
+                            Err(e) => {
+                                eprintln!(
+                                    "[cadeia] âncora do snapshot não confere ({e}) — replay completo"
+                                );
+                                return Ok(None);
+                            }
+                        }
+                    }
+                    None => unreachable!(),
+                };
+                for h in tail_start..inicio_janela {
+                    let Some(linha) = linha_por_altura.get(&h).copied() else {
+                        eprintln!(
+                            "[cadeia] falta bloco {h} ao avançar âncora do snapshot — replay completo"
+                        );
+                        return Ok(None);
+                    };
+                    let Some(jv) = store.get_json(linha).map_err(|e| format!("ler bloco {h}: {e}"))? else {
+                        eprintln!("[cadeia] bloco {h} ausente no store — replay completo");
+                        return Ok(None);
+                    };
+                    let bloco = match crate::block::block_from_json(&jv) {
+                        Ok(b) => b,
+                        Err(e) => {
+                            eprintln!("[cadeia] bloco {h} ilegível ({e}) — replay completo");
+                            return Ok(None);
+                        }
+                    };
+                    if let Err(e) = self.apply_block_to(&mut base, &bloco) {
+                        eprintln!(
+                            "[cadeia] falha ao avançar âncora no bloco {h} ({e}) — replay completo"
+                        );
+                        return Ok(None);
+                    }
+                }
+                let anterior = linha_por_altura
+                    .get(&(inicio_janela - 1))
+                    .and_then(|linha| store.get_json(*linha).ok().flatten())
+                    .and_then(|jv| crate::block::block_from_json(&jv).ok());
+                if let Some(raiz) = anterior.as_ref().and_then(|b| b.state_root.as_deref()) {
+                    let obtida = crate::stateroot::compute_state_root(
+                        &base
+                            .state_leaves()
+                            .map_err(|e| format!("estado não codificável: {e}"))?,
+                    );
+                    if obtida != raiz {
+                        eprintln!(
+                            "[cadeia] âncora avançada não confere na altura {} — replay completo",
+                            inicio_janela - 1
+                        );
+                        return Ok(None);
+                    }
+                }
+                eprintln!(
+                    "[cadeia] snapshot: âncora avançada {} → {} (boot rápido)",
+                    snap.tail_start, inicio_janela
+                );
+                tail_start = inicio_janela;
+                Some(base)
+            }
+        } else {
+            // "Existe bloco antes da janela?" é pergunta sobre o ARQUIVO, não sobre a
+            // altura zero: uma cadeia cujo arquivo comece acima do gênese (nó que
+            // sincronizou de um ponto, fixture de teste) tem `tail_start > 0` e mesmo
+            // assim não tem nada atrás. Perguntar `tail_start == 0` recusaria o boot
+            // rápido nesses casos por um motivo que não existe.
+            let ha_bloco_antes = primeira_no_arquivo.is_some_and(|p| tail_start > p);
+            match (ha_bloco_antes, snap.base_estado.as_ref()) {
+                (false, _) => None,
+                (_, None) => {
+                    eprintln!("[cadeia] snapshot sem âncora para a janela — replay completo");
+                    return Ok(None);
+                }
+                (true, Some(v)) => {
+                    let anterior = linha_por_altura
+                        .get(&(tail_start - 1))
+                        .and_then(|linha| store.get_json(*linha).ok().flatten())
+                        .and_then(|v| crate::block::block_from_json(&v).ok());
+                    let raiz_anterior = anterior.as_ref().and_then(|b| b.state_root.clone());
+                    match crate::snapshot::Snapshot::estado_verificado(
+                        v,
+                        tail_start - 1,
+                        raiz_anterior.as_deref(),
+                    ) {
+                        Ok(s) => Some(s),
+                        Err(e) => {
+                            eprintln!("[cadeia] âncora do snapshot não confere ({e}) — replay completo");
+                            return Ok(None);
+                        }
                     }
                 }
             }
@@ -1831,7 +2151,6 @@ impl Blockchain {
             .collect();
 
         // ---- daqui para baixo, só escrita: tudo já foi provado ----
-        let tail: Vec<Block> = tail.into_iter().collect();
         self.tail_start = tail_start;
         self.tail = tail;
         self.state = estado;
@@ -1841,6 +2160,11 @@ impl Blockchain {
         self.tx_index = tx_index;
         self.address_tx_index = address_tx_index;
         self.blocks_with_txs = blocks_with_txs;
+        self.producer_keys = producer_keys;
+        eprintln!(
+            "[cadeia] snapshot: {} chave(s) de produtor recuperada(s) da varredura",
+            self.producer_keys.len()
+        );
         // O arquivo acabou de ser lido e ainda descreve a ponta: não há por que
         // reescrevê-lo no primeiro bloco que chegar.
         self.ultimo_snapshot = snap.altura;
@@ -1865,6 +2189,23 @@ impl Blockchain {
         if altura.saturating_sub(self.ultimo_snapshot) < crate::config::SNAPSHOT_INTERVAL_BLOCKS {
             return;
         }
+        self.disparar_snapshot(caminho, altura);
+    }
+
+    /// Grava snapshot agora (shutdown limpo / ops). Best-effort; espera o job.
+    pub fn forcar_snapshot(&mut self, caminho: &std::path::Path) {
+        let altura = self.height();
+        if altura < 0 {
+            return;
+        }
+        let altura = altura as u64;
+        self.disparar_snapshot(caminho, altura);
+        if let Some(j) = self.snapshot_job.take() {
+            let _ = j.join();
+        }
+    }
+
+    fn disparar_snapshot(&mut self, caminho: &std::path::Path, altura: u64) {
         // Um job ainda em voo: não empilhar (o intervalo já foi reservado).
         if self.snapshot_job.as_ref().is_some_and(|j| !j.is_finished()) {
             return;
@@ -3178,7 +3519,7 @@ mod tests {
         let mut boot2 = Blockchain::new();
         let descartados = boot2
             .load_from_disk(crate::blockstore::BlockStore::new(&arquivo), agora(6))
-            .expect("boot tolerante");
+            .expect("boot tolerante a 1 bloco no rabo");
         assert_eq!(descartados, 1, "o rabo inválido é descartado, não fatal");
         assert_eq!(boot2.height(), origem.height(), "o prefixo válido permanece");
         // E o TERCEIRO boot confirma que o truncamento persistiu no arquivo.
@@ -3188,6 +3529,38 @@ mod tests {
             0,
             "depois do truncamento o arquivo está íntegro"
         );
+
+        // Rabo GRANDE inválido: sem force, o boot ABORTA e o arquivo não muda.
+        {
+            let mut store = crate::blockstore::BlockStore::new(&arquivo);
+            store.scan(0, |_, _| true).expect("reindexa");
+            for bump in 1..=5 {
+                let mut lixo = origem.tail.last().expect("cabeça").clone();
+                lixo.height = origem.height() + bump;
+                store
+                    .append(&crate::block::block_to_json_line(&lixo).expect("linha"))
+                    .expect("append");
+            }
+        }
+        let mut boot_safe = Blockchain::new();
+        let err = boot_safe
+            .load_from_disk(crate::blockstore::BlockStore::new(&arquivo), agora(8))
+            .expect_err("tem de abortar sem truncar");
+        assert!(
+            err.contains("boot abortado") && err.contains("NÃO foram descartados"),
+            "erro foi: {err}"
+        );
+        // Com force: descarta após backup.
+        let mut boot_force = Blockchain::new();
+        let n = boot_force
+            .load_from_disk_with(
+                crate::blockstore::BlockStore::new(&arquivo),
+                agora(9),
+                LoadFromDiskOpts::force_discard_tail(),
+            )
+            .expect("force discard");
+        assert!(n >= 5, "descartou o rabo grande ({n})");
+        assert_eq!(boot_force.height(), origem.height());
 
         let _ = std::fs::remove_file(&arquivo);
     }
@@ -4299,7 +4672,8 @@ mod tests {
             // continua "bem-formado" e só a verificação híbrida o pega.
             lote[ruim_em].signature = "AAAA".into();
 
-            let (verificados, erro) = Blockchain::verificar_lote(lote);
+            let vazias = BTreeMap::new();
+            let (verificados, erro) = Blockchain::verificar_lote(lote, &vazias);
             assert_eq!(
                 verificados.len(),
                 ruim_em,
@@ -4313,9 +4687,51 @@ mod tests {
         }
 
         // E um lote inteiramente válido passa sem erro.
-        let (verificados, erro) = Blockchain::verificar_lote(blocos.clone());
+        let vazias = BTreeMap::new();
+        let (verificados, erro) = Blockchain::verificar_lote(blocos.clone(), &vazias);
         assert_eq!(verificados.len(), blocos.len());
         assert!(erro.is_none());
+    }
+
+    /// Regressão: lotes sucessivos de blocos compactos herdam `producer_keys`.
+    ///
+    /// Sem a semente, o 1.º bloco do 2.º lote (após LOTE=512 na prática) falhava
+    /// com «chave pública do produtor inválida» mesmo com a cadeia íntegra.
+    #[test]
+    fn lote_seguinte_herda_chaves_de_produtores() {
+        let cs = carteiras();
+        let mut chain = cadeia(&cs, ALTURA, 100);
+        let mut com_chave = Vec::new();
+        let mut compactos = Vec::new();
+        for slot in 101..=104 {
+            let mut b = proximo(&chain, &cs, slot);
+            chain.add_block(b.clone(), agora(slot)).expect("bloco");
+            com_chave.push(b.clone());
+            // Simula fio compacto: pubs omitidas, só assinatura.
+            b.public_key = None;
+            b.pq_public_key = None;
+            compactos.push(b);
+        }
+        let vazias = BTreeMap::new();
+        let (ok, err) = Blockchain::verificar_lote(com_chave.clone(), &vazias);
+        assert!(err.is_none());
+        assert_eq!(ok.len(), 4);
+
+        // Sem semente: compactos sozinhos falham no primeiro.
+        let (prefixo, err) = Blockchain::verificar_lote(compactos.clone(), &vazias);
+        assert!(prefixo.is_empty());
+        assert!(err.expect("falha").contains("chave pública"));
+
+        // Com as chaves do lote anterior (como `aplicar_lote` faz via self):
+        let mut seeds = BTreeMap::new();
+        for b in &com_chave {
+            if let (Some(pk), Some(pq)) = (&b.public_key, &b.pq_public_key) {
+                seeds.insert(b.producer.clone(), (pk.clone(), pq.clone()));
+            }
+        }
+        let (ok, err) = Blockchain::verificar_lote(compactos, &seeds);
+        assert!(err.is_none(), "{err:?}");
+        assert_eq!(ok.len(), 4);
     }
 
     /// Quanto o lote paralelo economiza no termo que domina o replay.
@@ -4342,7 +4758,8 @@ mod tests {
         let sequencial = t.elapsed().as_secs_f64() * 1000.0;
 
         let t = std::time::Instant::now();
-        let (verificados, erro) = Blockchain::verificar_lote(blocos.clone());
+        let vazias = BTreeMap::new();
+        let (verificados, erro) = Blockchain::verificar_lote(blocos.clone(), &vazias);
         let paralelo = t.elapsed().as_secs_f64() * 1000.0;
         assert!(erro.is_none());
         assert_eq!(verificados.len(), n);

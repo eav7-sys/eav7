@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   if (!rail) return bad(400, "bad_request", "rail obrigatória");
   if (!(usdAmount >= 100)) return bad(400, "bad_request", "usdAmount mínimo 100");
 
-  if (useRemoteRelayer() && process.env.SALE_RELAYER_PUBLIC_URL) {
+  if (useRemoteRelayer("public") && process.env.SALE_RELAYER_PUBLIC_URL) {
     try {
       const res = await fetch(`${relayerBase("public")}/intent`, {
         method: "POST",

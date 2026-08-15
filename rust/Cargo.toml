@@ -30,6 +30,12 @@ license = "MIT"
 [workspace]
 members = ["node", "sdk", "wasm", "core"]
 
+# Binário de testnet pública: `cargo build -p eav7-node --features testnet`
+# (EAVM chain id 72021). Mainnet continua o default sem feature.
+[features]
+default = []
+testnet = []
+
 [dependencies]
 # SHA3-256 — a hash do protocolo eav20. RustCrypto, implementação constante em tempo.
 sha3 = "0.10"

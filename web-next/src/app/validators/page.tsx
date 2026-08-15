@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getStatus, getValidators } from "@/lib/api";
 import { ValidatorsList } from "@/components/scan/lists/validators-list";
 import { getT } from "@/i18n/server";
@@ -18,5 +19,11 @@ export default async function ValidatorsPage() {
     getStatus().catch(() => null),
   ]);
 
-  return <ValidatorsList inicial={validators} status={status} />;
+  // Suspense: a lista lê ?tab= via useSearchParams — sem fronteira, uma
+  // eventual pré-renderização estática da rota quebraria o build.
+  return (
+    <Suspense fallback={null}>
+      <ValidatorsList inicial={validators} status={status} />
+    </Suspense>
+  );
 }

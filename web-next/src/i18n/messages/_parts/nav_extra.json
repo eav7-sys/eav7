@@ -7,7 +7,9 @@
       "names": "Nomes EAV-NS",
       "namesDesc": "Nomes legíveis → endereço",
       "governance": "Governança",
-      "governanceDesc": "Propostas, parâmetros e tesouraria"
+      "governanceDesc": "Propostas, parâmetros e tesouraria",
+      "whitepaper": "Whitepaper",
+      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
     },
     "en": {
       "nfts": "EAV721 NFTs",
@@ -15,7 +17,9 @@
       "names": "EAV-NS Names",
       "namesDesc": "Human-readable names → address",
       "governance": "Governance",
-      "governanceDesc": "Proposals, parameters and treasury"
+      "governanceDesc": "Proposals, parameters and treasury",
+      "whitepaper": "Whitepaper",
+      "whitepaperDesc": "Technical document v1.0 · PT/EN"
     }
   }
 }

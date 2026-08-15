@@ -626,6 +626,34 @@ impl BlockStore {
         Ok(())
     }
 
+    /// Cópia do `blocks.jsonl` antes de um truncate destrutivo (pré-discard).
+    /// Destino: `blocks.jsonl.<tag>-<unix>.bak` ao lado do arquivo.
+    pub fn backup_before_truncate(&self, tag: &str) -> R<PathBuf> {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let ts = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let safe_tag: String = tag
+            .chars()
+            .map(|c| if c.is_ascii_alphanumeric() || c == '-' { c } else { '-' })
+            .collect();
+        let nome = format!(
+            "{}.{safe_tag}-{ts}.bak",
+            self.file
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("blocks.jsonl")
+        );
+        let dest = self
+            .file
+            .parent()
+            .map(|p| p.join(&nome))
+            .unwrap_or_else(|| PathBuf::from(&nome));
+        std::fs::copy(&self.file, &dest)?;
+        Ok(dest)
+    }
+
     /// Reescreve o arquivo INTEIRO. Só para gênese e migração — o custo é O(cadeia)
     /// e materializa tudo, o que é o oposto do que este módulo existe para fazer.
     ///

@@ -3,7 +3,7 @@ import path from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import { SALE_RAILS, type SaleRail } from "@/lib/sale-rails";
 import type { SaleIntent } from "@/lib/sale-api";
-import { buildSaleQuote, type SaleQuote } from "@/lib/sale-pricing";
+import { buildSaleQuote, loadSaleAutoCfg, type SaleQuote } from "@/lib/sale-pricing";
 
 export type SaleChannel = "private" | "public";
 
@@ -134,7 +134,7 @@ function toPublic(intent: StoredIntent): SaleIntent {
 }
 
 export function getSaleQuoteSnapshot(channel: SaleChannel = "private"): SaleQuote {
-  return buildSaleQuote(loadState(channel).intents);
+  return buildSaleQuote(loadState(channel).intents, loadSaleAutoCfg(channel));
 }
 
 export function createLocalIntent(
@@ -146,7 +146,7 @@ export function createLocalIntent(
   if (!(usdAmount >= 100)) throw new Error("usdAmount mínimo 100");
   const rail = railById(railId);
   const state = loadState(channel);
-  const quote = buildSaleQuote(state.intents);
+  const quote = buildSaleQuote(state.intents, loadSaleAutoCfg(channel));
   const price = quote.priceUsdPerEav7;
   if (!(price > 0)) throw new Error("preço inválido");
 
@@ -190,7 +190,10 @@ export function confirmLocalIntent(
   );
 }
 
-export function useRemoteRelayer(): boolean {
+export function useRemoteRelayer(channel: SaleChannel = "private"): boolean {
+  if (channel === "public") {
+    return Boolean(process.env.SALE_RELAYER_PUBLIC_URL || process.env.SALE_RELAYER_URL);
+  }
   return Boolean(process.env.SALE_RELAYER_URL);
 }
 

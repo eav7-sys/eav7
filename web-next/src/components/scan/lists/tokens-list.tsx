@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type TokenSummary } from "@/lib/api";
-import { fmtToken, fmtUsd, num, numCompact, shortHash, whenUtc } from "@/lib/format";
+import { addrLink, fmtToken, fmtUsd, num, numCompact, whenUtc } from "@/lib/format";
 import { useT } from "@/i18n/provider";
 import type { MarketPrice } from "@/lib/price-market";
 import { Cartao, ListaShell, Selo, StatCard, Td, Th, Tr, Vazio, corDe } from "./table";
@@ -159,7 +159,7 @@ function LinhaToken({
           href={`/address/${k.creator}`}
           className="block truncate pr-3 font-mono text-[12.5px] text-[var(--scan-link)] hover:underline"
         >
-          {shortHash(k.creator, 10, 6)}
+          {addrLink(k.creator)}
         </Link>
       </Td>
       <Td right className="whitespace-nowrap text-muted">

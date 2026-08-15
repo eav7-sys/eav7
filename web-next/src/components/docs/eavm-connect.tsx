@@ -4,28 +4,21 @@ import { useEffect, useRef, useState } from "react";
 import { Copy } from "@/components/ui/copy";
 import { IconWallet, IconNetwork, IconQuantumKey } from "@/components/icons";
 import { useT } from "@/i18n/provider";
+import { EAVM_CHAIN_ID_DEC, EAVM_CHAIN_PARAMS } from "@/lib/eavm-chain";
 
-// 72020 em hex = 0x11954
-const CHAIN_PARAMS = {
-  chainId: "0x11954",
-  chainName: "EAV7 EAVM",
-  nativeCurrency: { name: "EAV7", symbol: "EAV7", decimals: 18 },
-  rpcUrls: ["https://rpc.eavscan.com"],
-  blockExplorerUrls: ["https://eavscan.com"],
-  iconUrls: ["https://eavscan.com/brand/eav7-coin.png"],
-};
+const CHAIN_PARAMS = { ...EAVM_CHAIN_PARAMS };
 
 type EthProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
 };
 
 const PARAM_ROWS: { key: string; v: string; copy?: boolean }[] = [
-  { key: "networkName", v: "EAV7 EAVM" },
-  { key: "rpcUrl", v: "https://rpc.eavscan.com", copy: true },
-  { key: "chainId", v: "72020", copy: true },
-  { key: "symbol", v: "EAV7" },
-  { key: "explorer", v: "https://eavscan.com", copy: true },
-  { key: "decimals", v: "18" },
+  { key: "networkName", v: EAVM_CHAIN_PARAMS.chainName },
+  { key: "rpcUrl", v: EAVM_CHAIN_PARAMS.rpcUrls[0], copy: true },
+  { key: "chainId", v: String(EAVM_CHAIN_ID_DEC), copy: true },
+  { key: "symbol", v: EAVM_CHAIN_PARAMS.nativeCurrency.symbol },
+  { key: "explorer", v: EAVM_CHAIN_PARAMS.blockExplorerUrls[0], copy: true },
+  { key: "decimals", v: String(EAVM_CHAIN_PARAMS.nativeCurrency.decimals) },
 ];
 
 const STEP_KEYS = ["step1", "step2", "step3"] as const;

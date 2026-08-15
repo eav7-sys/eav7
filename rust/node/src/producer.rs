@@ -23,9 +23,11 @@
 //!
 //! # Achados de auditoria espelhados
 //!
-//! • H2 — a produção NUNCA é bloqueada por altura auto-reportada de peer: as
-//!   guardas abaixo são as únicas, e nenhuma consulta a rede (node.js:270,
-//!   "Não há gate por altura auto-reportada de peer — evita o vetor de halt").
+//! • H2 — a produção NUNCA é bloqueada por altura auto-reportada de peer
+//!   **arbitrário**: as guardas abaixo são as únicas no caminho default, e
+//!   nenhuma consulta a peers da malha (node.js:270). Exceção explícita do
+//!   operador: `--follow` / `EAV7_FOLLOW` (ver `follow.rs`) — tip canónica
+//!   confiável (hub), não peer aleatório.
 //! • L4 — `last_slot` é marcado SÓ depois de `produce_block` retornar sucesso
 //!   (node.js:276): uma falha transitória deixa o slot em aberto e o próximo
 //!   tick (200 ms depois, ainda dentro do slot de 1 s) tenta de novo.
@@ -182,10 +184,19 @@ pub fn tick(
 /// `gossip`: ver o cabeçalho do módulo — `Some(sender)` recebe cada bloco
 /// produzido como linha JSON canônica (`block_to_json_line`); `None` desliga a
 /// difusão ativa (peers sincronizam por pull). O `main.rs` liga o canal ao P2P.
+///
+/// `follow_url`: tip canónica do operador (`EAV7_FOLLOW`). `None` = comportamento
+/// histórico (sem gate de rede). Ver `crate::follow`.
+///
+/// `boot_ready`: quando `Some`, o produtor espera este flag (primeiro ciclo de
+/// sync P2P ou timeout de boot) antes do primeiro bloco — evita o race
+/// pós-restart que gerou o fork de 13 ago 2026.
 pub fn start(
     state: AppState,
     wallet: Arc<ProductionWallet>,
     gossip: Option<UnboundedSender<String>>,
+    follow_url: Option<String>,
+    boot_ready: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut intervalo = tokio::time::interval(Duration::from_millis(INTERVALO_MS));
@@ -196,8 +207,46 @@ pub fn start(
         intervalo.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         // node.js:51 — `this.lastSlot = -1`. Vive no task, não no Node.
         let mut last_slot: i64 = -1;
+        // Cliente HTTP sempre: tip guard TRON (peers) ou EAV7_FOLLOW.
+        let follow_client = Some(crate::p2p::make_client());
+        let mut hold_log = crate::follow::HoldLogger::new(Duration::from_secs(30));
+        let boot_deadline = std::time::Instant::now() + Duration::from_secs(20);
         loop {
             intervalo.tick().await;
+            if let Some(flag) = boot_ready.as_ref() {
+                use std::sync::atomic::Ordering;
+                if !flag.load(Ordering::Relaxed) && std::time::Instant::now() < boot_deadline {
+                    continue;
+                }
+            }
+            if let (Some(url), Some(client)) = (follow_url.as_deref(), follow_client.as_ref()) {
+                let (altura, head) = {
+                    let Ok(node) = state.read() else { continue };
+                    let head = node.blockchain.head().map(|b| b.hash.clone());
+                    (node.blockchain.height(), head)
+                };
+                match crate::follow::check(client, url, altura, head.as_deref()).await {
+                    crate::follow::FollowDecision::Allow => {}
+                    crate::follow::FollowDecision::Hold(reason) => {
+                        hold_log.maybe_log(reason);
+                        continue;
+                    }
+                }
+            } else if let Some(client) = follow_client.as_ref() {
+                // Estilo TRON (default): miss slot se a tip dos peers discordar.
+                let (altura, head, peers) = {
+                    let Ok(node) = state.read() else { continue };
+                    let head = node.blockchain.head().map(|b| b.hash.clone());
+                    (node.blockchain.height(), head, node.peers.clone())
+                };
+                match crate::follow::check_peers(client, &peers, altura, head.as_deref()).await {
+                    crate::follow::FollowDecision::Allow => {}
+                    crate::follow::FollowDecision::Hold(reason) => {
+                        hold_log.maybe_log(reason);
+                        continue;
+                    }
+                }
+            }
             let now = agora_ms();
             // Bloco SÍNCRONO sob o write-lock: pega o guard, decide, solta. O
             // guard não existe depois da chave — impossível atravessar `await`.

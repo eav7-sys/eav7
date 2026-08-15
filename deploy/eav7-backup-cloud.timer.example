@@ -1,0 +1,12 @@
+[Unit]
+Description=EAV7 — envio diário do backup para fora do ESXi (OneDrive)
+
+[Timer]
+# 03:20 UTC: depois do backup horário das 03:00 ter criado o diário do dia,
+# e fora da janela de maior atividade.
+OnCalendar=*-*-* 03:20:00
+Persistent=true
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target

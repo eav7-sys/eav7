@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>EAV7 — Apresentação</title>
+<style>
+/* Fontes estáticas (não variáveis): o print-to-PDF do Chrome rasteriza
+   variable fonts como Type 3 e o texto fica borrado em zoom/projetor. */
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("fonts/SpaceGrotesk-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("fonts/SpaceGrotesk-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("fonts/SpaceGrotesk-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("fonts/SpaceGrotesk-Bold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("fonts/SpaceGrotesk-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/JetBrainsMono-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/JetBrainsMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/JetBrainsMono-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/JetBrainsMono-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  --ground: #06070c;
+  --ink: #f4f5f8;
+  --ink-soft: #c4c7d4;
+  --ink-mute: #8b90a3;
+  --ink-faint: #555a6c;
+  --violet: #6336c4;
+  --violet-lt: #b08cff;
+  --teal: #3fd6dc;
+  --teal-dim: rgba(63, 214, 220, 0.55);
+  --hair: rgba(255, 255, 255, 0.11);
+  --hair-soft: rgba(255, 255, 255, 0.06);
+  --panel: rgba(255, 255, 255, 0.028);
+  --panel-2: rgba(99, 54, 196, 0.10);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@page { size: 13.333in 7.5in; margin: 0; }
+
+.slide {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  overflow: hidden;
+  padding: 64px 88px 96px;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--ground);
+  background-image: url("assets/ambient.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  break-after: page;
+  page-break-after: always;
+}
+.slide:last-child { break-after: auto; page-break-after: auto; }
+.slide > * { position: relative; z-index: 1; }
+
+/* rail esquerda — presença de marca em todo o deck */
+.slide::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--violet-lt) 0%, var(--violet) 42%, var(--teal) 100%);
+  z-index: 2;
+}
+
+/* ---------- chrome ---------- */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+.eyebrow .dim { color: var(--ink-faint); }
+.eyebrow::before {
+  content: "";
+  width: 18px; height: 1px;
+  background: var(--teal);
+  opacity: 0.7;
+  flex: none;
+}
+
+.foot {
+  position: absolute;
+  left: 88px; right: 88px; bottom: 36px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  z-index: 1;
+}
+.foot::before {
+  content: "";
+  position: absolute; left: 0; right: 0; top: -16px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(159,123,255,0.35), var(--hair-soft) 28%, var(--hair-soft));
+}
+.foot .mark { color: var(--ink-mute); }
+.foot .mark b { color: var(--violet-lt); font-weight: 500; }
+
+h1 {
+  font-size: 74px;
+  line-height: 0.96;
+  font-weight: 500;
+  letter-spacing: -0.038em;
+}
+h2 {
+  font-size: 48px;
+  line-height: 1.05;
+  font-weight: 500;
+  letter-spacing: -0.032em;
+  max-width: 22ch;
+}
+h2.wide { max-width: 32ch; }
+.lede {
+  font-size: 21px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  font-weight: 300;
+  max-width: 58ch;
+}
+.lede strong { color: var(--ink); font-weight: 500; }
+em.hl { font-style: normal; color: var(--violet-lt); }
+em.hlt { font-style: normal; color: var(--teal); }
+
+.mono { font-family: "JetBrains Mono", monospace; }
+.rule { height: 1px; background: var(--hair); }
+.spacer { flex: 1; }
+
+/* ---------- cover ---------- */
+.cover {
+  justify-content: flex-end;
+  padding: 72px 88px 112px;
+}
+.cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, rgba(99,54,196,0.16) 0%, transparent 42%),
+    linear-gradient(0deg, rgba(6,7,12,0.55) 0%, transparent 48%);
+  z-index: 0;
+  pointer-events: none;
+}
+.cover .eyebrow { margin-bottom: 0; }
+.wordmark {
+  font-size: 188px;
+  line-height: 0.82;
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  color: var(--ink);
+}
+.wordmark b { font-weight: 600; color: var(--violet-lt); }
+.cover .tag {
+  margin-top: 28px;
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: -0.018em;
+  color: var(--ink-soft);
+  max-width: 28ch;
+  line-height: 1.25;
+}
+.cover .tag b { color: var(--ink); font-weight: 500; }
+.cover .meta {
+  margin-top: 40px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  border-top: 1px solid var(--hair);
+  padding-top: 22px;
+  max-width: 720px;
+}
+.cover .meta span {
+  padding-right: 28px;
+  margin-right: 28px;
+  border-right: 1px solid var(--hair);
+}
+.cover .meta span:last-child {
+  border-right: none;
+  padding-right: 0;
+  margin-right: 0;
+  color: var(--teal);
+}
+
+/* ---------- content patterns ---------- */
+.head { display: flex; flex-direction: column; gap: 18px; }
+.body { margin-top: 40px; }
+
+.stack { display: flex; flex-direction: column; }
+.stack > .item {
+  padding: 20px 0 20px 22px;
+  border-top: 1px solid var(--hair);
+  border-left: 2px solid transparent;
+  display: grid;
+  gap: 6px;
+  background: linear-gradient(90deg, var(--panel), transparent 55%);
+}
+.stack > .item:last-child { border-bottom: 1px solid var(--hair); }
+.stack > .item .t {
+  font-size: 22px; font-weight: 500; letter-spacing: -0.02em;
+}
+.stack > .item .d {
+  font-size: 15.5px; line-height: 1.45; color: var(--ink-mute); font-weight: 300; max-width: 74ch;
+}
+.stack.accent > .item:nth-child(1) { border-left-color: var(--violet); }
+.stack.accent > .item:nth-child(2) { border-left-color: var(--violet-lt); }
+.stack.accent > .item:nth-child(3) { border-left-color: var(--teal); }
+.stack.accent > .item:nth-child(4) { border-left-color: rgba(255,255,255,0.28); }
+
+.cols { display: grid; gap: 48px; }
+.cols.c2 { grid-template-columns: 1fr 1fr; }
+.cols.quad { grid-template-columns: 1fr 1fr; row-gap: 36px; column-gap: 56px; }
+.cols.c3 { grid-template-columns: repeat(3, 1fr); gap: 36px; }
+
+.col {
+  padding-top: 0;
+  border-top: 2px solid var(--hair);
+  padding-top: 18px;
+}
+.col.accent-v { border-top-color: var(--violet-lt); }
+.col.accent-t { border-top-color: var(--teal); }
+.col.accent-d { border-top-color: rgba(255,255,255,0.28); }
+.col .n {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-faint);
+  display: block;
+}
+.col .h { margin-top: 14px; font-size: 22px; font-weight: 500; letter-spacing: -0.022em; }
+.col .p { margin-top: 10px; font-size: 15px; line-height: 1.5; color: var(--ink-mute); font-weight: 300; }
+
+.kv { display: flex; flex-direction: column; }
+.kv .row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hair-soft);
+  gap: 30px;
+}
+.kv .row:first-child { border-top: 1px solid var(--hair); }
+.kv .k {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-mute);
+  white-space: nowrap;
+}
+.kv .v {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14.5px; color: var(--ink); text-align: right;
+}
+.kv .v.t { color: var(--teal); }
+.kv .v.v { color: var(--violet-lt); }
+
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+.metrics .m {
+  padding: 8px 28px 4px;
+  border-left: 1px solid var(--hair);
+  position: relative;
+}
+.metrics .m:first-child { padding-left: 0; border-left: none; }
+.metrics .big {
+  font-size: 52px; font-weight: 500; letter-spacing: -0.04em; line-height: 1;
+}
+.metrics .big small {
+  font-size: 18px; font-weight: 400; letter-spacing: -0.01em;
+  color: var(--ink-mute); margin-left: 6px;
+}
+.metrics .lb {
+  margin-top: 14px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint);
+  line-height: 1.45;
+}
+
+.note {
+  margin-top: 28px;
+  padding: 14px 0 14px 18px;
+  border-left: 2px solid var(--violet-lt);
+  background: linear-gradient(90deg, var(--panel-2), transparent 70%);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-mute);
+  font-weight: 300;
+  max-width: 78ch;
+}
+.note b { color: var(--ink-soft); font-weight: 500; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--teal);
+  border: 1px solid rgba(63, 214, 220, 0.35);
+  border-radius: 2px;
+  padding: 8px 14px 8px 12px;
+  background: rgba(63, 214, 220, 0.06);
+}
+.chip .dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--teal);
+  box-shadow: 0 0 0 3px rgba(63, 214, 220, 0.18);
+}
+
+/* ---------- architecture diagram ---------- */
+.arch { display: grid; grid-template-columns: 1fr 280px; gap: 36px; align-items: stretch; }
+.layers { display: flex; flex-direction: column; gap: 0; }
+.layer {
+  border: 1px solid var(--hair);
+  border-bottom: none;
+  padding: 18px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 26px;
+  background: var(--panel);
+}
+.layer:last-of-type { border-bottom: 1px solid var(--hair); }
+.layer .nm { font-size: 20px; font-weight: 500; letter-spacing: -0.015em; }
+.layer .nm span {
+  font-family: "JetBrains Mono", monospace; font-size: 12px;
+  color: var(--ink-mute); margin-left: 12px; letter-spacing: 0.04em; font-weight: 400;
+}
+.layer .ds {
+  font-family: "JetBrains Mono", monospace; font-size: 11.5px;
+  color: var(--ink-mute); text-align: right; letter-spacing: 0.04em; line-height: 1.55;
+}
+.layer.a { border-left: 3px solid var(--teal); }
+.layer.b { border-left: 3px solid var(--violet-lt); }
+.layer.c {
+  border-left: 3px solid var(--violet);
+  background: linear-gradient(90deg, rgba(99,54,196,0.16), rgba(99,54,196,0) 70%);
+}
+.conn {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint);
+  padding: 8px 24px 8px 27px;
+  border-left: 1px solid var(--hair);
+  border-right: 1px solid var(--hair);
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(0,0,0,0.15);
+}
+.conn::before { content: ""; width: 1px; height: 10px; background: var(--teal-dim); }
+.side {
+  border: 1px solid var(--hair);
+  border-top: 3px solid var(--teal);
+  padding: 24px 24px;
+  display: flex; flex-direction: column; gap: 12px;
+  background: linear-gradient(180deg, rgba(63,214,220,0.07), transparent 55%);
+  justify-content: space-between;
+}
+.side .st { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+.side .sl {
+  font-family: "JetBrains Mono", monospace; font-size: 12px; line-height: 1.85; color: var(--ink-mute);
+}
+.side .url {
+  font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--teal); letter-spacing: 0.04em;
+  margin-top: auto; padding-top: 16px; border-top: 1px solid var(--hair-soft);
+}
+
+/* ---------- signature diagram ---------- */
+.sig { display: grid; grid-template-columns: 1fr 48px 1fr; align-items: stretch; gap: 0; }
+.sig .part {
+  border: 1px solid var(--hair);
+  padding: 28px 28px;
+  background: var(--panel);
+}
+.sig .part.p1 { border-top: 3px solid var(--violet-lt); }
+.sig .part.p2 { border-top: 3px solid var(--teal); }
+.sig .part .nm { font-family: "JetBrains Mono", monospace; font-size: 22px; letter-spacing: -0.02em; }
+.sig .part .kind {
+  margin-top: 10px;
+  font-family: "JetBrains Mono", monospace; font-size: 10.5px;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint);
+}
+.sig .part .p { margin-top: 18px; font-size: 15px; line-height: 1.45; color: var(--ink-mute); font-weight: 300; }
+.sig .plus {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: var(--violet-lt); font-weight: 300;
+}
+
+/* ---------- validator set ---------- */
+.seats { display: flex; align-items: flex-end; gap: 4px; height: 92px; }
+.seats i { display: block; width: 11px; background: rgba(255,255,255,0.08); height: 30px; }
+.seats i.on { background: linear-gradient(180deg, var(--teal), rgba(63,214,220,0.25)); height: 88px; }
+.seats i.bank { background: rgba(255,255,255,0.035); height: 18px; }
+
+/* ---------- tokenomics bar ---------- */
+.bar {
+  display: flex; height: 48px; width: 100%; overflow: hidden;
+  border: 1px solid var(--hair);
+}
+.bar div { height: 100%; position: relative; }
+.bar .s1 { background: linear-gradient(180deg, #c4a4ff, var(--violet-lt)); width: 45%; }
+.bar .s2 { background: linear-gradient(180deg, #7a52d6, var(--violet)); width: 30.25%; }
+.bar .s3 { background: linear-gradient(180deg, #6eebef, var(--teal)); width: 14.75%; }
+.bar .s4 { background: rgba(255, 255, 255, 0.18); width: 10%; }
+.legend { margin-top: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.legend .l { padding-right: 12px; border-left: 3px solid transparent; padding-left: 12px; }
+.legend .l.a { border-left-color: var(--violet-lt); }
+.legend .l.b { border-left-color: var(--violet); }
+.legend .l.c { border-left-color: var(--teal); }
+.legend .l.d { border-left-color: rgba(255,255,255,0.35); }
+.legend .pct { font-size: 28px; font-weight: 500; letter-spacing: -0.03em; }
+.legend .nm {
+  margin-top: 6px;
+  font-family: "JetBrains Mono", monospace; font-size: 10.5px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint);
+}
+.legend .l.a .pct { color: var(--violet-lt); }
+.legend .l.b .pct { color: #9a78e8; }
+.legend .l.c .pct { color: var(--teal); }
+.legend .l.d .pct { color: var(--ink-soft); }
+
+/* ---------- compact table ---------- */
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tbl th, .tbl td {
+  text-align: left; padding: 12px 12px;
+  border-top: 1px solid var(--hair);
+  vertical-align: top;
+}
+.tbl th {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-faint); font-weight: 500; border-top: none;
+  padding-bottom: 10px;
+}
+.tbl td.num { font-family: "JetBrains Mono", monospace; font-size: 13.5px; letter-spacing: -0.01em; white-space: nowrap; }
+.tbl td.pct { color: var(--violet-lt); font-weight: 500; font-size: 15px; letter-spacing: -0.02em; white-space: nowrap; }
+.tbl tr:last-child td { border-bottom: 1px solid var(--hair); }
+.tbl .swatch {
+  display: inline-block; width: 8px; height: 8px; margin-right: 10px;
+  vertical-align: 1px;
+}
+.tbl .swatch.a { background: var(--violet-lt); }
+.tbl .swatch.b { background: var(--violet); }
+.tbl .swatch.c { background: var(--teal); }
+.tbl .swatch.d { background: rgba(255,255,255,0.35); }
+
+/* ---------- sale price ladder ---------- */
+.price-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 14px; }
+.price {
+  border: 1px solid var(--hair);
+  padding: 14px 12px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+  background: var(--panel);
+  position: relative;
+}
+.price.on {
+  border-color: rgba(63, 214, 220, 0.45);
+  border-top: 3px solid var(--teal);
+  background: linear-gradient(180deg, rgba(63,214,220,0.10), transparent 70%);
+}
+.price .tl {
+  font-family: "JetBrains Mono", monospace; font-size: 10px;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint);
+}
+.price .tp { font-size: 22px; font-weight: 500; letter-spacing: -0.025em; color: var(--ink); }
+.price.on .tp { color: var(--teal); }
+.price .tu { font-size: 12px; line-height: 1.35; color: var(--ink-mute); font-weight: 300; }
+.price .rung {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: rgba(255,255,255,0.06);
+}
+.price .rung i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--violet), var(--teal));
+}
+
+/* ---------- hash ---------- */
+.hash {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  border: 1px solid var(--hair);
+  border-left: 3px solid var(--teal);
+  padding: 18px 22px;
+  word-break: break-all;
+  background: linear-gradient(90deg, rgba(63,214,220,0.06), transparent 55%);
+}
+.hash b { color: var(--teal); font-weight: 500; }
+
+/* ---------- roadmap / risk ---------- */
+.steps { display: flex; flex-direction: column; }
+.steps .s {
+  display: grid; grid-template-columns: 52px 1fr;
+  gap: 22px;
+  padding: 15px 0;
+  border-top: 1px solid var(--hair);
+  align-items: start;
+}
+.steps .s:last-child { border-bottom: 1px solid var(--hair); }
+.steps .s .ix {
+  font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: 0.12em;
+  color: var(--violet-lt); padding-top: 5px;
+}
+.steps .s .tt { font-size: 20px; font-weight: 500; letter-spacing: -0.02em; }
+.steps .s .dd { margin-top: 5px; font-size: 14.5px; line-height: 1.42; color: var(--ink-mute); font-weight: 300; max-width: 80ch; }
+
+/* ---------- closing ---------- */
+.links { display: flex; flex-direction: column; }
+.links .a {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 18px 0;
+  border-top: 1px solid var(--hair);
+  gap: 30px;
+}
+.links .a:last-child { border-bottom: 1px solid var(--hair); }
+.links .a .lb {
+  font-family: "JetBrains Mono", monospace; font-size: 11px;
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-faint);
+}
+.links .a .vl { font-size: 24px; font-weight: 400; letter-spacing: -0.02em; }
+.links .a .vl.t { color: var(--teal); }
+.links .a .vl.v { color: var(--violet-lt); }
+
+.closing-brand {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 40px;
+  margin-top: 8px;
+}
+.closing-brand .wordmark { font-size: 72px; line-height: 0.85; }
+.closing-meta {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-faint); text-align: right; line-height: 2;
+}
+</style>
+</head>
+<body>
+
+<!-- 01 — Cover -->
+<section class="slide cover">
+  <div class="eyebrow">Layer-1 &nbsp;<span class="dim">/</span>&nbsp; Protocolo eav20 &nbsp;<span class="dim">/</span>&nbsp; Mainnet ao vivo</div>
+  <div class="wordmark" style="margin-top:36px">EAV<b>7</b></div>
+  <div class="tag">A Layer-1 que nasceu <b>pós-quântica</b> — e já produz blocos.</div>
+  <div class="meta">
+    <span>11 de agosto de 2026</span>
+    <span>Whitepaper v1.0</span>
+    <span>eavscan.com</span>
+  </div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>01 / 16</span></div>
+</section>
+
+<!-- 02 — O problema -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">01 &nbsp;<span class="dim">—</span>&nbsp; O problema</div>
+    <h2 class="wide">As correções mais importantes ficaram para depois.</h2>
+  </div>
+  <div class="body cols quad" style="margin-top:40px">
+    <div class="col accent-v">
+      <span class="n">01 · Criptografia</span>
+      <div class="h">O pós-quântico virou promessa</div>
+      <div class="p">Cadeias assinam com curvas elípticas e prometem migrar quando for urgente. Trocar assinaturas de uma rede viva é a parte difícil — e é a que se adia.</div>
+    </div>
+    <div class="col accent-t">
+      <span class="n">02 · Inteligência artificial</span>
+      <div class="h">Caixa-preta ou poder</div>
+      <div class="p">Ou o resultado do modelo é confiança cega fora da cadeia, ou quem computa passa a influenciar consenso e validadores. Nenhuma das duas serve a uma camada base.</div>
+    </div>
+    <div class="col accent-v">
+      <span class="n">03 · Operação</span>
+      <div class="h">Rodar um nó é um projeto</div>
+      <div class="p">Sincronizar, fazer stake e produzir blocos exige ler o monorepo. Descentralização que depende de heroísmo operacional não escala.</div>
+    </div>
+    <div class="col accent-d">
+      <span class="n">04 · Comunicação</span>
+      <div class="h">Roadmap vendido como produção</div>
+      <div class="p">O que está ligado, o que está condicionado e o que ainda não existe raramente aparecem no mesmo slide.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>02 / 16</span></div>
+</section>
+
+<!-- 03 — A tese -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">02 &nbsp;<span class="dim">—</span>&nbsp; A tese</div>
+    <h2 class="wide">Três decisões tomadas na altura zero, não na versão 2.</h2>
+  </div>
+  <div class="body cols c3" style="margin-top:48px">
+    <div class="col accent-v">
+      <span class="n">01 · Criptografia</span>
+      <div class="h">Híbrido obrigatório</div>
+      <div class="p">Toda carteira, transação e bloco exige <em class="hl">secp256k1 e ML-DSA-44</em>. Não existe caminho opcional, nem migração pendente: a rede já assina assim desde o gênese.</div>
+    </div>
+    <div class="col accent-t">
+      <span class="n">02 · Inteligência artificial</span>
+      <div class="h">Mercado sem mando</div>
+      <div class="p">Um mercado nativo de tarefas de IA como <em class="hlt">primitivo de consenso</em> — porém sem qualquer poder sobre o consenso ou sobre os validadores. A IA é carga útil, não autoridade.</div>
+    </div>
+    <div class="col accent-d">
+      <span class="n">03 · Operação</span>
+      <div class="h">Core para operadores</div>
+      <div class="p">O cliente é escrito em Rust e o <em class="hl">eav7-core</em> é a porta de entrada: sincronizar, fazer stake e, se eleito, produzir blocos — sem precisar do monorepo.</div>
+    </div>
+  </div>
+  <div class="note">Somado a isso, um princípio de comunicação: <b>dizer o que está ligado, o que está condicionado e o que ainda não existe.</b> Esta apresentação segue essa regra.</div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>03 / 16</span></div>
+</section>
+
+<!-- 04 — Arquitetura -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">03 &nbsp;<span class="dim">—</span>&nbsp; Arquitetura</div>
+    <h2 class="wide">Uma biblioteca de consenso, um nó, um Core.</h2>
+  </div>
+  <div class="body arch" style="margin-top:36px">
+    <div class="layers">
+      <div class="layer a">
+        <div class="nm">eav7-core <span>operador</span></div>
+        <div class="ds">init · run · stake · score</div>
+      </div>
+      <div class="conn">HTTP API · P2P</div>
+      <div class="layer b">
+        <div class="nm">eav7-node <span>nó completo</span></div>
+        <div class="ds">consenso · API · produtor · EAVM RPC</div>
+      </div>
+      <div class="conn">Rust</div>
+      <div class="layer c">
+        <div class="nm">eav7 <span>biblioteca de consenso</span></div>
+        <div class="ds">estado · blocos · stateRoot<br />EAVM · governança</div>
+      </div>
+    </div>
+    <div class="side">
+      <div>
+        <div class="st">EAVSCAN</div>
+        <div class="sl">explorador<br />carteira<br />JSON API</div>
+      </div>
+      <div class="url">eavscan.com</div>
+    </div>
+  </div>
+  <div class="note">Cliente em <b>Rust</b> (<span class="mono">eav7-node</span> / <span class="mono">eav7-core</span>). Código-fonte público sob licença MIT.</div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>04 / 16</span></div>
+</section>
+
+<!-- 05 — Pós-quântico -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">04 &nbsp;<span class="dim">—</span>&nbsp; Segurança pós-quântica</div>
+    <h2 class="wide">Duas assinaturas. Sempre. Sem exceção.</h2>
+  </div>
+  <div class="body sig" style="margin-top:44px">
+    <div class="part p1">
+      <div class="nm">secp256k1</div>
+      <div class="kind">curva elíptica · clássico</div>
+      <div class="p">Compatibilidade com o ferramental criptográfico já consolidado no ecossistema.</div>
+    </div>
+    <div class="plus">+</div>
+    <div class="part p2">
+      <div class="nm">ML-DSA-44</div>
+      <div class="kind">reticulados · pós-quântico</div>
+      <div class="p">Resistência a adversário quântico na mesma assinatura, e não numa futura versão do protocolo.</div>
+    </div>
+  </div>
+  <div class="body kv" style="margin-top:40px">
+    <div class="row"><div class="k">Suíte</div><div class="v t">eav7-hybrid-1</div></div>
+    <div class="row"><div class="k">Escopo obrigatório</div><div class="v">carteiras · transações · blocos</div></div>
+    <div class="row"><div class="k">Endereços</div><div class="v v">E7…</div></div>
+  </div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>05 / 16</span></div>
+</section>
+
+<!-- 06 — Consenso -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">05 &nbsp;<span class="dim">—</span>&nbsp; Consenso</div>
+    <h2 class="wide">DPoS, finalidade BFT, blocos de ~1 segundo.</h2>
+  </div>
+  <div class="body" style="margin-top:36px">
+    <div class="metrics">
+      <div class="m">
+        <div class="big">~1<small>s</small></div>
+        <div class="lb">tempo de bloco</div>
+      </div>
+      <div class="m">
+        <div class="big">BFT</div>
+        <div class="lb">finalidade</div>
+      </div>
+      <div class="m">
+        <div class="big">16<small>EAV7</small></div>
+        <div class="lb">recompensa por bloco</div>
+      </div>
+      <div class="m">
+        <div class="big">7<small>→ 51</small></div>
+        <div class="lb">âncoras ativas hoje → alvo</div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:48px">
+    <div class="seats">
+      <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i><i class="bank"></i>
+    </div>
+    <div class="mono" style="margin-top:14px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);display:flex;gap:40px">
+      <span style="color:var(--teal)">7 âncoras da fundação — altura 0</span>
+      <span>assentos ativos até 51</span>
+      <span>banco 50 · top 101</span>
+    </div>
+  </div>
+  <div class="note">Produtor estrito, <b>stateRoot</b>, slashing, votação e governança estão ativos desde a altura 0. Uma produtora por VM, malha completa. <b>Hoje N = 7</b>, todas operadas pela fundação — a descentralização depende de operadores externos qualificarem-se.</div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>06 / 16</span></div>
+</section>
+
+<!-- 07 — EAVM -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">06 &nbsp;<span class="dim">—</span>&nbsp; EAVM · Carteiras</div>
+    <h2 class="wide">A rede aparece nas carteiras que as pessoas já usam.</h2>
+  </div>
+  <div class="body cols c2" style="margin-top:48px">
+    <div class="col accent-v">
+      <span class="n">Compatibilidade</span>
+      <div class="h">Chain ID 72020</div>
+      <div class="p">Camada JSON-RPC voltada ao ecossistema EVM: <em class="hl">MetaMask</em> e <em class="hl">Trust Wallet</em> conectam sem cliente proprietário e sem extensão dedicada.</div>
+    </div>
+    <div class="col accent-t">
+      <span class="n">Ativo nativo</span>
+      <div class="h">EAV7 · 6 decimais</div>
+      <div class="p">Protocolo <em class="hlt">eav20</em>, endereços <em class="hlt">E7…</em>. Execução EAVM com valor está ativa desde a altura 0.</div>
+    </div>
+  </div>
+  <div class="body kv" style="margin-top:44px">
+    <div class="row"><div class="k">Rede</div><div class="v">Layer-1 · protocolo eav20</div></div>
+    <div class="row"><div class="k">Chain ID (EAVM)</div><div class="v t">72020</div></div>
+    <div class="row"><div class="k">Contas EAVM</div><div class="v">sem par de chaves híbrido — não assinam blocos</div></div>
+  </div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>07 / 16</span></div>
+</section>
+
+<!-- 08 — IA -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">07 &nbsp;<span class="dim">—</span>&nbsp; Camada de IA</div>
+    <h2 class="wide">Um mercado de tarefas no consenso — sem poder sobre o consenso.</h2>
+  </div>
+  <div class="body stack accent" style="margin-top:40px">
+    <div class="item">
+      <div class="t">Primitivo nativo, não contrato acessório</div>
+      <div class="d">O mercado de tarefas de IA é parte da camada base do protocolo: as fases-base estão ativas desde a altura 0, junto com oráculos, recursos GB e EAVM.</div>
+    </div>
+    <div class="item">
+      <div class="t">Zero autoridade sobre consenso e validadores</div>
+      <div class="d">Quem executa tarefas de IA não ganha influência sobre produção de blocos, votação, stake ou permissões. A separação é de projeto, não de política.</div>
+    </div>
+    <div class="item">
+      <div class="t">Limite declarado: atestação ainda não existe</div>
+      <div class="d">A atestação TEE/ZK (<span class="mono">AI_TEE</span>) permanece distante. Hoje a cadeia verifica assinatura registrada — não enclave nem prova nativa. Isso está escrito no whitepaper, não escondido nele.</div>
+    </div>
+  </div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>08 / 16</span></div>
+</section>
+
+<!-- 09 — Tokenomics · distribuição -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">08 &nbsp;<span class="dim">—</span>&nbsp; Tokenomics · Distribuição</div>
+    <h2 class="wide">100 bilhões no gênese — mercado aberto em 45%.</h2>
+  </div>
+  <div class="body" style="margin-top:24px">
+    <div class="bar">
+      <div class="s1"></div>
+      <div class="s2"></div>
+      <div class="s3"></div>
+      <div class="s4"></div>
+    </div>
+    <div class="legend">
+      <div class="l a"><div class="pct">45%</div><div class="nm">Público</div></div>
+      <div class="l b"><div class="pct">30,25%</div><div class="nm">Fundação</div></div>
+      <div class="l c"><div class="pct">14,75%</div><div class="nm">Venda privada</div></div>
+      <div class="l d"><div class="pct">10%</div><div class="nm">Parceiro</div></div>
+    </div>
+  </div>
+  <div class="body" style="margin-top:18px">
+    <table class="tbl">
+      <thead>
+        <tr><th>Bucket</th><th>%</th><th>Tokens</th><th>Destino no lançamento</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="swatch a"></span>Distribuição pública</td>
+          <td class="pct">45,00%</td>
+          <td class="num">45.000.000.000</td>
+          <td>Custódia publicada · líquido / LBP</td>
+        </tr>
+        <tr>
+          <td><span class="swatch b"></span>Fundação / Tesouraria</td>
+          <td class="pct">30,25%</td>
+          <td class="num">30.250.000.000</td>
+          <td>Stake das 7 Âncoras + 12 partes (1/12 líquido)</td>
+        </tr>
+        <tr>
+          <td><span class="swatch c"></span>Venda privada</td>
+          <td class="pct">14,75%</td>
+          <td class="num">14.750.000.000</td>
+          <td>Custódia · cliff 12m + linear 24m (produto)</td>
+        </tr>
+        <tr>
+          <td><span class="swatch d"></span>Parceiro estratégico</td>
+          <td class="pct">10,00%</td>
+          <td class="num">10.000.000.000</td>
+          <td>4 tranches de 2,5B · cooldown 12m</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Insiders (fundação + privada + parceiro) somam <b>55%</b>. Decimais: 6 · unidade mínima <span class="mono">e7</span> (1 EAV7 = 10⁶ e7).</div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>09 / 16</span></div>
+</section>
+
+<!-- 10 — Tokenomics · emissão -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">09 &nbsp;<span class="dim">—</span>&nbsp; Tokenomics · Emissão</div>
+    <h2 class="wide">Emissão baixa. Queima total das taxas.</h2>
+  </div>
+  <div class="body metrics" style="margin-top:32px">
+    <div class="m"><div class="big">16<small>EAV7</small></div><div class="lb">recompensa / bloco</div></div>
+    <div class="m"><div class="big">~1<small>s</small></div><div class="lb">tempo de bloco</div></div>
+    <div class="m"><div class="big">0,50%</div><div class="lb">emissão no 1º ano</div></div>
+    <div class="m"><div class="big" style="color:var(--teal)">100%</div><div class="lb">taxas queimadas</div></div>
+  </div>
+  <div class="body kv" style="margin-top:26px">
+    <div class="row"><div class="k">Supply de gênese</div><div class="v">100.000.000.000 EAV7</div></div>
+    <div class="row"><div class="k">Halving</div><div class="v">a cada 126.144.000 blocos · ≈ 4 anos</div></div>
+    <div class="row"><div class="k">Emissão no primeiro ano</div><div class="v">504.576.000 EAV7 · 0,50% do gênese</div></div>
+    <div class="row"><div class="k">Emissão total até a exaustão</div><div class="v">4.036.608.000 EAV7 · ≈ 4,04% do gênese</div></div>
+    <div class="row"><div class="k">Teto teórico (antes das queimas)</div><div class="v">≈ 104.036.608.000 EAV7</div></div>
+    <div class="row"><div class="k">Circulação efetiva</div><div class="v">gênese + emitido − queimado</div></div>
+  </div>
+  <div class="note">A emissão converge a zero após 64 halvings. Sob volume relevante, a rede é <b>estruturalmente deflacionária</b>.</div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>10 / 16</span></div>
+</section>
+
+<!-- 11 — Tokenomics · vesting e venda -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">10 &nbsp;<span class="dim">—</span>&nbsp; Tokenomics · Vesting &amp; venda</div>
+    <h2 class="wide">Liberação escalonada. Preço por tier.</h2>
+  </div>
+  <div class="body cols c2" style="margin-top:22px;gap:32px">
+    <div class="col accent-v" style="border-top-width:2px">
+      <span class="n">Fundação · após 7 × 10.000 stake</span>
+      <div class="p" style="max-width:none;margin-top:10px">Restante <b>30.249.930.000</b> EAV7 em <b>12 partes iguais</b>: 1/12 líquido no dia 1; 11 vestings com <span class="mono">cliff = duration</span> em 12, 18, 24, 30, 36, 42, 48, 54, 60, 66 e 72 meses.</div>
+      <div class="p" style="max-width:none;margin-top:16px"><span class="n" style="display:block;margin-bottom:6px;color:var(--ink-faint)">Parceiro · 10%</span>Quatro tranches de <b>2,5B</b>. Cooldown de 12 meses. Anti self-deal.</div>
+      <div class="p" style="max-width:none;margin-top:14px"><span class="n" style="display:block;margin-bottom:6px;color:var(--ink-faint)">Venda privada · 14,75%</span>Produto: cliff 12m + linear 24m. Preço <b>travado no intent</b>.</div>
+    </div>
+    <div class="col accent-t" style="border-top-width:2px">
+      <span class="n">Tiers da venda (USD arrecadado)</span>
+      <div class="price-grid">
+        <div class="price on">
+          <div class="tl">Launch</div><div class="tp">$0,005</div><div class="tu">até US$ 500k</div>
+          <div class="rung"><i style="width:20%"></i></div>
+        </div>
+        <div class="price">
+          <div class="tl">Early</div><div class="tp">$0,008</div><div class="tu">até US$ 2M</div>
+          <div class="rung"><i style="width:40%"></i></div>
+        </div>
+        <div class="price">
+          <div class="tl">Growth</div><div class="tp">$0,010</div><div class="tu">até US$ 5M</div>
+          <div class="rung"><i style="width:60%"></i></div>
+        </div>
+        <div class="price">
+          <div class="tl">Final</div><div class="tp">$0,012</div><div class="tu">até US$ 15M</div>
+          <div class="rung"><i style="width:80%"></i></div>
+        </div>
+        <div class="price">
+          <div class="tl">Last call</div><div class="tp">$0,015</div><div class="tu">aberto</div>
+          <div class="rung"><i style="width:100%"></i></div>
+        </div>
+      </div>
+      <div class="p" style="max-width:none;margin-top:14px;font-size:13px">Tier sobe só com intents <span class="mono">paid</span>/<span class="mono">granted</span>. Pending não move o preço.</div>
+    </div>
+  </div>
+  <div class="body kv" style="margin-top:16px">
+    <div class="row"><div class="k">Público</div><div class="v mono" style="font-size:12px">E7AADB…8320</div></div>
+    <div class="row"><div class="k">Venda</div><div class="v mono" style="font-size:12px">E7C665…CCB0</div></div>
+    <div class="row"><div class="k">Parceiro</div><div class="v mono" style="font-size:12px">E72F728…2D40</div></div>
+    <div class="row"><div class="k">Tesouraria</div><div class="v mono" style="font-size:12px">E7F290…D126</div></div>
+  </div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>11 / 16</span></div>
+</section>
+
+<!-- 12 — Mainnet ao vivo -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">11 &nbsp;<span class="dim">—</span>&nbsp; Mainnet</div>
+    <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">
+      <h2 style="max-width:24ch">Não é testnet. Está no ar.</h2>
+      <span class="chip"><span class="dot"></span>ao vivo · 11 ago 2026</span>
+    </div>
+  </div>
+  <div class="body" style="margin-top:34px">
+    <div class="hash">gênese &nbsp; <b>7aa09afc</b>d542e6ec8fd4b977658ed522143991f20a8ce48aab8aca9aeb80e5fb</div>
+  </div>
+  <div class="body kv" style="margin-top:30px">
+    <div class="row"><div class="k">Conjunto ativo</div><div class="v">7 âncoras da fundação desde a altura 0</div></div>
+    <div class="row"><div class="k">Topologia</div><div class="v">1 produtor por VM · malha completa</div></div>
+    <div class="row"><div class="k">Ativo desde a altura 0</div><div class="v" style="max-width:62ch">produtor estrito · stateRoot · slashing · votação · governança · recursos GB · EAVM · camadas-base do oráculo de IA</div></div>
+  </div>
+  <div class="note">O perfil de heights zero <b>é</b> o perfil da mainnet ao vivo — não um overlay de demonstração.</div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>12 / 16</span></div>
+</section>
+
+<!-- 13 — Explorador e código aberto -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">12 &nbsp;<span class="dim">—</span>&nbsp; Verificável</div>
+    <h2 class="wide">Tudo o que foi dito aqui pode ser conferido hoje.</h2>
+  </div>
+  <div class="body cols c2" style="margin-top:48px">
+    <div class="col accent-t">
+      <span class="n">Explorador</span>
+      <div class="h" style="color:var(--teal)">eavscan.com</div>
+      <div class="p">Blocos, transações, âncoras e carteira em produção. O hash de gênese e o conjunto ativo podem ser verificados sem intermediário.</div>
+    </div>
+    <div class="col accent-v">
+      <span class="n">Código-fonte · MIT</span>
+      <div class="h" style="color:var(--violet-lt)">github.com/eav7-sys/eav7</div>
+      <div class="p">Repositório público: biblioteca de consenso, nó, Core, SDK e explorador. Licença MIT.</div>
+    </div>
+  </div>
+  <div class="body kv" style="margin-top:48px">
+    <div class="row"><div class="k">Whitepaper</div><div class="v">v1.0 · 11 de agosto de 2026 · PT e EN</div></div>
+    <div class="row"><div class="k">Cliente</div><div class="v">Rust · eav7-node / eav7-core</div></div>
+  </div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>13 / 16</span></div>
+</section>
+
+<!-- 14 — Roadmap honesto -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">13 &nbsp;<span class="dim">—</span>&nbsp; Roadmap</div>
+    <h2 class="wide">O que ainda não está pronto.</h2>
+  </div>
+  <div class="body steps" style="margin-top:28px">
+    <div class="s">
+      <div class="ix">01</div>
+      <div>
+        <div class="tt">Descentralizar o conjunto ativo</div>
+        <div class="dd">Sair de 7 âncoras da fundação rumo a 51 ativas, com banco de 50 — dependente de operadores independentes qualificarem-se por stake e voto.</div>
+      </div>
+    </div>
+    <div class="s">
+      <div class="ix">02</div>
+      <div>
+        <div class="tt">Auditoria externa</div>
+        <div class="dd">Ainda não houve auditoria externa. Existe revisão adversarial interna e conjunto congelado de vetores de conformidade, o que não substitui terceiros.</div>
+      </div>
+    </div>
+    <div class="s">
+      <div class="ix">03</div>
+      <div>
+        <div class="tt">Atestação de IA (TEE/ZK)</div>
+        <div class="dd">O marco <span class="mono">AI_TEE</span> permanece distante até existir atestador real. Até lá, a verificação on-chain é de assinatura registrada.</div>
+      </div>
+    </div>
+    <div class="s">
+      <div class="ix">04</div>
+      <div>
+        <div class="tt">Ponte com valor econômico</div>
+        <div class="dd">Condicionada: <span class="mono">bridgeRelayers</span> nasce vazio. A ponte não está aberta para valor econômico até haver adaptador, comitê e checklist operacional cumprido.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>14 / 16</span></div>
+</section>
+
+<!-- 15 — Riscos -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">14 &nbsp;<span class="dim">—</span>&nbsp; Riscos</div>
+    <h2 class="wide">Os três riscos que declaramos antes de qualquer pergunta.</h2>
+  </div>
+  <div class="body cols c3" style="margin-top:48px">
+    <div class="col accent-v">
+      <span class="n">Centralização</span>
+      <div class="h">N = 7 hoje</div>
+      <div class="p">O conjunto ativo é operado pela fundação. Com N pequeno não há resistência significativa a conluio, coerção ou falha correlacionada de infraestrutura.</div>
+    </div>
+    <div class="col accent-t">
+      <span class="n">Verificação</span>
+      <div class="h">Sem auditoria externa</div>
+      <div class="p">Nenhuma auditoria de terceiros foi concluída até esta data. Quem avaliar a rede deve considerar o código aberto e os vetores como evidência parcial.</div>
+    </div>
+    <div class="col accent-d">
+      <span class="n">Interoperabilidade</span>
+      <div class="h">Ponte fechada</div>
+      <div class="p">A ponte não transporta valor econômico e é atestada por comitê — não trustless. Qualquer expectativa de fluxo entre cadeias hoje é prematura.</div>
+    </div>
+  </div>
+  <div class="note">Nenhum destes pontos é novidade interna: eles constam do whitepaper v1.0 e da documentação pública. <b>A transparência é parte da proposta, não uma concessão.</b></div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>15 / 16</span></div>
+</section>
+
+<!-- 16 — Contato -->
+<section class="slide">
+  <div class="head">
+    <div class="eyebrow">15 &nbsp;<span class="dim">—</span>&nbsp; Contato</div>
+    <h2 class="wide">Verifique, opere, participe.</h2>
+  </div>
+  <div class="body links" style="margin-top:36px">
+    <div class="a"><div class="lb">Explorador</div><div class="vl t">eavscan.com</div></div>
+    <div class="a"><div class="lb">Código-fonte · MIT</div><div class="vl v">github.com/eav7-sys/eav7</div></div>
+    <div class="a"><div class="lb">Whitepaper</div><div class="vl">v1.0 · 11 de agosto de 2026</div></div>
+    <div class="a"><div class="lb">Rede</div><div class="vl">Chain ID 72020 · EAV7 · 6 decimais</div></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="closing-brand">
+    <div class="wordmark">EAV<b>7</b></div>
+    <div class="closing-meta">
+      Layer-1 · protocolo eav20<br />
+      secp256k1 + ML-DSA-44 · eav7-hybrid-1
+    </div>
+  </div>
+  <div class="foot"><span class="mark">EAV<b>7</b> · EAVSCAN</span><span>16 / 16</span></div>
+</section>
+
+</body>
+</html>

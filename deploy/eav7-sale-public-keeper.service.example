@@ -1,0 +1,25 @@
+# Keeper permissionless — PublicVault.finalizeToLp após deadline / sold-out.
+# Watch-only (sem --live): só loga readiness. No fim da LBP:
+#   KEEPER_PRIVATE_KEY=0x… node scripts/finalize-public-keeper.mjs --once --live
+#
+# Layout hub: /opt/eav7-contracts/{scripts,sale,artifacts}
+
+[Unit]
+Description=EAV7 public LBP finalize keeper (watch)
+After=network-online.target eav7-sale-public-relayer.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eav7
+Group=eav7
+WorkingDirectory=/opt/eav7-contracts
+Environment=EAV7_RPC=http://127.0.0.1:7070
+Environment=PUBLIC_VAULT_ADDRESS=0x892a7e28d78c2bbff16cbc14c5b5712b8d1f97b0
+Environment=POLL_MS=60000
+ExecStart=/usr/bin/node scripts/finalize-public-keeper.mjs --watch
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

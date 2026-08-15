@@ -9,6 +9,7 @@
     "testnet:up": "bash bin/eav7-testnet-up.sh",
     "testnet:down": "bash bin/eav7-testnet-down.sh",
     "testnet:demo": "bash bin/eav7-testnet-demo.sh",
+    "testnet:lbp-e2e": "bash bin/eav7-lbp-e2e-local.sh",
     "verificar": "bash bin/eav7-verificar.sh"
   }
 }

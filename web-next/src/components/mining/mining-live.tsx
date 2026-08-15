@@ -6,6 +6,7 @@ import { useT } from "@/i18n/provider";
 import { getStatus, getValidators, type Status, type Validators } from "@/lib/api";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Reveal } from "@/components/ui/reveal";
+import { ListaShell } from "@/components/scan/lists/table";
 import { fmt, fmtCompact } from "@/lib/format";
 import {
   IconReward,
@@ -74,23 +75,17 @@ export function MiningLive({ initial }: { initial: Initial }) {
   const totalStaked = v ? v.current.reduce((s, x) => s + BigInt(x.staked), 0n) : 0n;
 
   return (
-    <div className="mx-auto max-w-[1180px] px-5 py-8">
-      {/* cabeçalho */}
-      <div className="rise mb-6">
-        <div className="font-mono text-[11px] font-semibold uppercase tracking-[2px] text-teal">
-          {t("mining_live.badge_consensus")}
-        </div>
-        <h1 className="font-display mt-1.5 flex items-center gap-3 text-[clamp(24px,3.6vw,34px)] font-extrabold leading-tight tracking-tight">
-          {t("mining_live.title")}
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-line-2 bg-panel/70 px-2.5 py-1 text-[11px] font-semibold text-muted">
-            <span className="livedot" style={{ width: 6, height: 6 }} /> {t("mining_live.live_badge")}
-          </span>
-        </h1>
-        <div className="mt-1.5 font-mono text-[12.5px] text-muted">
-          {t("mining_live.subtitle")}
-        </div>
-      </div>
-
+    <ListaShell
+      titulo={t("mining_live.title")}
+      eyebrow={t("mining_live.badge_consensus")}
+      subtitle={<span className="font-mono text-[12.5px]">{t("mining_live.subtitle")}</span>}
+      live
+      titleExtra={
+        <span className="ml-3 inline-flex items-center gap-1.5 rounded-full border border-line-2 bg-panel/70 px-2.5 py-1 align-middle text-[11px] font-semibold tracking-normal text-muted">
+          <span className="livedot" style={{ width: 6, height: 6 }} /> {t("mining_live.live_badge")}
+        </span>
+      }
+    >
       {/* cards de emissão */}
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
@@ -261,6 +256,6 @@ export function MiningLive({ initial }: { initial: Initial }) {
           </div>
         </div>
       </Reveal>
-    </div>
+    </ListaShell>
   );
 }

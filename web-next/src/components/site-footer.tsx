@@ -58,6 +58,8 @@ export function SiteFooter() {
           <FLink href="/wallet">{t("scan_footer.wallet")}</FLink>
           <FLink href="/docs/ponte">{t("scan_footer.bridge")}</FLink>
           <FLink href="/mining">{t("scan_footer.mining")}</FLink>
+          <FLink href="/market">{t("scan_footer.market")}</FLink>
+          <FLink href="/whitepaper">{t("scan_footer.whitepaper")}</FLink>
         </FooterCol>
 
         <FooterCol title={t("scan_footer.dev")}>
@@ -96,7 +98,7 @@ export function SiteFooter() {
             <path d="M22 2 11 13" />
             <path d="M22 2l-7 20-4-9-9-4z" />
           </Soc>
-          <Soc href="https://github.com/eav7" label="GitHub">
+          <Soc href="https://github.com/eav7-sys/eav7" label="GitHub">
             <path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21" />
           </Soc>
           <Soc href="https://eavscan.com" label="Web">

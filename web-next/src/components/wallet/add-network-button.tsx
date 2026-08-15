@@ -2,15 +2,9 @@
 
 import { useState } from "react";
 import { useT } from "@/i18n/provider";
+import { EAVM_CHAIN_PARAMS } from "@/lib/eavm-chain";
 
-// 72020 = 0x11954
-const CHAIN_PARAMS = {
-  chainId: "0x11954",
-  chainName: "EAV7 EAVM",
-  nativeCurrency: { name: "EAV7", symbol: "EAV7", decimals: 18 },
-  rpcUrls: ["https://rpc.eavscan.com"],
-  blockExplorerUrls: ["https://eavscan.com"],
-};
+const CHAIN_PARAMS = { ...EAVM_CHAIN_PARAMS };
 
 type EthProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;

@@ -26,7 +26,7 @@ pub const SLOT_FUTURE_TOLERANCE_MS: u64 = 400;
 pub const STRICT_PRODUCER_HEIGHT: u64 = 0;
 pub const PRODUCE_LAG_TOLERANCE: u64 = 5;
 pub const REORG_WINDOW: u64 = 5000;
-pub const SNAPSHOT_INTERVAL_BLOCKS: u64 = 5000;
+pub const SNAPSHOT_INTERVAL_BLOCKS: u64 = 1000;
 /// Âncoras ativas (≠ 27 TRON). Ver `docs/plano/17-set-51-banco-101.md`.
 pub const MAX_VALIDATORS: u64 = 51;
 /// Reservas após as ativas → top `MAX_VALIDATORS + VALIDATOR_BANK_SIZE` (= 101).
@@ -107,6 +107,12 @@ pub const MAX_SYNC_PAGE_BYTES: u64 = 16000000;
 pub const MAX_TX_SCAN: u64 = 20000;
 pub const MAX_LOG_INDEX: u64 = 100000;
 pub const MAX_ALERT_CONTEXT_BYTES: u64 = 2048;
+/// Mainnet `72020` · testnet pública `72021` (feature Cargo `testnet`).
+/// Fixo no build — o nó confere `ENV_DE_CONSENSO` no boot e aborta se o
+/// ambiente pedir outro chain id sem o binário correspondente.
+#[cfg(feature = "testnet")]
+pub const EAVM_CHAIN_ID: u64 = 72021;
+#[cfg(not(feature = "testnet"))]
 pub const EAVM_CHAIN_ID: u64 = 72020;
 pub const EAVM_WEI_PER_E7: u128 = 1000000000000;
 pub const RESOURCE_WINDOW_BLOCKS: u64 = 86400;

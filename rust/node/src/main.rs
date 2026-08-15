@@ -12,9 +12,13 @@
 
 use std::sync::{Arc, RwLock};
 
-use eav7::blockchain::Blockchain;
+use eav7::blockchain::{Blockchain, LoadFromDiskOpts};
 use eav7::blockstore::BlockStore;
 use eav7_node::node::Node;
+
+/// Marker único no binário — ops confirma com:
+/// `strings /usr/local/bin/eav7-node | grep -c force-discard-invalid-tail` → 1
+const FORCE_DISCARD_INVALID_TAIL: &str = "force-discard-invalid-tail";
 
 struct Args {
     port: u16,
@@ -35,19 +39,34 @@ struct Args {
     /// `--sentinel`: sobe a sentinela de segurança (heurísticas + parecer LLM
     /// se `ANTHROPIC_API_KEY` estiver definida) como task in-process.
     sentinel: bool,
+    force_discard_invalid_tail: bool,
     /// `--oracle-wallet <arquivo>`: sobe o worker de oráculo de IA com esta
     /// carteira (role de operador; publica AI_RESULT).
     oracle_wallet: Option<std::path::PathBuf>,
+    /// Tip canónica do operador (`--follow` / `EAV7_FOLLOW`). Âncoras seguem o hub.
+    follow: Option<String>,
 }
 
-const USO: &str = "uso: eav7-node [--port 6070] [--host 0.0.0.0] [--data dir] [--genesis-hash <hash>]
-                 [--validator carteira.json] [--peers url,url] [--self-url url]
-                 [--public-rpc url]
-                 [--allow-private-peers] [--genesis genesis.json]
-                 [--eavm-port <n>] [--no-eavm] [--sentinel] [--oracle-wallet w.json]
-
-RPC EAVM (dialeto Ethereum p/ MetaMask/Trust Wallet): LIGADO por padrão na porta
-port+1000; --eavm-port <n> escolhe a porta; --no-eavm desliga.";
+fn print_uso() {
+    // A flag CLI é montada em runtime a partir de FORCE_DISCARD_INVALID_TAIL para
+    // o marker aparecer UMA vez no binário (check ops com `strings | grep -c`).
+    println!(
+        "uso: eav7-node [--port 6070] [--host 0.0.0.0] [--data dir] [--genesis-hash <hash>]\n\
+                 [--validator carteira.json] [--peers url,url] [--self-url url]\n\
+                 [--public-rpc url]\n\
+                 [--allow-private-peers] [--genesis genesis.json]\n\
+                 [--eavm-port <n>] [--no-eavm] [--sentinel] [--oracle-wallet w.json]\n\
+                 [--follow http://hub:6070] [--{FORCE_DISCARD_INVALID_TAIL}]\n\n\
+RPC EAVM (dialeto Ethereum p/ MetaMask/Trust Wallet): LIGADO por padrão na porta\n\
+port+1000; --eavm-port <n> escolhe a porta; --no-eavm desliga.\n\n\
+Anti-fork: --follow <url> (ou EAV7_FOLLOW) faz este nó SÓ produzir quando a tip\n\
+local coincide com a do intermediário canónico (hub). Sem follow = comportamento\n\
+antigo. Durabilidade: por default o boot NÃO trunca mais de 1 bloco inválido no\n\
+fim do blocks.jsonl (aborta e preserva o arquivo). Force via\n\
+EAV7_FORCE_DISCARD_INVALID_TAIL=1 (ou a flag CLI homónima) permite descartar o\n\
+rabo após backup local."
+    );
+}
 
 fn parse_args() -> Result<Args, String> {
     let mut args = Args {
@@ -64,8 +83,11 @@ fn parse_args() -> Result<Args, String> {
         eavm_port: None,
         no_eavm: false,
         sentinel: false,
+        force_discard_invalid_tail: false,
         oracle_wallet: None,
+        follow: None,
     };
+    let force_flag = format!("--{FORCE_DISCARD_INVALID_TAIL}");
     let mut it = std::env::args().skip(1);
     while let Some(flag) = it.next() {
         let mut valor = |nome: &str| it.next().ok_or(format!("{nome} exige um valor"));
@@ -87,7 +109,7 @@ fn parse_args() -> Result<Args, String> {
             "--allow-private-peers" => args.allow_private_peers = true,
             "--genesis" => args.genesis_file = Some(valor("--genesis")?.into()),
             "--help" | "-h" => {
-                println!("{USO}");
+                print_uso();
                 std::process::exit(0);
             }
             // RPC EAVM PORTADO: `--eavm-port <n>` escolhe a porta (liga o RPC);
@@ -100,7 +122,26 @@ fn parse_args() -> Result<Args, String> {
             "--no-eavm" => args.no_eavm = true,
             "--sentinel" => args.sentinel = true,
             "--oracle-wallet" => args.oracle_wallet = Some(valor("--oracle-wallet")?.into()),
-            outra => return Err(format!("flag desconhecida: {outra}\n\n{USO}")),
+            "--follow" => args.follow = Some(valor("--follow")?),
+            outra if outra == force_flag => args.force_discard_invalid_tail = true,
+            outra => {
+                print_uso();
+                return Err(format!("flag desconhecida: {outra}"));
+            }
+        }
+    }
+    if !args.force_discard_invalid_tail {
+        if let Ok(v) = std::env::var("EAV7_FORCE_DISCARD_INVALID_TAIL") {
+            let on = matches!(v.as_str(), "1" | "true" | "TRUE" | "yes" | "YES");
+            args.force_discard_invalid_tail = on;
+        }
+    }
+    if args.follow.is_none() {
+        if let Ok(v) = std::env::var("EAV7_FOLLOW") {
+            let v = v.trim().to_string();
+            if !v.is_empty() {
+                args.follow = Some(v);
+            }
         }
     }
     Ok(args)
@@ -247,8 +288,17 @@ async fn executa() -> Result<(), String> {
                 altura + 1,
             );
         } else {
+            let opts = if args.force_discard_invalid_tail {
+                eprintln!(
+                    "[cadeia] AVISO: --{FORCE_DISCARD_INVALID_TAIL} ativo — rabo inválido \
+                     pode ser truncado após backup local"
+                );
+                LoadFromDiskOpts::force_discard_tail()
+            } else {
+                LoadFromDiskOpts::default()
+            };
             let descartados = blockchain
-                .load_from_disk(store, agora_ms())
+                .load_from_disk_with(store, agora_ms(), opts)
                 .map_err(|e| format!("boot de {}: {e}", arquivo.display()))?;
             if descartados > 0 {
                 eprintln!(
@@ -358,7 +408,13 @@ async fn executa() -> Result<(), String> {
         allow_private_peers: args.allow_private_peers,
         sync_ms: 5000,
     };
-    let _p2p = eav7_node::p2p::start(estado.clone(), p2p_config.clone(), args.peers.clone());
+    let boot_ready = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let _p2p = eav7_node::p2p::start(
+        estado.clone(),
+        p2p_config.clone(),
+        args.peers.clone(),
+        Some(boot_ready.clone()),
+    );
 
     // RELAY de blocos recebidos (node.js:226) e SYNC sob demanda (node.js:221).
     // Duas tasks pequenas em volta do mesmo transporte: o handler de `POST
@@ -501,7 +557,16 @@ async fn executa() -> Result<(), String> {
                 eav7_node::p2p::broadcast_block(&client, &config_gossip, &peers, linha);
             }
         });
-        let _produtor = eav7_node::producer::start(estado.clone(), w, Some(bloco_gossip));
+        let _produtor = eav7_node::producer::start(
+            estado.clone(),
+            w,
+            Some(bloco_gossip),
+            args.follow.clone(),
+            Some(boot_ready.clone()),
+        );
+        if let Some(ref url) = args.follow {
+            println!("[nó] follow canónico: {url} (só produz alinhado à tip do hub)");
+        }
         println!(
             "[nó] minerando como {}",
             validator_address.as_deref().unwrap_or("?")
@@ -568,7 +633,7 @@ async fn executa() -> Result<(), String> {
     // navegação do browser é do Next, não de um peer) e por fim o failover de
     // leitura do gateway. É a ordem de `api.js:262-297`.
     let router = eav7_node::api::router()
-        .with_state(estado)
+        .with_state(estado.clone())
         .layer(axum::middleware::from_fn_with_state(
             proxy,
             eav7_node::api::proxy_leitura::proxiar,
@@ -587,10 +652,30 @@ async fn executa() -> Result<(), String> {
         .map_err(|e| format!("bind em {endereco}: {e}"))?;
     println!("[nó] API pública em http://{endereco}");
 
+    let snap_estado = estado.clone();
+    let snap_dir = args
+        .data
+        .clone()
+        .unwrap_or_else(|| std::path::PathBuf::from("."));
     axum::serve(listener, router.into_make_service_with_connect_info::<std::net::SocketAddr>())
-        .with_graceful_shutdown(async {
-            let _ = tokio::signal::ctrl_c().await;
-            eprintln!("\n[nó] encerrando");
+        .with_graceful_shutdown(async move {
+            #[cfg(unix)]
+            {
+                use tokio::signal::unix::{signal, SignalKind};
+                let mut sigterm = signal(SignalKind::terminate()).expect("signal terminate");
+                tokio::select! {
+                    _ = tokio::signal::ctrl_c() => {}
+                    _ = sigterm.recv() => {}
+                }
+            }
+            #[cfg(not(unix))]
+            {
+                let _ = tokio::signal::ctrl_c().await;
+            }
+            eprintln!("[nó] encerrando — a gravar estado.snap");
+            if let Ok(mut n) = snap_estado.write() {
+                n.blockchain.forcar_snapshot(&snap_dir.join("estado.snap"));
+            }
         })
         .await
         .map_err(|e| format!("servidor: {e}"))

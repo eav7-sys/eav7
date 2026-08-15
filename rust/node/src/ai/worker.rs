@@ -383,8 +383,25 @@ impl AiOracleWorker {
     /// `start()` (worker.js:132-138): registra-se e entra no laço periódico.
     /// Como no JS, falha no REGISTRO aborta o start (o `await` rejeitaria);
     /// erro de ciclo é logado e o laço continua.
+    ///
+    /// O worker sobe *antes* do bind HTTP do próprio nó — por isso o registo
+    /// tenta de novo com backoff até a API local responder (até ~2 min).
     pub async fn run(mut self) -> Result<(), String> {
-        self.ensure_registered().await?;
+        let mut delay = Duration::from_millis(200);
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+        loop {
+            match self.ensure_registered().await {
+                Ok(()) => break,
+                Err(e) => {
+                    if tokio::time::Instant::now() >= deadline {
+                        return Err(e);
+                    }
+                    self.log(&format!("[oráculo] aguardando API local ({e})"));
+                    tokio::time::sleep(delay).await;
+                    delay = (delay * 2).min(Duration::from_secs(2));
+                }
+            }
+        }
         self.log(&format!(
             "[oráculo] ativo em {} como {}",
             self.node_url, self.address

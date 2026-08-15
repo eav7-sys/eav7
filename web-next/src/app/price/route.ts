@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getFreeFloatE7 } from "@/lib/circulating";
 import { getMarketPrice } from "@/lib/price-market";
 
 export const dynamic = "force-dynamic";
@@ -6,12 +7,24 @@ export const dynamic = "force-dynamic";
 /**
  * GET /price — spot EAV7/USD.
  *
- * Query opcional: `?circulating=<e7>` para incluir marketCapUsd.
+ * Query opcional: `?circulating=<e7>` para mcap.
+ * Sem query: usa free float (gênese+emitido−queimado − custódias).
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const circulating = url.searchParams.get("circulating");
-  const data = getMarketPrice({ circulatingE7: circulating });
+  const fromQuery = url.searchParams.get("circulating");
+  let circulating = fromQuery;
+  let basis: "free-float" | "query" | null = fromQuery ? "query" : null;
+  if (!circulating) {
+    try {
+      circulating = await getFreeFloatE7();
+      basis = "free-float";
+    } catch {
+      circulating = null;
+      basis = null;
+    }
+  }
+  const data = getMarketPrice({ circulatingE7: circulating, circulatingBasis: basis });
   return NextResponse.json(
     { data },
     {

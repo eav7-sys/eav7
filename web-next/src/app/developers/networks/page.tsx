@@ -12,6 +12,8 @@ import {
   Mono,
   SpecList,
 } from "@/components/developers/dev-page";
+import { EavmConnect } from "@/components/docs/eavm-connect";
+import { EAVM_MANUAL_NETWORK } from "@/lib/eavm-chain";
 import { getT } from "@/i18n/server";
 
 const LOCAL = `# um nó + explorador, tudo em uma linha
@@ -75,9 +77,25 @@ export default async function NetworksPage() {
               { k: t("dev.networks.rowRpc"), v: <Mono>https://rpc.eavscan.com</Mono>, note: t("dev.networks.rowRpcNote") },
               { k: t("dev.networks.rowChainId"), v: <Mono>72020 · 0x11954</Mono>, note: t("dev.networks.rowChainIdNote") },
               { k: t("dev.networks.rowExplorer"), v: <Mono>https://eavscan.com</Mono>, note: t("dev.networks.rowExplorerNote") },
+              { k: t("dev.networks.rowIcon"), v: <Mono>https://eavscan.com/icon-512.png</Mono>, note: t("dev.networks.rowIconNote") },
               { k: t("dev.networks.rowRegistry"), v: <Mono>chain-registry/eip155-72020.json</Mono>, note: t("dev.networks.rowRegistryNote") },
             ]}
           />
+        </DevSection>
+
+        <DevSection
+          id="add-network"
+          kicker={t("dev.networks.addKicker")}
+          title={t("dev.networks.addTitle")}
+          intro={t("dev.networks.addIntro")}
+        >
+          <EavmConnect />
+          <div className="mt-6">
+            <CodeBlock code={EAVM_MANUAL_NETWORK} label={t("dev.networks.addManualLabel")} />
+          </div>
+          <div className="mt-5">
+            <Callout title={t("dev.networks.addTrustTitle")}>{t("dev.networks.addTrustBody")}</Callout>
+          </div>
         </DevSection>
 
         <DevSection

@@ -33,7 +33,7 @@ export function PriceTicker() {
   const up = p.change24hPct >= 0;
   return (
     <Link
-      href="/sale"
+      href="/market"
       title={`${p.sourceLabel} · atualizado ${new Date(p.updatedAt).toLocaleTimeString()}`}
       className="hidden items-center gap-1.5 rounded-[10px] border border-[var(--scan-border)] bg-[var(--scan-chip)] px-2.5 py-1.5 font-mono text-[11px] font-semibold text-ink transition hover:border-[rgba(159,123,255,0.45)] min-[1100px]:inline-flex"
     >

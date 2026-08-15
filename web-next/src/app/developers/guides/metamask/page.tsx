@@ -13,14 +13,10 @@ import {
   SpecList,
 } from "@/components/developers/dev-page";
 import { EavmConnect } from "@/components/docs/eavm-connect";
+import { EAVM_MANUAL_NETWORK } from "@/lib/eavm-chain";
 import { getT } from "@/i18n/server";
 
-const MANUAL = `Nome da rede   EAV7 EAVM
-RPC            https://rpc.eavscan.com
-Chain ID       72020            (0x11954)
-Símbolo        EAV7
-Decimais       18               (a superfície EAVM assume 18)
-Explorador     https://eavscan.com`;
+const MANUAL = EAVM_MANUAL_NETWORK;
 
 const CHECK = `curl -s https://rpc.eavscan.com \\
   -H 'Content-Type: application/json' \\

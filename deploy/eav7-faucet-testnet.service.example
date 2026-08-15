@@ -1,0 +1,30 @@
+# systemd — faucet da testnet pública (opt-in FAUCET_ENABLE=1).
+# Escuta 127.0.0.1:8790 · Cloudflare: faucet-testnet.eavscan.com
+
+[Unit]
+Description=EAV7 Testnet faucet
+After=network-online.target eav7-core-testnet.service
+Wants=network-online.target
+Requires=eav7-core-testnet.service
+
+[Service]
+Type=simple
+User=eav7
+Group=eav7
+WorkingDirectory=/opt/eav7-faucet
+Environment=FAUCET_ENABLE=1
+Environment=FAUCET_HOST=127.0.0.1
+Environment=FAUCET_PORT=8790
+Environment=EAV7_NODE=http://127.0.0.1:6170
+Environment=FAUCET_WALLET=/var/lib/eav7-testnet/validator-wallet.json
+Environment=EAV7_CLI=/usr/local/bin/eav7-cli
+Environment=FAUCET_AMOUNT=100
+Environment=FAUCET_INTERVAL_MS=3600000
+Environment=FAUCET_CORS=https://testnet.eavscan.com
+ExecStart=/usr/bin/node /opt/eav7-faucet/index.mjs
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

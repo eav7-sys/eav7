@@ -62,7 +62,38 @@ pub fn executar(args: RunArgs) -> Result<(), String> {
         }
     }
 
+    // Camada IA (opt-in por ambiente — não muda consenso):
+    //   EAV7_ORACLE_WALLET=/caminho/oracle.json  → --oracle-wallet
+    //   EAV7_SENTINEL=1                          → --sentinel
+    if let Ok(ow) = std::env::var("EAV7_ORACLE_WALLET") {
+        let ow = ow.trim();
+        if !ow.is_empty() {
+            let p = PathBuf::from(ow);
+            if !p.exists() {
+                return Err(format!(
+                    "EAV7_ORACLE_WALLET aponta para ficheiro inexistente: {}",
+                    p.display()
+                ));
+            }
+            cmd.arg("--oracle-wallet").arg(&p);
+            println!("[core] oráculo de IA: {}", p.display());
+        }
+    }
+    if std::env::var("EAV7_SENTINEL").as_deref() == Ok("1") {
+        cmd.arg("--sentinel");
+        println!("[core] sentinela de segurança ligada");
+    }
+    if let Ok(follow) = std::env::var("EAV7_FOLLOW") {
+        let follow = follow.trim();
+        if !follow.is_empty() {
+            cmd.arg("--follow").arg(follow);
+            println!("[core] follow canónico: {follow}");
+        }
+    }
+
     println!("[core] arrancando {} …", bin.display());
+    // Herda EAV7_FORCE_DISCARD_INVALID_TAIL do ambiente do serviço, se definido.
+    // Default do eav7-node: NÃO truncar rabo grande no boot (ver docs/ops/CHAIN-DURABILITY.md).
     // Sinais e código de saída do nó passam ao operador.
     let status = cmd
         .status()

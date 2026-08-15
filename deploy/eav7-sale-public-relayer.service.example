@@ -1,0 +1,32 @@
+# Exemplo systemd — relayer da LBP pública (PublicVault.grant)
+# Copiar para /etc/systemd/system/eav7-sale-public-relayer.service
+# Secrets: EnvironmentFile=/etc/eav7/sale-public-relayer.env (chmod 600)
+#
+# Layout no hub:
+#   /opt/eav7-contracts/{sale,artifacts}/…
+#   WorkingDirectory=/opt/eav7-contracts/sale/relayer
+#
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now eav7-sale-public-relayer
+
+[Unit]
+Description=EAV7 public LBP sale relayer
+After=network-online.target eav7-web.service eav7-core.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eav7
+Group=eav7
+WorkingDirectory=/opt/eav7-contracts/sale/relayer
+Environment=SALE_MODE=public
+Environment=PORT=8788
+Environment=EAV7_RPC=http://127.0.0.1:7070
+EnvironmentFile=-/etc/eav7/sale-public-relayer.env
+ExecStart=/usr/bin/node index.mjs serve
+Restart=on-failure
+RestartSec=5
+# Não expor 8788 na internet — só localhost / front no hub.
+
+[Install]
+WantedBy=multi-user.target

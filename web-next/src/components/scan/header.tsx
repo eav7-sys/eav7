@@ -16,13 +16,14 @@ interface NavItem {
 }
 
 // Itens do menu "Blockchain" (desenho: Blocos · Transações · Contratos).
-// "Contratos" ficou de fora porque a rota /contracts ainda não existe no app —
-// link morto no menu principal é pior que item ausente. Basta reinserir aqui
-// quando a página nascer (a chave scan_chrome.navContracts já está traduzida).
+// "Contratos" ficou de fora: apontava para /developers/eavm, que é docs de dev,
+// não lista de contratos do explorer. Uma página /contracts real exigiria um
+// endpoint de listagem no nó — a API só expõe getContract(addr) individual
+// (/contract/:addr). Reinserir aqui quando a rota nascer (a chave
+// scan_chrome.navContracts já está traduzida). EAVM segue em /developers.
 const BLOCKCHAIN: NavItem[] = [
   { href: "/blocks", key: "scan_chrome.navBlocks" },
   { href: "/txs", key: "scan_chrome.navTxs" },
-  { href: "/developers/eavm", key: "scan_chrome.navContracts" },
 ];
 
 /** Nav top-level do EAVScan.dc.html (sem Developers — vai no footer). */
@@ -41,24 +42,130 @@ function isActive(pathname: string, href: string): boolean {
 const LINK_BASE =
   "rounded-[9px] px-3 py-2 text-[13.5px] font-medium transition-colors hover:bg-[var(--scan-hover,rgba(255,255,255,0.045))] hover:text-ink";
 
-/** Marca: logo 7 + EAVSCAN + selo MAINNET (como no HTML). */
-function BrandMark({ label, net }: { label: string; net: string }) {
+/** Marca: logo 7 + EAVSCAN + selo de rede clicável (Mainnet ↔ Testnet). */
+function BrandMark({ label }: { label: string }) {
+  const t = useT();
+  const isTestnet = process.env.NEXT_PUBLIC_NETWORK === "testnet";
+  const currentId = isTestnet ? "testnet" : "mainnet";
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const networks = [
+    {
+      id: "mainnet" as const,
+      label: t("scan_chrome.mainnet"),
+      desc: t("scan_chrome.mainnetDesc"),
+      url: "https://eavscan.com",
+      dot: "var(--teal, #2ecc71)",
+    },
+    {
+      id: "testnet" as const,
+      label: t("scan_chrome.testnet"),
+      desc: t("scan_chrome.testnetDesc"),
+      url: "https://testnet.eavscan.com",
+      dot: "var(--gold, #f39c12)",
+    },
+  ];
+  const current = networks.find((n) => n.id === currentId) ?? networks[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const badgeClass = isTestnet
+    ? "border-[rgba(243,156,18,0.45)] bg-[rgba(243,156,18,0.14)] text-[var(--gold,#f39c12)]"
+    : "border-[rgba(99,54,196,0.35)] bg-[var(--scan-chip,rgba(99,54,196,0.16))] text-[var(--scan-link,#9f7bff)]";
+
   return (
-    <Link href="/" aria-label={label} className="flex flex-none items-center gap-2.5">
-      <span
-        className="grid h-[30px] w-[30px] place-items-center rounded-[9px] text-[15px] font-extrabold text-white shadow-[0_4px_14px_rgba(99,54,196,0.45)]"
-        style={{ background: "linear-gradient(135deg,#7242D4,#4B2694)" }}
-      >
-        7
-      </span>
-      <span className="font-display text-[18px] font-bold tracking-[0.05em] text-ink">EAVSCAN</span>
-      <span
+    <div ref={wrapRef} className="relative flex flex-none items-center gap-2.5">
+      <Link href="/" aria-label={label} className="flex flex-none items-center gap-2.5">
+        <span
+          className="grid h-[30px] w-[30px] place-items-center rounded-[9px] text-[15px] font-extrabold text-white shadow-[0_4px_14px_rgba(99,54,196,0.45)]"
+          style={{ background: "linear-gradient(135deg,#7242D4,#4B2694)" }}
+        >
+          7
+        </span>
+        <span className="font-display text-[18px] font-bold tracking-[0.05em] text-ink">EAVSCAN</span>
+      </Link>
+
+      <button
+        type="button"
         id="eav-netbadge"
-        className="rounded-md border border-[rgba(99,54,196,0.35)] bg-[var(--scan-chip,rgba(99,54,196,0.16))] px-1.5 py-0.5 text-[9.5px] font-bold tracking-[0.08em] text-[var(--scan-link,#9f7bff)] max-[1000px]:hidden"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={t("scan_chrome.networkSwitch")}
+        className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9.5px] font-bold tracking-[0.08em] transition hover:brightness-110 ${badgeClass}`}
       >
-        {net}
-      </span>
-    </Link>
+        {current.label}
+        <svg
+          width="9"
+          height="9"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.8"
+          strokeLinecap="round"
+          className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          aria-label={t("scan_chrome.networkLabel")}
+          className="eav-pop absolute left-0 top-[calc(100%+10px)] z-50 w-56 overflow-hidden rounded-xl border border-line-2 bg-panel p-1.5 shadow-[var(--shadow)]"
+        >
+          <div className="font-mono px-2.5 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[1.2px] text-faint">
+            {t("scan_chrome.networkLabel")}
+          </div>
+          {networks.map((n) => {
+            const active = n.id === currentId;
+            return (
+              <a
+                key={n.id}
+                href={active ? undefined : n.url}
+                role="option"
+                aria-selected={active}
+                onClick={() => setOpen(false)}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start transition ${
+                  active ? "bg-violet/12 text-ink" : "text-muted hover:bg-line/70 hover:text-ink"
+                }`}
+              >
+                <span
+                  className="h-2.5 w-2.5 flex-none rounded-full"
+                  style={{ background: n.dot, boxShadow: `0 0 7px ${n.dot}` }}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-semibold">{n.label}</span>
+                  <span className="block truncate text-[11px] text-faint">{n.desc}</span>
+                </span>
+                {active ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="flex-none text-violet" aria-hidden>
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : null}
+              </a>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -202,7 +309,7 @@ export function ScanHeader() {
   return (
     <header className="eav-header sticky top-0 z-50 border-b border-[var(--scan-border-soft,var(--line-2))] backdrop-blur-2xl">
       <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-4 px-6">
-        <BrandMark label={t("scan_chrome.brandAria")} net={t("scan_chrome.mainnet")} />
+        <BrandMark label={t("scan_chrome.brandAria")} />
 
         <nav className="hidden items-center gap-1 min-[900px]:flex">
           <Link

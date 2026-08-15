@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getTxs, type Tx, type TxPage } from "@/lib/api";
-import { ago, fmt, fmtToken, num, shortHash } from "@/lib/format";
+import { addrLink, ago, fmt, fmtToken, hashLink, num } from "@/lib/format";
 import { useT } from "@/i18n/provider";
 import { Cartao, ListaShell, Paginacao, Selo, Td, Th, Tr, Vazio } from "./table";
 
@@ -34,6 +34,9 @@ export function TxsList({ inicial, total }: Props) {
 
   const linhas = q.data?.txs ?? [];
   const proximoCursor = q.data?.nextBefore ?? null;
+  // Total de páginas é uma ESTIMATIVA a partir do contador da rede (/stats):
+  // a paginação real é por cursor e txs novas entram o tempo todo — daí o "~".
+  const totalPaginas = total != null ? Math.max(1, Math.ceil(total / POR_PAGINA)) : null;
 
   return (
     <ListaShell titulo={t("scanLists.titleTxs")}>
@@ -70,7 +73,11 @@ export function TxsList({ inicial, total }: Props) {
         <Paginacao
           rotulo={
             <span className="flex flex-wrap items-center gap-2">
-              <span>{t("scanLists.pageN", { n: pilha.length + 1 })}</span>
+              <span>
+                {totalPaginas != null
+                  ? t("scanLists.pageOfTotal", { n: pilha.length + 1, total: num(totalPaginas) })
+                  : t("scanLists.pageN", { n: pilha.length + 1 })}
+              </span>
               {total != null ? (
                 <span className="text-faint">{t("scanLists.totalTxs", { n: num(total) })}</span>
               ) : null}
@@ -114,7 +121,7 @@ function LinhaTx({ x, t }: { x: Tx; t: (k: string) => string }) {
     <Tr>
       <Td>
         <Link href={`/tx/${x.id}`} className="block truncate pr-3 font-mono text-violet hover:underline">
-          {shortHash(x.id, 12, 6)}
+          {hashLink(x.id)}
         </Link>
       </Td>
       <Td>
@@ -127,7 +134,7 @@ function LinhaTx({ x, t }: { x: Tx; t: (k: string) => string }) {
           href={`/address/${x.from}`}
           className="block truncate pr-3 font-mono text-[12.5px] text-violet hover:underline"
         >
-          {shortHash(x.from, 8, 4)}
+          {addrLink(x.from)}
         </Link>
       </Td>
       <Td>
@@ -136,7 +143,7 @@ function LinhaTx({ x, t }: { x: Tx; t: (k: string) => string }) {
             href={`/address/${x.to}`}
             className="block truncate pr-3 font-mono text-[12.5px] text-violet hover:underline"
           >
-            {shortHash(x.to, 8, 4)}
+            {addrLink(x.to)}
           </Link>
         ) : (
           <span className="text-faint">—</span>

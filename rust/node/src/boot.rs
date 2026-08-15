@@ -93,7 +93,7 @@ pub async fn boot(mut opts: BootOpts) -> Result<RunningNode, String> {
 
     let mut aborts = Vec::new();
 
-    let p2p_handle = p2p::start(estado.clone(), p2p_config.clone(), opts.peers);
+    let p2p_handle = p2p::start(estado.clone(), p2p_config.clone(), opts.peers, None);
     aborts.push(p2p_handle.abort_handle());
 
     // Relay de blocos + sync sob demanda (mesmo wiring do main).
@@ -169,7 +169,7 @@ pub async fn boot(mut opts: BootOpts) -> Result<RunningNode, String> {
                 }
             });
             aborts.push(h.abort_handle());
-            let h = crate::producer::start(estado.clone(), w, Some(bloco_gossip));
+            let h = crate::producer::start(estado.clone(), w, Some(bloco_gossip), None, None);
             aborts.push(h.abort_handle());
         }
     }

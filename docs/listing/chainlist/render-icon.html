@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="512" height="512"></canvas>
+<script>
+const c = document.getElementById("c");
+const ctx = c.getContext("2d");
+const S = 512;
+
+function roundRect(x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function heptagon(cx, cy, r, rot = -Math.PI / 2) {
+  ctx.beginPath();
+  for (let i = 0; i < 7; i++) {
+    const a = rot + (i * 2 * Math.PI) / 7;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+// Background squircle
+const g = ctx.createLinearGradient(40, 20, 480, 500);
+g.addColorStop(0, "#9b6cff");
+g.addColorStop(0.45, "#6336c4");
+g.addColorStop(1, "#3a1d7a");
+roundRect(0, 0, S, S, 112);
+ctx.fillStyle = g;
+ctx.fill();
+
+// Soft teal bloom (bottom-right)
+const bloom = ctx.createRadialGradient(420, 430, 10, 400, 400, 220);
+bloom.addColorStop(0, "rgba(63, 214, 220, 0.38)");
+bloom.addColorStop(0.55, "rgba(63, 214, 220, 0.10)");
+bloom.addColorStop(1, "rgba(63, 214, 220, 0)");
+roundRect(0, 0, S, S, 112);
+ctx.fillStyle = bloom;
+ctx.fill();
+
+// Top violet highlight
+const hi = ctx.createRadialGradient(140, 110, 8, 160, 140, 240);
+hi.addColorStop(0, "rgba(255,255,255,0.22)");
+hi.addColorStop(1, "rgba(255,255,255,0)");
+roundRect(0, 0, S, S, 112);
+ctx.fillStyle = hi;
+ctx.fill();
+
+// Inner heptagon ring (7 anchors)
+heptagon(S / 2, S / 2 + 4, 178);
+ctx.strokeStyle = "rgba(255,255,255,0.18)";
+ctx.lineWidth = 10;
+ctx.stroke();
+
+heptagon(S / 2, S / 2 + 4, 156);
+ctx.strokeStyle = "rgba(63, 214, 220, 0.35)";
+ctx.lineWidth = 3;
+ctx.stroke();
+
+// Anchor nodes on heptagon vertices
+for (let i = 0; i < 7; i++) {
+  const a = -Math.PI / 2 + (i * 2 * Math.PI) / 7;
+  const x = S / 2 + Math.cos(a) * 178;
+  const y = S / 2 + 4 + Math.sin(a) * 178;
+  ctx.beginPath();
+  ctx.arc(x, y, 7, 0, Math.PI * 2);
+  ctx.fillStyle = i === 0 ? "#3fd6dc" : "rgba(255,255,255,0.55)";
+  ctx.fill();
+}
+
+// Wordmark "7" — hero
+ctx.fillStyle = "#ffffff";
+ctx.font = "800 268px Arial, Helvetica, sans-serif";
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+ctx.shadowColor = "rgba(0,0,0,0.25)";
+ctx.shadowBlur = 24;
+ctx.shadowOffsetY = 8;
+ctx.fillText("7", S / 2, S / 2 + 10);
+ctx.shadowBlur = 0;
+
+// Small EAV caption under numeral (readable at 512, fades at tiny sizes ok)
+ctx.font = "700 36px Arial, Helvetica, sans-serif";
+ctx.fillStyle = "rgba(255,255,255,0.72)";
+ctx.letterSpacing = "10px";
+ctx.fillText("EAV", S / 2, S / 2 + 148);
+</script>
+</body>
+</html>

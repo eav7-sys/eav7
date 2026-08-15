@@ -51,7 +51,7 @@ export function BlockView({ block, status, t }: { block: BlockDetail; status: St
 
   return (
     <DetailPage>
-      <BackLink href="/blocks" label={t("scan_detail.back")} />
+      <BackLink href="/blocks" label={t("scanLists.titleBlocks")} />
 
       <div className="mb-5 flex flex-wrap items-center gap-3.5">
         <h1 className="font-display text-[26px] font-extrabold tracking-tight text-ink">

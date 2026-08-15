@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { AiOracle, AiTask } from "@/lib/api";
 import { getT } from "@/i18n/server";
-import { ago, fmt, fmtCompact, num, shortHash } from "@/lib/format";
+import { addrLink, ago, fmt, fmtCompact, hashLink, num } from "@/lib/format";
+import { ListaShell } from "./lists/table";
 import "@/components/scan/tokens.css";
 
 const AVATAR = ["#6336C4", "#7A4AE8", "#9F7BFF", "#45E0E6", "#2ECC71", "#F39C12", "#E879F9", "#5EA0FF"];
@@ -37,19 +38,17 @@ export async function ScanAiView({
   const sorted = [...oracles].sort((a, b) => (b.reputation ?? 0) - (a.reputation ?? 0));
 
   return (
-    <div className="scan mx-auto max-w-[1280px] px-6 py-9">
-      <div className="mb-5">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(159,123,255,0.35)] bg-[var(--scan-chip)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--scan-link)]">
-          <span className="scan-live" aria-hidden />
-          {t("page_ai.eyebrow")}
-        </div>
-        <h1 className="mt-3.5 font-display text-[clamp(30px,3.4vw,40px)] font-bold tracking-[-0.02em] text-ink">
-          {t("page_ai.title")}
-        </h1>
-        <p className="mt-2.5 font-mono text-[11.5px] text-faint">{t("page_ai.specLine")}</p>
-        <p className="mt-3 max-w-[760px] text-[13.5px] leading-relaxed text-muted">{t("page_ai.subtitle")}</p>
-      </div>
-
+    <ListaShell
+      titulo={t("page_ai.title")}
+      eyebrow={t("page_ai.eyebrow")}
+      subtitle={
+        <>
+          <span className="block font-mono text-[11.5px] text-faint">{t("page_ai.specLine")}</span>
+          <span className="mt-3 block">{t("page_ai.subtitle")}</span>
+        </>
+      }
+      live
+    >
       <div className="mb-5 flex items-center gap-2.5 overflow-x-auto pb-1">
         <PipelineStep n="01" title="AI_TASK" sub={t("page_ai.stepEscrow")} />
         <PipeArrow />
@@ -85,7 +84,7 @@ export async function ScanAiView({
           {sorted.length === 0 ? (
             <p className="px-5 py-8 text-center text-[13px] text-muted">{t("page_ai.emptyOracles")}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="scan-scroll-x">
               <div className="grid min-w-[640px] grid-cols-[40px_1.3fr_1.5fr_90px_70px_110px] px-5 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-faint">
                 <div>#</div>
                 <div>{t("page_ai.colAddress")}</div>
@@ -110,7 +109,7 @@ export async function ScanAiView({
                         href={`/address/${o.address}`}
                         className="truncate font-mono text-[var(--scan-link)] hover:underline"
                       >
-                        {shortHash(o.address, 10, 6)}
+                        {addrLink(o.address)}
                       </Link>
                     </div>
                     <div className="flex items-center gap-2.5 pr-4">
@@ -145,7 +144,7 @@ export async function ScanAiView({
                       href={`/tx/${k.id}`}
                       className="block truncate font-mono font-medium text-[var(--scan-link)] hover:underline"
                     >
-                      {shortHash(k.id, 14, 8)}
+                      {hashLink(k.id)}
                     </Link>
                     <div className="mt-1 text-[11px] text-faint">
                       {k.verified ?? "oracle"} · {k.createdAt ? ago(k.createdAt) : "—"}
@@ -168,7 +167,7 @@ export async function ScanAiView({
           )}
         </div>
       </div>
-    </div>
+    </ListaShell>
   );
 }
 

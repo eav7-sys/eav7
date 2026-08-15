@@ -3,7 +3,21 @@ import type { MetadataRoute } from "next";
 const BASE = "https://eavscan.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ["", "/blocks", "/txs", "/validators", "/tokens", "/nfts", "/names", "/governance", "/wallet", "/mining"];
+  const routes = [
+    "",
+    "/blocks",
+    "/txs",
+    "/validators",
+    "/tokens",
+    "/nfts",
+    "/names",
+    "/governance",
+    "/wallet",
+    "/mining",
+    "/market",
+    "/whitepaper",
+    "/sale/public",
+  ];
   // O portal do desenvolvedor é conteúdo estático: muda por release, não por bloco.
   const developers = [
     "/developers",

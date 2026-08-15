@@ -1,49 +1,44 @@
-# Listar a EAV7 (ícone + nome na MetaMask)
+# Listagens e publicação pública
 
-Para o **nome e o ícone da EAV7 aparecerem automaticamente** quando alguém adiciona
-a rede (Chain ID **72020**) na MetaMask/Trust, a rede precisa estar no repositório
-público **[ethereum-lists/chains](https://github.com/ethereum-lists/chains)**. A MetaMask
-e vários apps consomem essa lista.
+Plano mestre: **[`PLANO-PUBLICACAO.md`](./PLANO-PUBLICACAO.md)** — fases 0→5 (rede → mercado → CoinGecko/CMC → ecossistema).
 
-> É uma submissão **manual** via Pull Request no GitHub — precisa ser feita pela **sua**
-> conta do GitHub (eu não posso abrir o PR por você). Os arquivos abaixo já estão prontos.
+QA Fase 1 (carteiras): **[`FASE1-QA.md`](./FASE1-QA.md)**.  
+GTM Fase 2.1: **[`FASE2-GTM.md`](./FASE2-GTM.md)** (Opção A).  
+Ops LBP Fase 2.2: **[`FASE2-OPS.md`](./FASE2-OPS.md)**.  
+Comunicação TGE: **[`TGE-COMUNICACAO.md`](./TGE-COMUNICACAO.md)**.  
+AMM pós-LBP: **[`FASE3-AMM.md`](./FASE3-AMM.md)**.
 
-## Passo a passo
+Add network (após deploy): https://eavscan.com/developers/networks#add-network  
+Market / free float: https://eavscan.com/market  
+LBP pública: https://eavscan.com/sale/public
+Whitepaper: https://eavscan.com/whitepaper
 
-1. **Fork** de `https://github.com/ethereum-lists/chains`.
+## Status atual (snapshot)
 
-2. Copie **`eip155-72020.json`** (desta pasta) para:
-   ```
-   _data/chains/eip155-72020.json
-   ```
+| Destino | Status |
+|---|---|
+| LBP pública (`PublicVault`) | **Preparada** on-chain · marketing **adiado** · status `lbp-prepared` · preço front = private **$0.005** · ver [`FASE2-OPS.md`](./FASE2-OPS.md) |
+| Private sale | **Foco atual** · https://eavscan.com/sale · Launch $0.005 |
+| [`ethereum-lists/chains`](https://github.com/ethereum-lists/chains) · `eip155-72020` | **Mergeado** ([#8521](https://github.com/ethereum-lists/chains/pull/8521)) |
+| [chainlist.org/chain/72020](https://chainlist.org/chain/72020) | **Visível** |
+| Chainlist RPC seguro | **PR** [#3040](https://github.com/DefiLlama/chainlist/pull/3040) · CI verde · follow-up [comment](https://github.com/DefiLlama/chainlist/pull/3040#issuecomment-5261501741) |
+| Ícone + nome `EAV7` | **PR** [#8591](https://github.com/ethereum-lists/chains/pull/8591) · CI verde · follow-up [comment](https://github.com/ethereum-lists/chains/pull/8591#issuecomment-5261501921) |
+| Privacidade RPC | [eavscan.com/privacy#rpc](https://eavscan.com/privacy#rpc) |
 
-3. **Ícone** (opcional, mas é o que faz aparecer a imagem):
-   1. Suba o `web-next/public/icon.png` (256×256) para o IPFS. Sem instalar nada, use um pin
-      público, por exemplo:
-      ```bash
-      # com a CLI da web3.storage, ou pelo site pinata.cloud / nft.storage
-      # o objetivo é obter um CID, ex.: bafybeih...
-      ```
-   2. Pegue o **CID** retornado e cole em **`eav7-icon.json`** no lugar de
-      `SUBSTITUA_PELO_CID_DO_ICONE` (mantenha o prefixo `ipfs://`).
-   3. Copie `eav7-icon.json` para:
-      ```
-      _data/icons/eav7.json
-      ```
-      (o nome do arquivo — `eav7` — tem que bater com o campo `"icon": "eav7"` do chain JSON.)
+## Pastas / arquivos
 
-   Se você **não** quiser ícone agora, apague a linha `"icon": "eav7",` do
-   `eip155-72020.json` e pule o passo 3.
+| Path | Papel |
+|---|---|
+| [`PLANO-PUBLICACAO.md`](./PLANO-PUBLICACAO.md) | Sequência oficial de publicação |
+| [`TGE-COMUNICACAO.md`](./TGE-COMUNICACAO.md) | Copy PT/EN + riscos (post manual) |
+| [`FASE3-AMM.md`](./FASE3-AMM.md) | Runbook seed AMM pós-finalize |
+| [`chainlist/`](./chainlist/) | Pacote DefiLlama (RPC privacy) |
+| `eip155-72020.json` | Registro EIP-155 (espelho) |
+| `eav7-icon.json` | CID IPFS do ícone |
+| `../../chain-registry/eip155-72020.json` | Espelho na raiz do repo |
 
-4. Commit + push no seu fork e abra um **Pull Request** para `ethereum-lists/chains`.
-   A CI deles valida o schema automaticamente; depois de mergeado, o ícone/nome passam
-   a aparecer nos apps que usam a lista (leva alguns dias para propagar).
+## Observações técnicas
 
-## Observações
-
-- `decimals: 18` porque as carteiras EVM (MetaMask) exibem a moeda nativa com 18 casas;
-  on-chain a EAV7 usa 6 (o RPC EAVM converte 1 EAV7 = 10¹² unidades EAVM = 10⁶ e7).
-- `EIP3091` é o padrão de URL de explorador (`/tx/…`, `/block/…`, `/address/…`) — o
-  EAV7 Scan já segue esse padrão.
-- Para **preço** aparecer na carteira/corretora, é um caminho separado (listagem em
-  exchange + CoinGecko/CoinMarketCap), que exige liquidez e um processo próprio.
+- `decimals: 18` no registro EVM (display MetaMask); on-chain EAV7 usa 6 (`EAVM_WEI_PER_E7` = 10¹²).
+- Explorer EIP-3091: `/tx/…`, `/block/…`, `/address/…`.
+- CoinMarketCap / CoinGecko só na **Fase 3**, depois de liquidez (Fase 2).

@@ -14,7 +14,9 @@ function compile(file, contractName) {
     language: "Solidity",
     sources: { [file]: { content: source } },
     settings: {
-      optimizer: { enabled: true, runs: 200 },
+      optimizer: { enabled: true, runs: 1 },
+      viaIR: true,
+      metadata: { bytecodeHash: "none" },
       evmVersion: "shanghai",
       outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } },
     },

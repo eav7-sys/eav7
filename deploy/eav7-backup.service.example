@@ -1,0 +1,11 @@
+[Unit]
+Description=EAV7 — backup da cadeia (blocks.jsonl + snap)
+After=eav7-core.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/eav7-backup-chain.sh --dir /var/lib/eav7 --dst /var/backups/eav7 --keep 7
+# O backup lê /var/lib/eav7 (dono eav7) e escreve em /var/backups (dono root).
+User=root
+Nice=10
+IOSchedulingClass=idle

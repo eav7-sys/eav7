@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   getStatus,
@@ -12,7 +12,7 @@ import {
   type ValidatorPerf,
   type Validators,
 } from "@/lib/api";
-import { fmt, fmtCompact, fmtNsName, num, shortHash } from "@/lib/format";
+import { addrLink, addrTight, ancoraIndex, fmt, fmtCompact, fmtNsName, num } from "@/lib/format";
 import { useT, type TFunc } from "@/i18n/provider";
 import { Cartao, ListaShell, Selo, StatCard, Td, Th, Tr, Vazio, corDe } from "./table";
 
@@ -41,7 +41,12 @@ type Aba = "active" | "bank";
 
 export function ValidatorsList({ inicial, status }: Props) {
   const t = useT();
-  const [aba, setAba] = useState<Aba>("active");
+  // Aba na URL (?tab=bank), como nas telas de detalhe (ScanTabs): o endereço
+  // fica compartilhável e o botão "voltar" do navegador desfaz a troca.
+  // Sem parâmetro (ou valor desconhecido) cai em "active" — compatível com o
+  // comportamento anterior, em que a aba inicial era sempre a de ativos.
+  const params = useSearchParams();
+  const aba: Aba = params.get("tab") === "bank" ? "bank" : "active";
 
   const vQ = useQuery({
     queryKey: ["scan-validators"],
@@ -73,10 +78,19 @@ export function ValidatorsList({ inicial, status }: Props) {
     );
   }
 
-  const ativos = [...v.current].sort((a, b) => (pesoDe(b) > pesoDe(a) ? 1 : pesoDe(b) < pesoDe(a) ? -1 : 0));
-  const banco = [...(v.bank ?? [])].sort((a, b) =>
-    pesoDe(b) > pesoDe(a) ? 1 : pesoDe(b) < pesoDe(a) ? -1 : 0,
-  );
+  // Âncoras fundação: ordem 1…N (não por endereço/peso — stake igual embaralhava 6,1,2…).
+  const porAncoraDepoisPeso = (a: Validator, b: Validator) => {
+    const ia = ancoraIndex(a.name);
+    const ib = ancoraIndex(b.name);
+    if (ia != null && ib != null && ia !== ib) return ia - ib;
+    if (ia != null && ib == null) return -1;
+    if (ia == null && ib != null) return 1;
+    const pa = pesoDe(a);
+    const pb = pesoDe(b);
+    return pb > pa ? 1 : pb < pa ? -1 : a.address.localeCompare(b.address);
+  };
+  const ativos = [...v.current].sort(porAncoraDepoisPeso);
+  const banco = [...(v.bank ?? [])].sort(porAncoraDepoisPeso);
   const lista = aba === "active" ? ativos : banco;
   const pesoTotal = ativos.reduce((acc, x) => acc + pesoDe(x), 0n);
   const produtor = st?.producer ?? v.slotProducer;
@@ -132,7 +146,7 @@ export function ValidatorsList({ inicial, status }: Props) {
               <span className="scan-live" aria-hidden />
               {produtor ? (
                 <Link href={`/address/${produtor}`} className="truncate text-[15px] text-[var(--scan-link)] hover:underline">
-                  {fmtNsName(nomeProdutor) || shortHash(produtor, 8, 4)}
+                  {fmtNsName(nomeProdutor) || addrTight(produtor)}
                 </Link>
               ) : (
                 "—"
@@ -165,11 +179,11 @@ export function ValidatorsList({ inicial, status }: Props) {
         </div>
       ) : null}
 
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <TabBtn active={aba === "active"} onClick={() => setAba("active")}>
+      <div className="mb-3 flex flex-wrap items-center gap-2" role="tablist" aria-label={t("scanLists.titleValidators")}>
+        <TabBtn active={aba === "active"} href="/validators">
           {t("scanLists.tabActive")} ({num(ativos.length)})
         </TabBtn>
-        <TabBtn active={aba === "bank"} onClick={() => setAba("bank")}>
+        <TabBtn active={aba === "bank"} href="/validators?tab=bank">
           {t("scanLists.tabBank")} ({num(banco.length)})
         </TabBtn>
       </div>
@@ -227,19 +241,22 @@ export function ValidatorsList({ inicial, status }: Props) {
   );
 }
 
+/** Aba-pílula. É um Link (não <button>): o estado mora na URL — ver ScanTabs. */
 function TabBtn({
   active,
-  onClick,
+  href,
   children,
 }: {
   active: boolean;
-  onClick: () => void;
+  href: string;
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      href={href}
+      scroll={false}
+      role="tab"
+      aria-selected={active}
       className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition ${
         active
           ? "border-[rgba(159,123,255,0.45)] bg-[var(--scan-chip)] text-[var(--scan-link)]"
@@ -247,7 +264,7 @@ function TabBtn({
       }`}
     >
       {children}
-    </button>
+    </Link>
   );
 }
 
@@ -293,11 +310,11 @@ function LinhaValidador({
           </span>
           <Link href={`/address/${x.address}`} className="min-w-0 group">
             <span className="block truncate font-display text-[14px] font-bold text-ink transition-colors group-hover:text-[var(--scan-link)]">
-              {label || shortHash(x.address, 10, 6)}
+              {label || addrLink(x.address)}
             </span>
             {label ? (
               <span className="block truncate font-mono text-[11px] text-faint">
-                {shortHash(x.address, 10, 6)}
+                {addrLink(x.address)}
               </span>
             ) : null}
           </Link>

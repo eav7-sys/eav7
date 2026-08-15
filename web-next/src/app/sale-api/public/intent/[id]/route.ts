@@ -12,7 +12,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     );
   }
 
-  if (useRemoteRelayer() && process.env.SALE_RELAYER_PUBLIC_URL) {
+  if (useRemoteRelayer("public") && process.env.SALE_RELAYER_PUBLIC_URL) {
     try {
       const res = await fetch(`${relayerBase("public")}/intent/${id}`, { cache: "no-store" });
       const json = await res.json();

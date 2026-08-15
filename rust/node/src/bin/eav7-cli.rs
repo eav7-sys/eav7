@@ -40,7 +40,7 @@ use hyper::Method;
 
 use eav7::block::BlockSigner;
 use eav7::signature::{HybridPublicKey, SIGNATURE_SCHEME};
-use eav7::state::contracts::eavm_to_e7;
+use eav7::state::contracts::{eavm_to_e7, encode_e7_dest};
 use eav7::transaction::{build_transaction, verify_transaction, JsonValue, Tx, TxSpec};
 use eav7::{config, format_eav7, is_valid_address};
 
@@ -99,6 +99,9 @@ Ponte cross-chain
 
 Protocolo EAVM (MetaMask / Trust Wallet)
   eavm address <0x…>                  endereço E7 correspondente a uma conta EAVM
+  eavm encode-dest <E7…>              0xe7000000… (admin nativo na VM)
+  eavm deploy --wallet w.json --code ficheiro.bin|.hex
+  eavm call   --wallet w.json --to 0x… --input 0x…
 
 Serviços de longa duração (agora são o binário eav7-node)
   ai worker | ai sentinel | node start | mine   -> use eav7-node (veja a mensagem)
@@ -850,6 +853,49 @@ async fn executa() -> Result<(), String> {
             let e7 = eavm_to_e7(&eavm.to_lowercase()).map_err(|e| e.to_string())?;
             println!("EAVM : {}", eavm.to_lowercase());
             println!("EAV7 : {e7}");
+            Ok(())
+        }
+        ("eavm", Some("encode-dest")) => {
+            let e7 = rest.first().ok_or("opção obrigatória: endereço E7")?;
+            let dest = encode_e7_dest(e7).map_err(|e| e.to_string())?;
+            println!("{dest}");
+            Ok(())
+        }
+        ("eavm", Some("deploy")) => {
+            let wallet = ProductionWallet::from_file(cli.require("wallet", "--wallet")?)?;
+            let code_path = cli.require("code", "--code")?;
+            let raw = std::fs::read_to_string(code_path)
+                .map_err(|e| format!("ler --code {code_path}: {e}"))?;
+            let hex = raw.trim().trim_start_matches("0x");
+            if hex.is_empty() || !hex.chars().all(|c| c.is_ascii_hexdigit()) || hex.len() % 2 != 0 {
+                return Err("--code deve ser hex (opcional 0x)".into());
+            }
+            let data = JsonValue::map([(
+                "code".to_string(),
+                JsonValue::str(format!("0x{hex}")),
+            )]);
+            let tx = sign_and_send(&client, &node, &wallet, "EAVM_DEPLOY", None, 0, data).await?;
+            println!("txId : {}", tx.id.as_deref().unwrap_or(""));
+            Ok(())
+        }
+        ("eavm", Some("call")) => {
+            let wallet = ProductionWallet::from_file(cli.require("wallet", "--wallet")?)?;
+            let to = cli.require("to", "--to")?.to_lowercase();
+            if !to.starts_with("0x") || to.len() != 42 {
+                return Err("--to deve ser 0x + 40 hex".into());
+            }
+            let input = cli.require("input", "--input")?;
+            let input = if input.starts_with("0x") {
+                input.to_string()
+            } else {
+                format!("0x{input}")
+            };
+            let data = JsonValue::map([
+                ("to".to_string(), JsonValue::str(to)),
+                ("input".to_string(), JsonValue::str(input)),
+            ]);
+            let tx = sign_and_send(&client, &node, &wallet, "EAVM_CALL", None, 0, data).await?;
+            println!("txId : {}", tx.id.as_deref().unwrap_or(""));
             Ok(())
         }
 

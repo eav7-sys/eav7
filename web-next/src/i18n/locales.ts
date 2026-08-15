@@ -17,7 +17,7 @@ export const LOCALES = [
 export type LocaleCode = (typeof LOCALES)[number]["code"];
 export type Dir = "ltr" | "rtl";
 
-export const DEFAULT_LOCALE: LocaleCode = "pt";
+export const DEFAULT_LOCALE: LocaleCode = "en";
 export const LOCALE_COOKIE = "eav7-locale";
 
 export function isLocale(value: unknown): value is LocaleCode {

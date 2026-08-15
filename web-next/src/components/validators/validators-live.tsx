@@ -8,7 +8,7 @@ import { Copy } from "@/components/ui/copy";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Reveal } from "@/components/ui/reveal";
 import { Identicon } from "./identicon";
-import { fmt, fmtCompact, num, shortHash } from "@/lib/format";
+import { ancoraIndex, fmt, fmtCompact, num, shortHash } from "@/lib/format";
 import { IconValidator, IconReward, IconPulse, IconNetwork } from "@/components/icons";
 
 interface Initial {
@@ -88,7 +88,17 @@ export function ValidatorsLive({ initial }: { initial: Initial }) {
   const producer = status?.producer ?? v.slotProducer;
   // Peso = self-stake + votos recebidos (#4). É o critério de eleição dos 27.
   const weightOf = (x: Validator) => BigInt(x.staked) + BigInt(x.votes ?? "0");
-  const sorted = [...v.current].sort((a, b) => (weightOf(b) > weightOf(a) ? 1 : -1));
+  // Âncoras: lista 1…N; resto por peso (stake igual + sort por addr embaralhava os nomes).
+  const sorted = [...v.current].sort((a, b) => {
+    const ia = ancoraIndex(a.name);
+    const ib = ancoraIndex(b.name);
+    if (ia != null && ib != null && ia !== ib) return ia - ib;
+    if (ia != null && ib == null) return -1;
+    if (ia == null && ib != null) return 1;
+    const wa = weightOf(a);
+    const wb = weightOf(b);
+    return wb > wa ? 1 : wb < wa ? -1 : a.address.localeCompare(b.address);
+  });
   const totalStaked = v.current.reduce((s, x) => s + BigInt(x.staked), 0n);
   const totalWeight = v.current.reduce((s, x) => s + weightOf(x), 0n);
   const maxWeight = v.current.reduce((m, x) => (weightOf(x) > m ? weightOf(x) : m), 0n);

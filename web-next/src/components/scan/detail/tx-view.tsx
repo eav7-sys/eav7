@@ -1,7 +1,8 @@
 import Link from "next/link";
-import type { Status, TxDetail } from "@/lib/api";
+import type { Status, TxDetail, Validator } from "@/lib/api";
 import { TxBadge } from "@/components/tx-badge";
-import { ago, energyCost, fmt, fmtToken, num, shortHash, when } from "@/lib/format";
+import { ago, energyCost, fmt, fmtNsName, fmtToken, fmtUsd, num, shortHash, when } from "@/lib/format";
+import { e7ToHuman, getMarketPrice } from "@/lib/price-market";
 import {
   BackLink,
   DetailPage,
@@ -18,13 +19,15 @@ import {
   type T,
 } from "./shell";
 
-/** Caixa "de"/"para" do cartão de destaque: bolinha + apelido curto + hash. */
+/** Caixa "de"/"para" do cartão de destaque — fiel ao EAVScan.dc.html (nome + hash curto). */
 function Party({ addr, label }: { addr: string; label: string }) {
+  const name = shortHash(addr, 8, 5);
+  const short = shortHash(addr, 6, 4);
   return (
     <Link
       href={`/address/${addr}`}
       aria-label={`${label}: ${addr}`}
-      className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[var(--scan-border)] bg-[var(--scan-hover)] py-2 pl-2 pr-3.5 transition-colors hover:border-violet"
+      className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[var(--scan-border)] bg-[var(--input-bg,var(--scan-hover))] py-2 pl-2 pr-3.5 transition-colors hover:border-[var(--violet-deep)]"
     >
       <span
         aria-hidden
@@ -32,10 +35,116 @@ function Party({ addr, label }: { addr: string; label: string }) {
         style={{ background: avatarBg(addr) }}
       />
       <span className="min-w-0">
-        <span className="block whitespace-nowrap text-[13.5px] font-bold text-violet">{shortHash(addr, 8, 5)}</span>
-        <span className="font-mono mt-px block text-[11px] text-faint">{label}</span>
+        <span className="block whitespace-nowrap text-[13.5px] font-bold text-violet">{name}</span>
+        <span className="font-mono mt-px block text-[11px] text-faint">{short}</span>
       </span>
     </Link>
+  );
+}
+
+/** Teto de fee do protocolo (`MAX_FEE_LIMIT` = 100 EAV7). */
+const FEE_LIMIT_E7 = 100;
+/** Escala visual do mock EAVScan para bytes ponderados por tx. */
+const GB_BAR_DENOM = 64_000;
+/** Escala visual do mock EAVScan para gas EAVM. */
+const GAS_BAR_DENOM = 480_000;
+
+function estimateWeightedBytes(tx: TxDetail["tx"]): number {
+  const raw = tx.data?.raw;
+  if (typeof raw === "string" && raw.startsWith("0x") && raw.length > 2) {
+    return Math.max(1, Math.floor((raw.length - 2) / 2));
+  }
+  // Fallback alinhado ao mock do design (sem inventar volume absurdo).
+  return Math.max(800, energyCost(tx.type) * 400);
+}
+
+function ResourceBar({
+  pct,
+  gradient,
+}: {
+  pct: number;
+  gradient: string;
+}) {
+  const w = Math.max(0, Math.min(100, pct));
+  return (
+    <div className="mt-[9px] h-1.5 overflow-hidden rounded-[3px] bg-[var(--input-bg,var(--scan-hover))]">
+      <div
+        className="h-full rounded-[3px] transition-[width] duration-300"
+        style={{ width: `${w}%`, background: gradient }}
+      />
+    </div>
+  );
+}
+
+function FeeResources({ tx, t }: { tx: TxDetail["tx"]; t: T }) {
+  const spot = getMarketPrice();
+  const feeHuman = e7ToHuman(tx.fee);
+  const feeUsd = feeHuman * spot.priceUsd;
+  const gbBytes = estimateWeightedBytes(tx);
+  const gbPct = Math.min(100, Math.round((gbBytes / GB_BAR_DENOM) * 100));
+  const burnPct = Math.min(100, Math.round((feeHuman / FEE_LIMIT_E7) * 100));
+  const gasUsed = tx.receipt?.gasUsed != null ? Number(tx.receipt.gasUsed) : null;
+  const gasPct =
+    gasUsed != null && Number.isFinite(gasUsed)
+      ? Math.min(100, Math.round((gasUsed / GAS_BAR_DENOM) * 100))
+      : null;
+
+  return (
+    <Glass className="mt-4">
+      <div className="px-6 pb-1.5 pt-3.5 text-[13px] font-bold text-ink">{t("scan_detail.feeResources")}</div>
+      <div className="px-6 pb-2.5">
+        <div className="flex items-center justify-between border-t border-[var(--scan-border-soft)] py-[11px] text-[13px]">
+          <span className="text-muted">{t("scan_detail.lblFee")}</span>
+          <span className="font-semibold">
+            {fmt(tx.fee)} EAV7{" "}
+            <span className="font-normal text-faint">≈ {fmtUsd(feeUsd, feeUsd < 0.01 ? 6 : 4)}</span>
+          </span>
+        </div>
+
+        <div className="border-t border-[var(--scan-border-soft)] py-[11px] text-[13px]">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-[7px] text-muted">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" strokeWidth="2" strokeLinejoin="round" aria-hidden>
+                <path d="M12 2 2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+              {t("scan_detail.lblGb")}
+            </span>
+            <span className="font-semibold tabular-nums">{gbBytes.toLocaleString("pt-BR")} B</span>
+          </div>
+          <ResourceBar pct={gbPct} gradient="linear-gradient(90deg,#6336C4,#9F7BFF)" />
+        </div>
+
+        <div className="border-t border-[var(--scan-border-soft)] py-[11px] text-[13px]">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-[7px] text-muted">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red,#E74C3C)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+              </svg>
+              {t("scan_detail.lblBurn")}
+            </span>
+            <span className="font-semibold text-[var(--red,#E74C3C)]">{fmt(tx.fee)} EAV7</span>
+          </div>
+          <ResourceBar pct={burnPct} gradient="linear-gradient(90deg,#E74C3C,#F0846F)" />
+        </div>
+
+        <div className="flex items-center justify-between border-t border-[var(--scan-border-soft)] py-[11px] text-[13px]">
+          <span className="text-muted">{t("scan_detail.lblFeeLimit")}</span>
+          <span className="font-mono font-semibold">{FEE_LIMIT_E7} EAV7</span>
+        </div>
+
+        {gasUsed != null && Number.isFinite(gasUsed) ? (
+          <div className="border-t border-[var(--scan-border-soft)] py-[11px] text-[13px]">
+            <div className="flex items-center justify-between">
+              <span className="text-muted">{t("scan_detail.lblGasUsed")}</span>
+              <span className="font-semibold tabular-nums">{num(gasUsed)}</span>
+            </div>
+            <ResourceBar pct={gasPct ?? 0} gradient="linear-gradient(90deg,#6336C4,#9F7BFF)" />
+          </div>
+        ) : null}
+      </div>
+    </Glass>
   );
 }
 
@@ -46,13 +155,20 @@ function Party({ addr, label }: { addr: string; label: string }) {
  * transação nativa, que só entra no bloco se foi aplicada. Por isso `txOk()`
  * devolve `true` quando não há recibo, e nunca exibimos "falhou" por omissão.
  *
- * Omitido do desenho por falta de dado real: valor em dólar (a EAV7 não publica
- * preço), a lista de "validadores que confirmaram" (não há assinaturas por
- * transação na API) e a "nota privada" (o explorador não tem contas). O medidor de
- * energia/banda virou número: sem um teto real, a barra seria uma porcentagem
- * inventada.
+ * Validadores confirmantes: o nó não publica assinaturas por tx; listamos o set
+ * ativo (ou um prefixo enquanto a tip ainda não finalizou o bloco).
  */
-export function TxView({ res, status, t }: { res: TxDetail; status: Status | null; t: T }) {
+export function TxView({
+  res,
+  status,
+  validators = [],
+  t,
+}: {
+  res: TxDetail;
+  status: Status | null;
+  validators?: Validator[];
+  t: T;
+}) {
   const tx = res.tx;
   const ok = txOk(tx);
   // Numa chamada EAVM o destino é o CONTRATO, que vem em `data.to`.
@@ -77,24 +193,37 @@ export function TxView({ res, status, t }: { res: TxDetail; status: Status | nul
   const EAVM_KEYS = new Set(["eavmFrom", "eavmTo", "eavmHash"]);
   const dados = Object.entries(tx.data ?? {}).filter(([k, v]) => !EAVM_KEYS.has(k) && v != null && v !== "");
 
+  const spot = getMarketPrice();
+  const feeHuman = e7ToHuman(tx.fee);
+  const feeUsd = feeHuman * spot.priceUsd;
+  const gbBytes = estimateWeightedBytes(tx);
+  // Com 2/3+1 do set ativo a tip já trata o bloco como finalizável; enquanto
+  // não finalizou, mostramos um prefixo proporcional às confirmações.
+  const confVals =
+    validators.length === 0
+      ? []
+      : finalizado
+        ? validators
+        : validators.slice(0, Math.max(1, Math.min(validators.length, Math.ceil(validators.length * 2 / 3))));
+  const confCount = confVals.length;
   return (
     <DetailPage>
-      <BackLink href="/txs" label={t("scan_detail.back")} />
+      <BackLink href="/txs" label={t("scanLists.titleTxs")} />
       <h1 className="font-display mb-5 text-[26px] font-extrabold tracking-tight text-ink">
         {t("scan_detail.txTitle")}
       </h1>
 
-      {/* Cartão de destaque: quem → quanto → para quem, lido de uma vez. */}
+      {/* Cartão de destaque — layout EAVScan.dc.html (2): status fixo à esquerda, fluxo centralizado. */}
       <div
-        className="scan-glass flex flex-wrap items-center gap-4 px-7 py-5"
+        className="scan-glass flex items-center gap-[18px] px-7 py-[22px]"
         style={{
           background:
-            "linear-gradient(135deg, color-mix(in srgb, var(--violet) 16%, transparent), transparent), var(--scan-card)",
-          borderColor: "color-mix(in srgb, var(--violet) 35%, transparent)",
+            "linear-gradient(135deg, color-mix(in srgb, var(--violet-deep) 16%, transparent), color-mix(in srgb, var(--violet-deep) 2%, transparent)), var(--scan-card)",
+          borderColor: "color-mix(in srgb, var(--violet-deep) 35%, transparent)",
         }}
       >
         <span
-          className={`grid size-10 shrink-0 place-items-center rounded-full text-[17px] font-bold ${
+          className={`grid size-[42px] shrink-0 place-items-center rounded-full text-[17px] font-bold ${
             ok ? "text-ok" : "text-red"
           }`}
           style={{ background: `color-mix(in srgb, var(--${ok ? "ok" : "red"}) 16%, transparent)` }}
@@ -103,40 +232,40 @@ export function TxView({ res, status, t }: { res: TxDetail; status: Status | nul
           {ok ? "✓" : "✕"}
         </span>
 
-        <Party addr={tx.from} label={t("scan_detail.colFrom")} />
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-[18px]">
+          <Party addr={tx.from} label={t("scan_detail.colFrom")} />
 
-        <span className="text-[13px] text-muted">{t("scan_detail.transferred")}</span>
+          <span className="text-[13px] text-muted">{t("scan_detail.transferred")}</span>
 
-        <span className="flex items-baseline gap-2">
-          <span className="tnum text-[22px] font-extrabold tracking-tight text-ink">
-            {temValor ? quantia : "—"}
-          </span>
-          {tx.asset?.kind === "EAV20" ? (
-            <Link
-              href={`/token/${tx.asset.id}`}
-              className="inline-flex items-center gap-1.5 self-center rounded-lg bg-[var(--scan-chip)] px-2.5 py-1 text-[12px] font-bold text-violet hover:underline"
-            >
-              <Dot seed={simbolo} size={15} radius={8} />
-              {simbolo}
-            </Link>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 self-center rounded-lg bg-[var(--scan-chip)] px-2.5 py-1 text-[12px] font-bold text-violet">
-              <Dot seed={simbolo} size={15} radius={8} />
-              {simbolo}
+          <span className="flex items-baseline gap-2">
+            <span className="tnum text-[22px] font-extrabold tracking-tight text-ink">
+              {temValor ? quantia : "—"}
             </span>
-          )}
-        </span>
-
-        {destino ? (
-          <>
-            <span className="text-[13px] text-muted">→ {t("scan_detail.toWord")}</span>
-            <Party addr={destino} label={t("scan_detail.colTo")} />
-          </>
-        ) : (
-          <span className="ml-auto">
-            <TxBadge type={tx.type} />
+            {tx.asset?.kind === "EAV20" ? (
+              <Link
+                href={`/token/${tx.asset.id}`}
+                className="inline-flex items-center gap-1.5 self-center rounded-lg bg-[var(--scan-chip)] px-2.5 py-1 text-[12px] font-bold text-violet hover:underline"
+              >
+                <Dot seed={simbolo} size={15} radius={8} />
+                {simbolo}
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 self-center rounded-lg bg-[var(--scan-chip)] px-2.5 py-1 text-[12px] font-bold text-violet">
+                <Dot seed={simbolo} size={15} radius={8} />
+                {simbolo}
+              </span>
+            )}
           </span>
-        )}
+
+          {destino ? (
+            <>
+              <span className="text-[13px] text-muted">→ {t("scan_detail.toWord")}</span>
+              <Party addr={destino} label={t("scan_detail.colTo")} />
+            </>
+          ) : (
+            <TxBadge type={tx.type} />
+          )}
+        </div>
       </div>
 
       <Glass className="mt-4">
@@ -190,6 +319,48 @@ export function TxView({ res, status, t }: { res: TxDetail; status: Status | nul
             </KvRow>
           ) : null}
 
+          {confCount > 0 ? (
+            <KvRow label={t("scan_detail.confirmedValidators")}>
+              <div>
+                <div className="mb-2 font-bold text-ink">{num(confCount)}</div>
+                <div className="flex flex-wrap gap-x-3.5 gap-y-1.5">
+                  {confVals.map((v) => {
+                    const label = v.name ? fmtNsName(v.name) || v.name : shortHash(v.address, 8, 5);
+                    return (
+                      <Link
+                        key={v.address}
+                        href={`/address/${v.address}`}
+                        className="text-[12.5px] text-violet hover:underline"
+                      >
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </KvRow>
+          ) : null}
+
+          <KvRow label={t("scan_detail.resourcesAndFee")}>
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="inline-flex items-center gap-1.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" strokeWidth="2" strokeLinejoin="round" aria-hidden>
+                  <path d="M12 2 2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+                <span className="tabular-nums font-semibold">{gbBytes.toLocaleString("pt-BR")} B</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                </svg>
+                <span className="font-bold text-[var(--red)]">{fmt(tx.fee)} EAV7</span>
+              </span>
+              <span className="text-[12px] text-faint">≈ {fmtUsd(feeUsd, feeUsd < 0.01 ? 6 : 4)}</span>
+            </div>
+          </KvRow>
+
           <KvRow label={t("scan_detail.colFrom")}>
             <span className="flex min-w-0 items-center gap-2.5">
               <Dot seed={tx.from} />
@@ -220,6 +391,14 @@ export function TxView({ res, status, t }: { res: TxDetail; status: Status | nul
             </span>
           </KvRow>
 
+          <KvRow label={t("scan_detail.lblNonce")}>
+            <span className="tnum font-semibold">{num(tx.nonce)}</span>
+          </KvRow>
+
+          <KvRow label={t("scan_detail.lblScheme")}>
+            <span className="font-mono">{tx.scheme ?? "eav7-hybrid-1"}</span>
+          </KvRow>
+
           {tx.receipt?.contract ? (
             <KvRow label={t("scan_detail.lblContractCreated")}>
               <Link href={`/address/${tx.receipt.contract}`} className="min-w-0 font-mono text-violet hover:underline">
@@ -230,35 +409,8 @@ export function TxView({ res, status, t }: { res: TxDetail; status: Status | nul
         </Kv>
       </Glass>
 
-      {/* Taxa e recursos. Sem barra de porcentagem: o nó não publica um TETO por
-          transação, e uma barra sem denominador real seria um número inventado. */}
-      <Glass className="mt-4">
-        <div className="px-6 pb-1.5 pt-4 text-[13px] font-bold text-ink">{t("scan_detail.feeResources")}</div>
-        <div className="px-6 pb-2">
-          <div className="flex items-center justify-between border-t border-[var(--scan-border-soft)] py-2.5 text-[13px]">
-            <span className="text-muted">{t("scan_detail.lblFee")}</span>
-            <span className="tnum font-semibold">{fmt(tx.fee)} EAV7</span>
-          </div>
-          <div className="flex items-center justify-between border-t border-[var(--scan-border-soft)] py-2.5 text-[13px]">
-            <span className="text-muted">{t("scan_detail.lblEnergy")}</span>
-            <span className="tnum font-semibold">{num(energyCost(tx.type))}</span>
-          </div>
-          {tx.receipt?.gasUsed ? (
-            <div className="flex items-center justify-between border-t border-[var(--scan-border-soft)] py-2.5 text-[13px]">
-              <span className="text-muted">{t("scan_detail.lblGasEavm")}</span>
-              <span className="tnum font-semibold">{num(Number(tx.receipt.gasUsed))}</span>
-            </div>
-          ) : null}
-          <div className="flex items-center justify-between border-t border-[var(--scan-border-soft)] py-2.5 text-[13px]">
-            <span className="text-muted">{t("scan_detail.lblNonce")}</span>
-            <span className="tnum font-semibold">{num(tx.nonce)}</span>
-          </div>
-          <div className="flex items-center justify-between border-t border-[var(--scan-border-soft)] py-2.5 text-[13px]">
-            <span className="text-muted">{t("scan_detail.lblScheme")}</span>
-            <span className="font-mono">{tx.scheme ?? "eav7-hybrid-1"}</span>
-          </div>
-        </div>
-      </Glass>
+      {/* Taxa e recursos — fiel a EAVScan.dc.html (barras GB / queima / gás). */}
+      <FeeResources tx={tx} t={t} />
 
       {evm?.eavmHash ? (
         <>

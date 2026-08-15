@@ -12,6 +12,8 @@ import {
   type SaleIntent,
   type SaleQuote,
 } from "@/lib/sale-api";
+import { useI18n, type TFunc } from "@/i18n/provider";
+import { Eav7SeloCoin } from "@/components/brand/eav7-selo-coin";
 import "./sale-experience.css";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -21,26 +23,26 @@ function shortAddr(a: string) {
   return `${a.slice(0, 8)}…${a.slice(-6)}`;
 }
 
-function fmtNum(n: number, maxFrac = 0) {
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: maxFrac }).format(n);
+function statusLabel(t: TFunc, status: string, liquid: boolean) {
+  if (status === "granted") {
+    return liquid ? t("sale_experience.statusGrantedLiquid") : t("sale_experience.statusGrantedVesting");
+  }
+  if (status === "paid") return t("sale_experience.statusPaid");
+  return t("sale_experience.statusPending");
 }
 
-function fmtUsd(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function statusLabel(status: string) {
-  if (status === "granted") return "Granted — vesting open";
-  if (status === "paid") return "Payment seen — granting…";
-  return "Waiting for payment confirmation";
-}
-
-export function SaleExperience({ channel = "private" }: { channel?: "private" | "public" }) {
+export function SaleExperience({
+  channel = "private",
+  allocateEnabled = true,
+  gateMessage = null,
+}: {
+  channel?: "private" | "public";
+  /** When false, show banner and disable create-intent (vault not open yet). */
+  allocateEnabled?: boolean;
+  gateMessage?: string | null;
+}) {
   const reduce = useReducedMotion();
+  const { t, locale } = useI18n();
   const [railId, setRailId] = useState("eth-usdt");
   const [usd, setUsd] = useState("1000");
   const [beneficiary, setBeneficiary] = useState("");
@@ -56,6 +58,17 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
   const eav7Out = usdNum / livePrice;
   const addrOk = /^0x[0-9a-fA-F]{40}$/.test(beneficiary);
   const step = intent ? "pay" : "pick";
+  const isPublic = channel === "public";
+
+  // Intl no idioma da interface (não fixo em en-US).
+  const fmtNum = (n: number, maxFrac = 0) =>
+    new Intl.NumberFormat(locale, { maximumFractionDigits: maxFrac }).format(n);
+  const fmtUsd = (n: number) =>
+    new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(n);
 
   const refreshQuote = useEffectEvent(async () => {
     try {
@@ -87,7 +100,7 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
       startTransition(() => setIntent(created));
       await refreshQuote();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao criar intent");
+      setError(e instanceof Error ? e.message : t("sale_experience.intentCreateFail"));
     } finally {
       setBusy(false);
     }
@@ -126,17 +139,6 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
       </div>
 
       <section className="sale__hero">
-        <motion.div
-          className="sale__mark"
-          aria-hidden
-          initial={reduce ? false : { opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.1, ease }}
-        >
-          <span className="sale__mark-glow" />
-          <span className="sale__mark-word">EAV7</span>
-        </motion.div>
-
         <div className="sale__hero-copy">
           <motion.p
             className="sale__kicker"
@@ -144,7 +146,8 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.12, ease }}
           >
-            {channel === "public" ? "Public distribution" : "Private sale"}
+            <span className="sale__kicker-dot" aria-hidden />
+            EAV7 · {isPublic ? t("sale_experience.kickerPublic") : t("sale_experience.kickerPrivate")}
           </motion.p>
           <motion.h1
             className="sale__title"
@@ -152,15 +155,15 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, delay: 0.18, ease }}
           >
-            {channel === "public" ? (
+            {isPublic ? (
               <>
-                Buy liquid.
-                <span>Pool forms itself after the window.</span>
+                {t("sale_experience.titlePublicA")}
+                <span>{t("sale_experience.titlePublicB")}</span>
               </>
             ) : (
               <>
-                Allocate once.
-                <span>Price climbs with demand.</span>
+                {t("sale_experience.titlePrivateA")}
+                <span>{t("sale_experience.titlePrivateB")}</span>
               </>
             )}
           </motion.h1>
@@ -170,9 +173,7 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.28, ease }}
           >
-            {channel === "public"
-              ? "Public LBP window — pay USDT/USDC/BTC, receive EAV7 liquid via PublicVault. When the window ends, unsold + LP seed finalize into the canonical AMM automatically."
-              : "Tiered private sale — every intent locks today's price. When the tier fills, the next buyer pays more. Vesting still opens automatically via SaleVault."}
+            {isPublic ? t("sale_experience.ledePublic") : t("sale_experience.ledePrivate")}
           </motion.p>
           <motion.div
             className="sale__hero-actions"
@@ -181,27 +182,48 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
             transition={{ duration: 0.55, delay: 0.36, ease }}
           >
             <a href="#allocate" className="sale__btn sale__btn--primary">
-              Start allocation
+              {t("sale_experience.startAllocation")}
+            </a>
+            <a href="/whitepaper" className="sale__btn sale__btn--ghost">
+              {t("sale_experience.whitepaper")}
             </a>
             <p className="sale__meta">
-              {heroPrice} · {channel === "public" ? "liquid at TGE" : "12m cliff · 24m linear"}
+              {heroPrice} · {isPublic ? t("sale_experience.metaLiquidTge") : t("sale_experience.metaVesting")}
             </p>
           </motion.div>
         </div>
+
+        <motion.div
+          className="sale__hero-visual"
+          aria-hidden
+          initial={reduce ? false : { opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.9, delay: 0.2, ease }}
+        >
+          <Eav7SeloCoin size={320} />
+        </motion.div>
       </section>
 
       <section id="allocate" className="sale__allocate">
-        {quote ? <ScarcityBar quote={quote} /> : null}
+        {gateMessage ? (
+          <p className="sale__footnote" style={{ marginBottom: "1.25rem" }}>
+            {gateMessage}{" "}
+            <a href="/market" className="sale__explorer">
+              /market
+            </a>
+          </p>
+        ) : null}
+        {quote ? <ScarcityBar quote={quote} t={t} fmtUsd={fmtUsd} /> : null}
 
         <div className="sale__panel">
           <header className="sale__panel-head">
-            <p className="sale__panel-kicker">Allocate</p>
-            <h2>Choose rail and amount</h2>
+            <p className="sale__panel-kicker">{t("sale_experience.panelKicker")}</p>
+            <h2>{t("sale_experience.panelTitle")}</h2>
           </header>
 
           <div className="sale__panel-grid">
             <div className="sale__form">
-              <p className="sale__label">Payment rail</p>
+              <p className="sale__label">{t("sale_experience.paymentRail")}</p>
               <div className="sale__rails">
                 {SALE_RAILS.map((r) => (
                   <RailChip
@@ -220,7 +242,7 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
               </div>
 
               <label className="sale__field">
-                <span className="sale__label">USD amount</span>
+                <span className="sale__label">{t("sale_experience.usdAmount")}</span>
                 <input
                   type="number"
                   min={100}
@@ -234,13 +256,14 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
 
               <label className="sale__field">
                 <span className="sale__label">
-                  Your EAVM address <em>(0x… for vesting)</em>
+                  {t("sale_experience.yourAddress")}{" "}
+                  <em>{isPublic ? t("sale_experience.addrHintPublic") : t("sale_experience.addrHintPrivate")}</em>
                 </span>
                 <input
                   type="text"
                   placeholder="0x…"
                   value={beneficiary}
-                  disabled={!!intent}
+                  disabled={!!intent || !allocateEnabled}
                   onChange={(e) => setBeneficiary(e.target.value.trim())}
                   className="sale__input"
                 />
@@ -251,11 +274,15 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
               {!intent ? (
                 <button
                   type="button"
-                  disabled={busy || usdNum < 100 || !addrOk}
+                  disabled={busy || !allocateEnabled || usdNum < 100 || !addrOk}
                   onClick={() => void onCreate()}
                   className="sale__btn sale__btn--ink"
                 >
-                  {busy ? "Locking price…" : "Lock price & pay instructions"}
+                  {busy
+                    ? t("sale_experience.lockingPrice")
+                    : !allocateEnabled
+                      ? t("sale_experience.lbpNotOpen")
+                      : t("sale_experience.lockAndPay")}
                 </button>
               ) : (
                 <button
@@ -267,7 +294,7 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
                     void refreshQuote();
                   }}
                 >
-                  Start over
+                  {t("sale_experience.startOver")}
                 </button>
               )}
             </div>
@@ -284,30 +311,25 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
                   >
                     <p className="sale__price-now">
                       ${livePrice}
-                      <span>/ EAV7 · {quote?.tierLabel ?? "…"}</span>
+                      <span>
+                        {t("sale_experience.perEav7")} · {quote?.tierLabel ?? "…"}
+                      </span>
                     </p>
                     <p className="sale__out">
                       {fmtNum(eav7Out)}
                       <span>EAV7</span>
                     </p>
-                    <p className="sale__out-note">
-                      Creating an intent locks this tier price for your payment. Pending intents
-                      also fill the tier — so waiting can cost more.
-                    </p>
+                    <p className="sale__out-note">{t("sale_experience.outNote")}</p>
                     <dl className="sale__rows">
-                      <Row k="Network" v={CHAIN_LABEL[rail.chain] ?? rail.chain} />
-                      <Row k="Asset" v={`${rail.asset} · ${rail.standard}`} />
+                      <Row k={t("sale_experience.rowNetwork")} v={CHAIN_LABEL[rail.chain] ?? rail.chain} />
+                      <Row k={t("sale_experience.rowAsset")} v={`${rail.asset} · ${rail.standard}`} />
                       <Row
-                        k="Vesting"
-                        v={
-                          channel === "public"
-                            ? "Liquid — no cliff"
-                            : "12-month cliff, 24-month linear"
-                        }
+                        k={t("sale_experience.rowVesting")}
+                        v={isPublic ? t("sale_experience.vestingPublic") : t("sale_experience.vestingPrivate")}
                       />
                       {quote?.nextPriceUsdPerEav7 != null ? (
                         <Row
-                          k="Next tier"
+                          k={t("sale_experience.rowNextTier")}
                           v={`$${quote.nextPriceUsdPerEav7} · ${quote.nextTierLabel}`}
                         />
                       ) : null}
@@ -327,32 +349,36 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
                         intent.status === "granted" ? " is-ok" : ""
                       }`}
                     >
-                      {intent.status === "granted" ? "Allocation granted" : "Send exactly"}
+                      {intent.status === "granted"
+                        ? t("sale_experience.allocationGranted")
+                        : t("sale_experience.sendExactly")}
                     </p>
                     <p className="sale__send-amt">
                       {formatPayDisplay(intent)} <span>{intent.asset}</span>
                     </p>
                     <p className="sale__out-note">
-                      Locked at{" "}
+                      {t("sale_experience.lockedAt")}{" "}
                       <span className="sale__mono">
                         ${intent.priceUsdPerEav7 ?? "—"}
                       </span>
                       {intent.tierId ? (
                         <>
                           {" "}
-                          · tier <span className="sale__mono">{intent.tierId}</span>
+                          · {t("sale_experience.tierWord")}{" "}
+                          <span className="sale__mono">{intent.tierId}</span>
                         </>
                       ) : null}
-                      . Intent <span className="sale__mono">{intent.id}</span>
+                      . {t("sale_experience.intentWord")}{" "}
+                      <span className="sale__mono">{intent.id}</span>
                     </p>
 
                     <div className="sale__addr">
                       <div className="sale__addr-top">
                         <div>
-                          <p className="sale__addr-label">Receive address</p>
+                          <p className="sale__addr-label">{t("sale_experience.receiveAddress")}</p>
                           <p className="sale__addr-value">{intent.receive}</p>
                         </div>
-                        <CopyButton text={intent.receive} />
+                        <CopyButton text={intent.receive} t={t} />
                       </div>
                       <a
                         href={intent.explorer}
@@ -360,40 +386,39 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
                         rel="noreferrer"
                         className="sale__explorer"
                       >
-                        Open on explorer →
+                        {t("sale_experience.openOnExplorer")}
                       </a>
                     </div>
 
                     <dl className="sale__rows">
                       <Row
-                        k="You receive"
-                        v={`${fmtNum(Number(e7ToWhole(intent.e7Amount)))} EAV7${
-                          intent.liquid || channel === "public" ? " (liquid)" : " (vested)"
+                        k={t("sale_experience.rowYouReceive")}
+                        v={`${fmtNum(Number(e7ToWhole(intent.e7Amount)))} EAV7 ${
+                          intent.liquid || isPublic
+                            ? t("sale_experience.liquidTag")
+                            : t("sale_experience.vestedTag")
                         }`}
                       />
-                      <Row k="Beneficiary" v={shortAddr(intent.beneficiary0x)} />
-                      <Row k="Status" v={statusLabel(intent.status)} />
+                      <Row k={t("sale_experience.rowBeneficiary")} v={shortAddr(intent.beneficiary0x)} />
+                      <Row
+                        k={t("sale_experience.rowStatus")}
+                        v={statusLabel(t, intent.status, intent.liquid || isPublic)}
+                      />
                       {intent.paymentTx ? (
-                        <Row k="Payment tx" v={shortAddr(intent.paymentTx)} />
+                        <Row k={t("sale_experience.rowPaymentTx")} v={shortAddr(intent.paymentTx)} />
                       ) : null}
                       {intent.grantTx ? (
-                        <Row k="Grant" v={shortAddr(intent.grantTx)} />
+                        <Row k={t("sale_experience.rowGrant")} v={shortAddr(intent.grantTx)} />
                       ) : null}
                     </dl>
 
                     {intent.status === "pending" ? (
                       <div className="sale__manual">
-                        <p className="sale__label">
-                          After you pay the exact amount, the watcher confirms automatically.
-                          Keep this page open — status updates every few seconds.
-                        </p>
+                        <p className="sale__label">{t("sale_experience.manualNote")}</p>
                       </div>
                     ) : null}
 
-                    <p className="sale__fine">
-                      Do not send from an exchange withdraw that cannot hit the exact amount. Your
-                      locked price stays even if the public tier moves up.
-                    </p>
+                    <p className="sale__fine">{t("sale_experience.finePrint")}</p>
                   </motion.div>
                 ) : null}
               </AnimatePresence>
@@ -401,7 +426,7 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
           </div>
         </div>
 
-        {quote ? <TierLadder quote={quote} /> : null}
+        {quote ? <TierLadder quote={quote} ariaLabel={t("sale_experience.ladderAria")} /> : null}
 
         <motion.p
           className="sale__footnote"
@@ -410,11 +435,10 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          {channel === "public" ? (
+          {isPublic ? (
             <>
-              Public LBP: intent locks price; PublicVault delivers liquid EAV7. After the window,{" "}
-              <span className="sale__mono">finalizeToLp</span> seeds the canonical pool. Private
-              sale stays at{" "}
+              {t("sale_experience.footnotePublicA")}{" "}
+              <span className="sale__mono">finalizeToLp</span> {t("sale_experience.footnotePublicB")}{" "}
               <a href="/sale" className="sale__explorer">
                 /sale
               </a>
@@ -422,8 +446,7 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
             </>
           ) : (
             <>
-              Price tiers rise with reserved USD. Intent locks the rate; SaleVault delivers
-              vesting. Public LBP:{" "}
+              {t("sale_experience.footnotePrivateA")}{" "}
               <a href="/sale/public" className="sale__explorer">
                 /sale/public
               </a>
@@ -436,20 +459,34 @@ export function SaleExperience({ channel = "private" }: { channel?: "private" | 
   );
 }
 
-function ScarcityBar({ quote }: { quote: SaleQuote }) {
+function ScarcityBar({
+  quote,
+  t,
+  fmtUsd,
+}: {
+  quote: SaleQuote;
+  t: TFunc;
+  fmtUsd: (n: number) => string;
+}) {
   const pct = Math.round(quote.progressInTier * 100);
   const remain =
     quote.remainingInTierUsd == null
-      ? "Last call — price stays until sale closes"
-      : `${fmtUsd(quote.remainingInTierUsd)} left at $${quote.priceUsdPerEav7} before $${quote.nextPriceUsdPerEav7}`;
+      ? t("sale_experience.scarcityLastCall")
+      : t("sale_experience.scarcityLeft", {
+          remaining: fmtUsd(quote.remainingInTierUsd),
+          price: quote.priceUsdPerEav7,
+          next: String(quote.nextPriceUsdPerEav7 ?? ""),
+        });
 
   return (
     <div className="sale__scarcity">
       <div className="sale__scarcity-top">
         <p className="sale__scarcity-title">
-          {quote.tierLabel} tier · ${quote.priceUsdPerEav7}
+          {quote.tierLabel} {t("sale_experience.scarcityTier")} · ${quote.priceUsdPerEav7}
         </p>
-        <p className="sale__scarcity-raised">{fmtUsd(quote.raisedUsd)} reserved</p>
+        <p className="sale__scarcity-raised">
+          {fmtUsd(quote.raisedUsd)} {t("sale_experience.scarcityReserved")}
+        </p>
       </div>
       <div className="sale__scarcity-track" aria-hidden>
         <div className="sale__scarcity-fill" style={{ width: `${pct}%` }} />
@@ -459,16 +496,16 @@ function ScarcityBar({ quote }: { quote: SaleQuote }) {
   );
 }
 
-function TierLadder({ quote }: { quote: SaleQuote }) {
+function TierLadder({ quote, ariaLabel }: { quote: SaleQuote; ariaLabel: string }) {
   return (
-    <div className="sale__ladder" aria-label="Price tiers">
-      {quote.tiers.map((t) => (
+    <div className="sale__ladder" aria-label={ariaLabel}>
+      {quote.tiers.map((tier) => (
         <div
-          key={t.id}
-          className={`sale__ladder-item${t.active ? " is-active" : ""}${t.filled ? " is-filled" : ""}`}
+          key={tier.id}
+          className={`sale__ladder-item${tier.active ? " is-active" : ""}${tier.filled ? " is-filled" : ""}`}
         >
-          <span className="sale__ladder-label">{t.label}</span>
-          <span className="sale__ladder-price">${t.priceUsdPerEav7}</span>
+          <span className="sale__ladder-label">{tier.label}</span>
+          <span className="sale__ladder-price">${tier.priceUsdPerEav7}</span>
         </div>
       ))}
     </div>
@@ -505,7 +542,7 @@ function RailChip({
   );
 }
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, t }: { text: string; t: TFunc }) {
   const [ok, setOk] = useState(false);
   return (
     <button
@@ -517,7 +554,7 @@ function CopyButton({ text }: { text: string }) {
         setTimeout(() => setOk(false), 1600);
       }}
     >
-      {ok ? "Copied" : "Copy"}
+      {ok ? t("sale_experience.copied") : t("sale_experience.copy")}
     </button>
   );
 }

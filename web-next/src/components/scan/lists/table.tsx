@@ -1,5 +1,6 @@
 "use client";
 
+import { avatarTone } from "../identity";
 import "../tokens.css";
 
 /**
@@ -12,42 +13,74 @@ import "../tokens.css";
  * `<colgroup>`, que dá o mesmo controle sem perder a semântica.
  */
 
+/**
+ * Cabeçalho padrão das telas do explorer: selo (eyebrow) + título + subtítulo.
+ * Extraído do ListaShell para que páginas fora das listas (/ai, /governance,
+ * /mining, /nfts, /names) tenham EXATAMENTE o mesmo bloco — antes cada uma
+ * montava a sua variação e elas divergiam em tamanho, cor e respiro.
+ *
+ * `subtitle` é ReactNode (não string) para comportar linhas extras, como a
+ * spec-line monoespaçada da /ai. Por isso o invólucro é <div>, não <p>:
+ * aninhar bloco em <p> é HTML inválido.
+ */
+export function ScanPageHeader({
+  titulo,
+  eyebrow,
+  subtitle,
+  live = false,
+  titleExtra,
+}: {
+  titulo: React.ReactNode;
+  eyebrow?: string;
+  subtitle?: React.ReactNode;
+  live?: boolean;
+  /** Elemento ao lado do título (ex.: selo "ao vivo" da /mining). */
+  titleExtra?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-5">
+      {eyebrow ? (
+        <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(159,123,255,0.35)] bg-[var(--scan-chip)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--scan-link)]">
+          {live ? <span className="scan-live" aria-hidden /> : null}
+          {eyebrow}
+        </div>
+      ) : null}
+      <h1
+        className={`font-display font-bold tracking-[-0.02em] text-ink ${
+          eyebrow
+            ? "mt-3.5 text-[clamp(30px,3.4vw,40px)]"
+            : "mb-0 text-[26px] font-extrabold tracking-[-0.01em]"
+        }`}
+      >
+        {titulo}
+        {titleExtra}
+      </h1>
+      {subtitle ? (
+        <div className="mt-2.5 max-w-[720px] text-[13.5px] leading-relaxed text-muted">{subtitle}</div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ListaShell({
   titulo,
   eyebrow,
   subtitle,
   live = false,
+  titleExtra,
   children,
 }: {
-  titulo: string;
+  titulo: React.ReactNode;
   eyebrow?: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   live?: boolean;
+  titleExtra?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="scan">
       <div className="mx-auto w-full max-w-[1280px] px-6 py-9">
-        <div className="mb-5">
-          {eyebrow ? (
-            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(159,123,255,0.35)] bg-[var(--scan-chip)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--scan-link)]">
-              {live ? <span className="scan-live" aria-hidden /> : null}
-              {eyebrow}
-            </div>
-          ) : null}
-          <h1
-            className={`font-display font-bold tracking-[-0.02em] text-ink ${
-              eyebrow
-                ? "mt-3.5 text-[clamp(30px,3.4vw,40px)]"
-                : "mb-0 text-[26px] font-extrabold tracking-[-0.01em]"
-            }`}
-          >
-            {titulo}
-          </h1>
-          {subtitle ? (
-            <p className="mt-2.5 max-w-[720px] text-[13.5px] leading-relaxed text-muted">{subtitle}</p>
-          ) : null}
-        </div>
+        <ScanPageHeader titulo={titulo} eyebrow={eyebrow} subtitle={subtitle} live={live} titleExtra={titleExtra} />
         {children}
       </div>
     </div>
@@ -71,11 +104,12 @@ export function StatCard({
 }
 
 /** O cartão de vidro que envolve a tabela. A rolagem horizontal fica AQUI
- *  dentro: sem isso a página inteira rola de lado no celular. */
+ *  dentro: sem isso a página inteira rola de lado no celular. `scan-scroll-x`
+ *  (tokens.css) desenha a sombra de "há mais conteúdo" nas bordas. */
 export function Cartao({ children }: { children: React.ReactNode }) {
   return (
     <div className="scan-glass overflow-hidden">
-      <div className="overflow-x-auto">{children}</div>
+      <div className="scan-scroll-x">{children}</div>
     </div>
   );
 }
@@ -208,9 +242,6 @@ export function Selo({
 }
 
 /** Avatar de cor estável derivada da semente — o mesmo endereço/token sempre
- *  no mesmo tom, o que ajuda a reconhecer repetições ao correr o olho. */
-export function corDe(semente: string): string {
-  let h = 0;
-  for (let i = 0; i < semente.length; i++) h = (h * 31 + semente.charCodeAt(i)) % 360;
-  return `hsl(${h} 62% 58%)`;
-}
+ *  no mesmo tom, o que ajuda a reconhecer repetições ao correr o olho.
+ *  Reexporta a identidade canônica (`scan/identity`) para os call sites `./table`. */
+export const corDe = avatarTone;

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ago, fmt, num, shortHash } from "@/lib/format";
+import { addrLink, addrTight, ago, fmt, hashLink, num } from "@/lib/format";
 import { useT } from "@/i18n/provider";
+import { avatarTone } from "@/components/scan/identity";
 import type { Block, Tx } from "@/lib/api";
 
 /** Cabeçalho comum aos dois painéis, com o ponto de "ao vivo". */
@@ -57,13 +58,6 @@ function Status({ tx }: { tx: Tx }) {
   );
 }
 
-/** Cor estável derivada do endereço — o mesmo produtor tem sempre o mesmo tom. */
-function avatarBg(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360;
-  return `hsl(${h} 62% 58%)`;
-}
-
 export function LatestBlocks({
   blocks,
   blockTimeMs,
@@ -107,7 +101,7 @@ export function LatestBlocks({
               <div className="flex min-w-0 items-center gap-[7px]">
                 <span
                   className="inline-block size-4 shrink-0 rounded-full"
-                  style={{ background: avatarBg(b.producer) }}
+                  style={{ background: avatarTone(b.producer) }}
                   aria-hidden
                 />
                 {/* Nome EAV-NS quando o produtor tem um REGISTRADO na cadeia; senão
@@ -120,11 +114,11 @@ export function LatestBlocks({
                   className="truncate text-[12.5px] font-semibold text-ink hover:text-violet"
                   title={b.producer}
                 >
-                  {nomes?.[b.producer] ?? shortHash(b.producer, 10, 6)}
+                  {nomes?.[b.producer] ?? addrLink(b.producer)}
                 </Link>
               </div>
               <div className="mt-[3px] truncate font-mono text-[11px] text-faint">
-                {shortHash(b.hash, 12, 6)}
+                {hashLink(b.hash)}
               </div>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
@@ -164,7 +158,7 @@ export function LatestTxs({ txs }: { txs: Tx[] }) {
             </div>
             <div className="min-w-[128px]">
               <Link href={`/tx/${x.id}`} className="font-mono text-[12.5px] font-semibold text-violet hover:underline">
-                {shortHash(x.id, 10, 6)}
+                {hashLink(x.id)}
               </Link>
               <div className="mt-[3px] flex items-center gap-1.5">
                 <span className="rounded bg-[var(--scan-chip)] px-[7px] py-[2px] text-[10px] font-semibold text-violet">
@@ -175,7 +169,7 @@ export function LatestTxs({ txs }: { txs: Tx[] }) {
             </div>
             <div className="flex min-w-0 flex-1 items-center gap-[7px] font-mono text-xs">
               <Link href={`/address/${x.from}`} className="truncate text-violet hover:underline">
-                {shortHash(x.from, 6, 4)}
+                {addrTight(x.from)}
               </Link>
               <svg className="shrink-0" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
                 <path d="M5 12h14" />
@@ -183,7 +177,7 @@ export function LatestTxs({ txs }: { txs: Tx[] }) {
               </svg>
               {x.to ? (
                 <Link href={`/address/${x.to}`} className="truncate text-violet hover:underline">
-                  {shortHash(x.to, 6, 4)}
+                  {addrTight(x.to)}
                 </Link>
               ) : (
                 <span className="text-faint">—</span>

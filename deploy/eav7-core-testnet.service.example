@@ -1,0 +1,23 @@
+# systemd — Core da testnet pública (chain id 72021).
+# Portas: API 6170 · EAVM RPC 7170 · dados /var/lib/eav7-testnet
+# Não compartilha estado com a mainnet (/var/lib/eav7).
+
+[Unit]
+Description=EAV7 Core (testnet 72021)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eav7
+Group=eav7
+WorkingDirectory=/var/lib/eav7-testnet
+Environment=EAV7_NODE_BIN=/usr/local/bin/eav7-node-testnet
+Environment=EAV7_GENESIS_ACTIVE=1
+ExecStart=/usr/local/bin/eav7-core-testnet run --dir /var/lib/eav7-testnet
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

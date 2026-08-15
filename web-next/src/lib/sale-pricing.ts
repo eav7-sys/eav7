@@ -33,13 +33,22 @@ type AutoCfg = {
   priceUsdPerEav7: string;
   tiers?: SaleTier[];
   tierProgressCounts?: string[];
+  channel?: string;
+  windowHours?: number;
 };
 
-const CFG_CANDIDATES = [
+const PRIVATE_CFG_CANDIDATES = [
   process.env.SALE_AUTO_CFG,
   path.resolve(process.cwd(), "../contracts/sale/auto-delivery.json"),
   path.resolve(process.cwd(), "data/sale-auto-delivery.json"),
   path.resolve(process.cwd(), "contracts/sale/auto-delivery.json"),
+].filter(Boolean) as string[];
+
+const PUBLIC_CFG_CANDIDATES = [
+  process.env.SALE_PUBLIC_AUTO_CFG,
+  path.resolve(process.cwd(), "../contracts/sale/public-lbp-delivery.json"),
+  path.resolve(process.cwd(), "data/sale-public-lbp-delivery.json"),
+  path.resolve(process.cwd(), "contracts/sale/public-lbp-delivery.json"),
 ].filter(Boolean) as string[];
 
 const EMBEDDED_CFG: AutoCfg = {
@@ -54,8 +63,8 @@ const EMBEDDED_CFG: AutoCfg = {
   tierProgressCounts: ["paid", "granted"],
 };
 
-export function loadSaleAutoCfg(): AutoCfg {
-  for (const p of CFG_CANDIDATES) {
+function loadCfgFrom(candidates: string[], fallback: AutoCfg): AutoCfg {
+  for (const p of candidates) {
     try {
       if (fs.existsSync(p)) {
         const raw = fs.readFileSync(p, "utf8");
@@ -65,7 +74,26 @@ export function loadSaleAutoCfg(): AutoCfg {
       /* tenta o próximo */
     }
   }
-  return EMBEDDED_CFG;
+  return fallback;
+}
+
+export function loadSaleAutoCfg(channel: "private" | "public" = "private"): AutoCfg {
+  if (channel === "public") {
+    return loadCfgFrom(PUBLIC_CFG_CANDIDATES, {
+      priceUsdPerEav7: "0.008",
+      channel: "public",
+      windowHours: 72,
+      tiers: [
+        { id: "lbp-open", label: "LBP open", untilRaisedUsd: 750000, priceUsdPerEav7: "0.008" },
+        { id: "lbp-early", label: "LBP early", untilRaisedUsd: 2500000, priceUsdPerEav7: "0.010" },
+        { id: "lbp-mid", label: "LBP mid", untilRaisedUsd: 6000000, priceUsdPerEav7: "0.012" },
+        { id: "lbp-late", label: "LBP late", untilRaisedUsd: 12000000, priceUsdPerEav7: "0.014" },
+        { id: "lbp-final", label: "LBP final", untilRaisedUsd: null, priceUsdPerEav7: "0.015" },
+      ],
+      tierProgressCounts: ["paid", "granted"],
+    });
+  }
+  return loadCfgFrom(PRIVATE_CFG_CANDIDATES, EMBEDDED_CFG);
 }
 
 export function raisedFromIntents(
@@ -82,7 +110,10 @@ export function raisedFromIntents(
   return sum;
 }
 
-export function resolveTier(raisedUsd: number, cfg: AutoCfg = loadSaleAutoCfg()): {
+export function resolveTier(
+  raisedUsd: number,
+  cfg: AutoCfg = loadSaleAutoCfg("private"),
+): {
   tier: SaleTier;
   index: number;
   tiers: SaleTier[];
@@ -111,7 +142,7 @@ export function resolveTier(raisedUsd: number, cfg: AutoCfg = loadSaleAutoCfg())
 
 export function buildSaleQuote(
   intents: Array<{ status: string; usdAmount: string }>,
-  cfg: AutoCfg = loadSaleAutoCfg(),
+  cfg: AutoCfg = loadSaleAutoCfg("private"),
 ): SaleQuote {
   const counts = cfg.tierProgressCounts ?? ["paid", "granted"];
   const raisedUsd = raisedFromIntents(intents, counts);

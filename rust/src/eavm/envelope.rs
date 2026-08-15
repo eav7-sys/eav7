@@ -958,8 +958,7 @@ pub fn verify_eavm_envelope(tx: &Tx) -> Result<(), String> {
         _ => &vazio,
     };
     let raw = data_str(data, "raw").unwrap_or_default();
-    // Formato do raw (`envelope.js:126`): minúsculo, `0x` + hex não vazio, e no
-    // MÁXIMO 8192 caracteres — o teto anti-DoS da verificação.
+    // Formato do raw: minúsculo, `0x` + hex não vazio, ≤ MAX_RAW_CHARS.
     let corpo_raw = raw.strip_prefix("0x").unwrap_or("");
     let raw_ok = !corpo_raw.is_empty()
         && corpo_raw.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())

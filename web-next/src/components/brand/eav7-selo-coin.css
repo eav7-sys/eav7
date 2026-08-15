@@ -1,0 +1,36 @@
+.eav7-selo--float {
+  animation: eav7SeloFloat 5.5s ease-in-out infinite alternate;
+}
+.eav7-selo__halo {
+  animation: eav7SeloHalo 4.5s ease-in-out infinite;
+}
+.eav7-selo__shine {
+  animation: eav7SeloShine 5.6s ease-in-out infinite;
+}
+.eav7-selo__twinkle {
+  animation: eav7SeloTwinkle 3.2s ease-in-out infinite;
+}
+@keyframes eav7SeloFloat {
+  from { transform: translateY(0); }
+  to { transform: translateY(-14px); }
+}
+@keyframes eav7SeloHalo {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+@keyframes eav7SeloShine {
+  0% { transform: translateX(-420px); }
+  55%, 100% { transform: translateX(440px); }
+}
+@keyframes eav7SeloTwinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50% { opacity: 0.9; transform: scale(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .eav7-selo--float,
+  .eav7-selo__halo,
+  .eav7-selo__shine,
+  .eav7-selo__twinkle {
+    animation: none;
+  }
+}

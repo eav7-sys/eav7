@@ -1,8 +1,8 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 import type { Governable, GovernanceState, Treasury } from "@/lib/api";
 import { getT } from "@/i18n/server";
-import { fmt, fmtCompact, num, shortHash } from "@/lib/format";
+import { addrTight, fmt, fmtCompact, num } from "@/lib/format";
+import { ListaShell, StatCard } from "./lists/table";
 import "@/components/scan/tokens.css";
 
 const E7_PARAMS = new Set(["BLOCK_REWARD", "MIN_VALIDATOR_STAKE", "FEE_EXEMPT_STAKE", "MIN_ORACLE_STAKE"]);
@@ -37,22 +37,14 @@ export async function ScanGovView({
   const quorum = gov.quorum ?? Math.floor((2 * (gov.validators || 0)) / 3) + 1;
 
   return (
-    <div className="scan mx-auto max-w-[1280px] px-6 py-9">
-      <div className="mb-5">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(159,123,255,0.35)] bg-[var(--scan-chip)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--scan-link)]">
-          <span className="scan-live" aria-hidden />
-          {t("page_governance.eyebrow")}
-        </div>
-        <h1 className="mt-3.5 font-display text-[clamp(30px,3.4vw,40px)] font-bold tracking-[-0.02em] text-ink">
-          {t("page_governance.title")}
-        </h1>
-        <p className="mt-2.5 max-w-[760px] text-[13.5px] leading-relaxed text-muted">
-          {t("page_governance.subtitle")}
-        </p>
-      </div>
-
+    <ListaShell
+      titulo={t("page_governance.title")}
+      eyebrow={t("page_governance.eyebrow")}
+      subtitle={t("page_governance.subtitle")}
+      live
+    >
       <div className="mb-5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat
+        <StatCard
           label={t("page_governance.statusLabel")}
           value={
             <span className={active ? "text-ok" : "text-gold"}>
@@ -60,7 +52,7 @@ export async function ScanGovView({
             </span>
           }
         />
-        <Stat
+        <StatCard
           label={t("page_governance.treasuryTitle")}
           value={
             <>
@@ -69,7 +61,7 @@ export async function ScanGovView({
             </>
           }
         />
-        <Stat
+        <StatCard
           label={t("page_governance.validators")}
           value={
             <>
@@ -81,7 +73,7 @@ export async function ScanGovView({
             </>
           }
         />
-        <Stat
+        <StatCard
           label={t("page_governance.treasuryPct")}
           value={`${treasury?.treasuryPct ?? 0}%`}
         />
@@ -105,7 +97,7 @@ export async function ScanGovView({
           {governable.length === 0 ? (
             <p className="px-5 py-8 text-center text-[13px] text-muted">{t("page_governance.noParams")}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="scan-scroll-x">
               <table className="w-full min-w-[560px] border-collapse text-[13px]">
                 <thead>
                   <tr className="font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-faint">
@@ -165,7 +157,7 @@ export async function ScanGovView({
                         <div className="mt-0.5 tnum text-[12.5px] text-muted">{govValue(p.param, p.value)}</div>
                         <div className="mt-1.5 font-mono text-[11px] text-faint">
                           <Link href={`/address/${p.proposer}`} className="text-[var(--scan-link)] hover:underline">
-                            {shortHash(p.proposer, 8, 4)}
+                            {addrTight(p.proposer)}
                           </Link>
                           {" · "}
                           {t("page_governance.colDeadline")} #{num(p.deadline)}
@@ -190,16 +182,7 @@ export async function ScanGovView({
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="scan-glass px-[18px] py-4">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-faint">{label}</div>
-      <div className="mt-[7px] font-display text-xl font-bold text-ink">{value}</div>
-    </div>
+    </ListaShell>
   );
 }
 

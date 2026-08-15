@@ -1,0 +1,13 @@
+[Unit]
+Description=EAV7 — envio do backup diário para OneDrive
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/eav7-backup-cloud.sh --remote eav7onedrive --path EAV7-backups --keep-days 30
+# O rclone.conf com o token vive no root; não deve ser legível por mais ninguém.
+User=root
+Environment=RCLONE_CONFIG=/root/.config/rclone/rclone.conf
+Nice=10
+IOSchedulingClass=idle
