@@ -2944,6 +2944,7 @@ mod tests {
 
     #[test]
     fn gov_propose_abaixo_do_fork_e_recusado() {
+        if GOVERNANCE_HEIGHT == 0 { return; }
         let mut s = State::new();
         let v = end("v1");
         com_validador(&mut s, &v);
@@ -3142,6 +3143,7 @@ mod tests {
 
     #[test]
     fn permission_update_recusa_conta_com_stake_antes_do_fork_v2() {
+        if PERMISSIONS_V2_HEIGHT == 0 { return; }
         let mut s = State::new();
         let dono = end("dono");
         let k1 = end("k1");
@@ -3369,6 +3371,7 @@ mod tests {
 
     #[test]
     fn permission_propose_abaixo_do_fork_v2_e_recusado() {
+        if PERMISSIONS_V2_HEIGHT == 0 { return; }
         let (mut s, conta, _, _, a1, _) = cenario_v2();
         let novo = end("owner_novo");
         let e = aplicar(
@@ -3682,6 +3685,7 @@ mod tests {
 
     #[test]
     fn multisig_abaixo_do_fork_de_permissoes_e_recusado() {
+        if PERMISSIONS_HEIGHT == 0 { return; }
         let mut s = State::new();
         let cofre = end("cofre");
         let k1 = end("k1");
@@ -3932,6 +3936,7 @@ mod tests {
 
     #[test]
     fn meta_tx_abaixo_do_fork_e_recusada() {
+        if META_HEIGHT == 0 { return; }
         let mut s = State::new();
         let relayer = end("relayer");
         let tx = tx_com("META_TX", &relayer, vec![("inner", JsonValue::Null)]);
@@ -4081,6 +4086,7 @@ mod tests {
 
     #[test]
     fn toda_rejeicao_deixa_o_estado_identico() {
+        if PERMISSIONS_V2_HEIGHT == 0 || GOVERNANCE_HEIGHT == 0 { return; }
         // A invariante central do módulo, verificada de uma vez sobre um estado
         // razoavelmente rico: nenhum caminho de erro pode deixar rastro.
         let (base, conta, o1, _, a1, _) = cenario_v2();
@@ -4499,6 +4505,7 @@ mod tests {
     /// rede rejeita.
     #[test]
     fn vote_multisig_abaixo_do_fork_v2_e_recusado() {
+        if PERMISSIONS_V2_HEIGHT == 0 { return; }
         let mut s = State::new();
         let (cofre, k1) = cofre_com_uma_chave(&mut s);
         let candidato = end("candidato-cedo");

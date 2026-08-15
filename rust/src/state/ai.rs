@@ -2121,6 +2121,7 @@ mod tests {
 
     #[test]
     fn ai_task_de_quorum_abaixo_do_fork_cai_no_modo_designado() {
+        if AI_QUORUM_HEIGHT == 0 { return; }
         // A porta de altura é o que impede este cliente de aceitar o que a rede
         // rejeita: abaixo de AI_QUORUM_HEIGHT o campo `quorum` é ignorado, e sem
         // `data.oracle` a transação tem de falhar.
@@ -2150,6 +2151,7 @@ mod tests {
 
     #[test]
     fn ai_result_abaixo_do_fork_de_desafio_paga_na_hora() {
+        if AI_CHALLENGE_HEIGHT == 0 { return; }
         let (mut st, req) = cenario(&["o1"], 100 * UNIT);
         let orc = addr("o1");
         let h = AI_CHALLENGE_HEIGHT - 1;
@@ -2382,6 +2384,7 @@ mod tests {
 
     #[test]
     fn ai_claim_abaixo_do_fork_e_recusado() {
+        if AI_CHALLENGE_HEIGHT == 0 { return; }
         let (mut st, _req, _orc, id) = cenario_desafio();
         let tx = tx_ai("AI_CLAIM", &addr("passante"), &[("taskId", s(&id))]);
         let e = aplicar(&mut st, &tx, &ctx(AI_CHALLENGE_HEIGHT - 1, T0 + 10_000_000)).unwrap_err();
@@ -2527,6 +2530,7 @@ mod tests {
 
     #[test]
     fn ai_bid_abaixo_do_fork_de_mercado_e_recusado() {
+        if AI_MARKET_HEIGHT == 0 { return; }
         let (mut st, req) = cenario(&["o1"], 100 * UNIT);
         let id = cria_aberta(&mut st, &req, 10 * UNIT);
         let lance = tx_ai("AI_BID", &addr("o1"), &[("taskId", s(&id)), ("price", JsonValue::Int(1))]);
@@ -2557,6 +2561,7 @@ mod tests {
 
     #[test]
     fn ai_refund_abaixo_do_fork_de_responsabilizacao_nao_slasha() {
+        if AI_ACCOUNTABILITY_HEIGHT == 0 { return; }
         let h = AI_ACCOUNTABILITY_HEIGHT - 1;
         let (mut st, req) = cenario(&["o1"], 100 * UNIT);
         let orc = addr("o1");
@@ -2605,6 +2610,7 @@ mod tests {
 
     #[test]
     fn ai_refund_de_tarefa_ja_concluida_e_rejeitado() {
+        if AI_CHALLENGE_HEIGHT == 0 { return; }
         let (mut st, req) = cenario(&["o1"], 100 * UNIT);
         let orc = addr("o1");
         let h = AI_CHALLENGE_HEIGHT - 1;

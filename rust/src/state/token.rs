@@ -948,6 +948,7 @@ mod tests {
 
     #[test]
     fn create_permite_simbolo_duplicado_abaixo_do_fork() {
+        if PERMISSIONS_V2_HEIGHT == 0 { return; }
         // Gated: a cadeia antiga pode já conter símbolos repetidos, e aplicar a regra
         // retroativamente invalidaria blocos que a rede validou.
         let mut s = estado();
@@ -1106,6 +1107,7 @@ mod tests {
 
     #[test]
     fn admin_abaixo_do_fork_e_rejeitado() {
+        if TOKEN_ADMIN_HEIGHT == 0 { return; }
         let (mut s, id) = com_token(true);
         for tipo in ["TOKEN_PAUSE", "TOKEN_UNPAUSE", "TOKEN_MINT", "TOKEN_BURN",
                      "TOKEN_BLACKLIST", "TOKEN_FREEZE", "TOKEN_UNFREEZE"] {

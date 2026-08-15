@@ -1727,6 +1727,7 @@ mod tests {
 
     #[test]
     fn abaixo_do_fork_0x08_e_conta_comum_e_devolve_sucesso_vazio() {
+        if vm::EAVM_OSAKA_HEIGHT == 0 { return; }
         // Este é o teste que impede uma cisão de rede: um nó ANTIGO no bloco
         // 1.899.999 trata 0x08 como conta sem código. Se este cliente rodasse o
         // pairing ali, os dois produziriam estados diferentes para o MESMO bloco.

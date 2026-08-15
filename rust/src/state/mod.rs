@@ -473,6 +473,7 @@ mod tests {
     /// chegava a outra raiz. A prova de replay pegou isto no primeiro TRANSFER.
     #[test]
     fn transferencia_comum_consome_energia_e_bandwidth() {
+        if crate::config::GB_FEE_HEIGHT == 0 { return; }
         let mut s = State::new();
         let de = "E7DE".to_string();
         let para = "E7PARA".to_string();

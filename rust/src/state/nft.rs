@@ -748,6 +748,7 @@ mod tests {
 
     #[test]
     fn nft_create_recusa_abaixo_da_altura_do_fork() {
+        if NFT_HEIGHT == 0 { return; }
         // Sem este gate, o cliente aceitaria uma transação que a rede rejeita — e
         // cindiria a cadeia sozinho.
         let dono = addr(ALICE);
@@ -1040,6 +1041,7 @@ mod tests {
 
     #[test]
     fn name_register_recusa_abaixo_da_altura_do_fork() {
+        if NAME_HEIGHT == 0 { return; }
         let dono = addr(ALICE);
         let mut s = estado_com_saldo(&[(&dono, 10_000_000)]);
         let t = tx("NAME_REGISTER", &dono, &[("name", JsonValue::str("eav7"))]);

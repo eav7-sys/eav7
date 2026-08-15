@@ -3,6 +3,11 @@
 //! Production implementation validated by frozen fixtures in `vectors/`.
 //! See `tests/vectors.rs`.
 
+// Com `GENESIS_ACTIVE_BUILD`, forks nascem em altura 0 — comparações `h >= FORK`
+// / `h < FORK` viram extremos de `u64` e o clippy marca absurd_extreme_comparisons.
+// O gate permanece no código para redes/builds com forks futuros não-zero.
+#![allow(clippy::absurd_extreme_comparisons)]
+
 // Rules compile on any target, including wasm32 (browser wallet).
 pub mod address;
 pub mod block;

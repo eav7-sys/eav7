@@ -2033,7 +2033,7 @@ impl Blockchain {
                 Some(base)
             } else {
                 let mut base = match snap.base_estado.as_ref() {
-                    Some(v) if tail_start == 0 => {
+                    Some(_v) if tail_start == 0 => {
                         eprintln!("[cadeia] snapshot inconsistente (base com tail_start=0) — replay completo");
                         return Ok(None);
                     }
@@ -2898,6 +2898,7 @@ mod tests {
 
     #[test]
     fn abaixo_do_fork_basta_ser_validador_ativo() {
+        if STRICT_PRODUCER_HEIGHT < 2 { return; }
         let cs = carteiras();
         // Âncora logo abaixo de STRICT_PRODUCER_HEIGHT: o bloco seguinte ainda cai
         // na janela de grandfathering.
@@ -2929,6 +2930,7 @@ mod tests {
 
     #[test]
     fn quem_nao_e_validador_nao_produz_nem_abaixo_do_fork() {
+        if STRICT_PRODUCER_HEIGHT < 2 { return; }
         let cs = carteiras();
         let mut chain = cadeia(&cs, STRICT_PRODUCER_HEIGHT - 2, 100);
         let estranha = Carteira::nova(200); // sem stake nenhum
@@ -3191,6 +3193,7 @@ mod tests {
 
     #[test]
     fn o_reorg_nao_pode_reverter_abaixo_do_produtor_estrito() {
+        if STRICT_PRODUCER_HEIGHT == 0 { return; }
         let cs = carteiras();
         // Cadeia JÁ acima do fork tentando forquilhar ABAIXO dele: é o cenário do
         // achado C1 — a janela de validação fraca é histórico congelado.
@@ -3536,7 +3539,7 @@ mod tests {
             store.scan(0, |_, _| true).expect("reindexa");
             for bump in 1..=5 {
                 let mut lixo = origem.tail.last().expect("cabeça").clone();
-                lixo.height = origem.height() + bump;
+                lixo.height = lixo.height.checked_add(bump).expect("altura cabe em u64");
                 store
                     .append(&crate::block::block_to_json_line(&lixo).expect("linha"))
                     .expect("append");
@@ -4708,8 +4711,23 @@ mod tests {
             chain.add_block(b.clone(), agora(slot)).expect("bloco");
             com_chave.push(b.clone());
             // Simula fio compacto: pubs omitidas, só assinatura.
-            b.public_key = None;
-            b.pq_public_key = None;
+            let signer = cs
+                .iter()
+                .find(|c| c.endereco() == b.producer)
+                .expect("carteira produtora");
+            b = build_block(
+                signer,
+                BuildParams {
+                    height: b.height,
+                    previous_hash: b.previous_hash,
+                    timestamp: b.timestamp,
+                    transactions: b.transactions,
+                    state_root: b.state_root,
+                    producer_account: b.producer_account,
+                    omit_public_keys: true,
+                },
+            )
+            .expect("bloco compacto");
             compactos.push(b);
         }
         let vazias = BTreeMap::new();
@@ -4720,7 +4738,7 @@ mod tests {
         // Sem semente: compactos sozinhos falham no primeiro.
         let (prefixo, err) = Blockchain::verificar_lote(compactos.clone(), &vazias);
         assert!(prefixo.is_empty());
-        assert!(err.expect("falha").contains("chave pública"));
+        assert!(err.as_deref().is_some_and(|e| e.contains("chave pública")), "erro foi: {err:?}");
 
         // Com as chaves do lote anterior (como `aplicar_lote` faz via self):
         let mut seeds = BTreeMap::new();

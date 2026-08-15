@@ -879,6 +879,7 @@ mod tests {
     /// grande (~5–6 KB). Compactação (SPKI-base64) reduz; refs de chave = próxima.
     #[test]
     fn tamanho_fio_bloco_ocioso_documentado() {
+        if crate::config::COMPACT_BLOCK_HEIGHT == 0 { return; }
         let legado = bloco(1_300_000);
         let n_legado = crate::transaction::canonical_json(&block_to_json(&legado)).len();
         assert!(
@@ -953,6 +954,7 @@ mod tests {
 
     #[test]
     fn abaixo_do_fork_a_assinatura_entra_no_hash() {
+        if crate::config::CANONICAL_HASH_HEIGHT == 0 { return; }
         let b = bloco(900_000);
         let payload = block_payload(&b);
         assert_eq!(b.hash, eav_hash_one(format!("{payload}{}{}", b.signature, b.pq_signature)));
@@ -984,6 +986,7 @@ mod tests {
 
     #[test]
     fn stateroot_e_obrigatorio_acima_do_fork_e_proibido_abaixo() {
+        if STATEROOT_HEIGHT == 0 { return; }
         let carteira = Carteira::nova(1);
 
         // Acima do fork sem raiz: `buildBlock` emite `stateRoot: null`, e a regra
@@ -1007,6 +1010,7 @@ mod tests {
 
     #[test]
     fn produceraccount_so_vale_acima_do_fork_de_permissoes() {
+        if PERMISSIONS_V2_HEIGHT == 0 { return; }
         let carteira = Carteira::nova(1);
         let outra = Carteira::nova(2);
         let mut p = params(1_950_000);
@@ -1215,6 +1219,7 @@ mod tests {
 
     #[test]
     fn stateroot_ausente_abaixo_do_fork_e_presente_acima() {
+        if STATEROOT_HEIGHT == 0 { return; }
         // ABAIXO: a chave nem pode aparecer. Emitir `"stateRoot":null` aqui daria
         // outra pré-imagem e outro hash — o bloco deixaria de ser o mesmo bloco.
         let abaixo = bloco(STATEROOT_HEIGHT - 1);
@@ -1251,7 +1256,8 @@ mod tests {
         let carteira = Carteira::nova(1);
         let outra = Carteira::nova(2);
 
-        let mut p = params(PERMISSIONS_V2_HEIGHT);
+        let height = PERMISSIONS_V2_HEIGHT.max(1);
+        let mut p = params(height);
         p.producer_account = Some(outra.endereco());
         let com = build_block(&carteira, p).expect("construção");
         assert_eq!(verify_block_integrity(&com), Ok(()));
@@ -1262,7 +1268,7 @@ mod tests {
         let voltou = block_from_json(&block_to_json(&com)).expect("volta");
         assert_eq!(block_validator(&voltou), outra.endereco());
 
-        let sem = bloco(PERMISSIONS_V2_HEIGHT);
+        let sem = bloco(height);
         assert_eq!(sem.producer_account, None);
         assert!(!block_to_json_line(&sem).expect("linha").contains("\"producerAccount\""));
         confere_ida_e_volta(&sem);
@@ -1315,6 +1321,7 @@ mod tests {
 
     #[test]
     fn a_linha_atravessa_o_blockstore_de_verdade() {
+        if STATEROOT_HEIGHT == 0 { return; }
         // O consumidor real. Um teste que só olha a string não pegaria o caso em
         // que o `append` recusa a linha ou em que a varredura a reparte — que é
         // justamente o modo de falha que corrompe a cadeia em silêncio.

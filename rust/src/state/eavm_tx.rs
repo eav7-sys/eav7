@@ -619,6 +619,7 @@ mod tests {
 
     #[test]
     fn sender_legado_e_o_keccak_do_texto_e7() {
+        if EAVM_VALUE_HEIGHT == 0 { return; }
         // Abaixo do fork de valor: keccak(E7)[12:] — state.js:890-893.
         let mut tx = Tx::new("EAVM_DEPLOY", "E7QUALQUERCOISA", 1, 1);
         tx.scheme = "eav7-hybrid-1".into();

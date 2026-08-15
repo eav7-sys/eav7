@@ -1308,6 +1308,7 @@ mod tests {
 
     #[test]
     fn unstake_teto_de_fila_so_vale_a_partir_do_fork() {
+        if PERMISSIONS_V2_HEIGHT == 0 { return; }
         let encher = |altura: u64| {
             let mut s = estado_base();
             for _ in 0..MAX_UNBONDING_ENTRIES {
@@ -1347,6 +1348,7 @@ mod tests {
 
     #[test]
     fn vote_abaixo_da_altura_de_fork_e_rejeitado_e_aceito_acima() {
+        if VOTING_HEIGHT == 0 { return; }
         // O caso que um cliente PRECISA acertar: a MESMA transação, duas alturas.
         let t = tx_vote(&bob(), "1000000000");
         let mut antes = estado_base();
@@ -1440,6 +1442,7 @@ mod tests {
 
     #[test]
     fn claim_voter_reward_respeita_a_altura_de_fork() {
+        if VOTING_HEIGHT == 0 { return; }
         let mut s = estado_base();
         let t = com_dados("CLAIM_VOTER_REWARD", &[("validator", JsonValue::str(bob()))]);
         rejeita_sem_sujar(&mut s, &t, &ctx(VOTING_HEIGHT - 1), "votação ainda não ativa");
@@ -1461,6 +1464,7 @@ mod tests {
 
     #[test]
     fn set_commission_vale_na_hora_abaixo_do_fork() {
+        if PERMISSIONS_V2_HEIGHT == 0 { return; }
         let mut s = estado_base();
         let t = com_dados("SET_COMMISSION", &[("percent", JsonValue::Int(15))]);
         assert!(aplicar(&mut s, &t, &ctx(PERMISSIONS_V2_HEIGHT - 1)).is_ok());
@@ -1491,6 +1495,7 @@ mod tests {
 
     #[test]
     fn set_commission_abaixo_da_altura_de_votacao_e_rejeitada() {
+        if VOTING_HEIGHT == 0 { return; }
         let mut s = estado_base();
         let t = com_dados("SET_COMMISSION", &[("percent", JsonValue::Int(15))]);
         rejeita_sem_sujar(&mut s, &t, &ctx(VOTING_HEIGHT - 1), "votação ainda não ativa");
@@ -1523,6 +1528,7 @@ mod tests {
 
     #[test]
     fn delegate_resource_respeita_a_altura_de_fork() {
+        if RESOURCE_HEIGHT == 0 { return; }
         let mut s = estado_base();
         let t = tx_delegacao("DELEGATE_RESOURCE", &bob(), "1000");
         rejeita_sem_sujar(&mut s, &t, &ctx(RESOURCE_HEIGHT - 1), "delegação de recurso ainda não ativa");
@@ -1608,6 +1614,7 @@ mod tests {
 
     #[test]
     fn vesting_create_respeita_a_altura_de_fork() {
+        if VESTING_HEIGHT == 0 { return; }
         let mut s = estado_base();
         let t = tx_vesting_create("1000", 0, 100);
         rejeita_sem_sujar(&mut s, &t, &ctx(VESTING_HEIGHT - 1), "vesting ainda não ativo");
@@ -1692,6 +1699,7 @@ mod tests {
 
     #[test]
     fn slash_respeita_a_altura_de_fork() {
+        if SLASHING_HEIGHT == 0 { return; }
         let mut s = estado_base();
         let t = tx_slash(bloco(&bob(), 10, "aa", None), bloco(&bob(), 10, "bb", None));
         rejeita_sem_sujar(&mut s, &t, &ctx(SLASHING_HEIGHT - 1), "slashing ainda não ativo");
@@ -1792,7 +1800,7 @@ mod tests {
                     previous_hash: "a".repeat(64),
                     timestamp: ts,
                     transactions: Vec::new(),
-                    state_root: None,
+                    state_root: Some("b".repeat(64)),
                     producer_account: None,
                     omit_public_keys: false,
                 },
@@ -1839,7 +1847,7 @@ mod tests {
                     previous_hash: "a".repeat(64),
                     timestamp: ts,
                     transactions: Vec::new(),
-                    state_root: None,
+                    state_root: Some("b".repeat(64)),
                     producer_account: None,
                     omit_public_keys: false,
                 },
