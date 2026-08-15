@@ -736,4 +736,4 @@ Estas são as alturas do perfil `GENESIS_ACTIVE` / altura zero da mainnet ao viv
 
 ---
 
-*EAV7 · Whitepaper Técnico v1.0 · 11 de agosto de 2026*
+*EAV7 · Whitepaper Técnico v1.0.1 · 15 de agosto de 2026*

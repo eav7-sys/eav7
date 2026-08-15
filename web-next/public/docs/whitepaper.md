@@ -544,7 +544,7 @@ O código-fonte é público em [github.com/eav7-sys/eav7](https://github.com/eav
 
 Na mainnet estão ativos desde o gênese: rodízio DPoS e finalidade BFT · produtor estrito, raiz de estado e slashing por dupla assinatura · assinaturas híbridas e identificadores imunes a maleabilidade · contabilidade GB · Assinatura Livre com delegação · staking, unbonding, votação, permissões v2 e governança de Âncora autorizada por owner (`GOVERNANCE_HEIGHT=0`) · tesouraria, vesting e meta-transações · execução EAVM com valor · fases-base de oráculos de IA (`AI_ACCOUNTABILITY` / `QUORUM` / `CHALLENGE` / `MARKET` / `PRIVATE` = 0) · nomes EAV-NS (incluindo re-registro das Âncoras no dia 0) · armazenamento resiliente · e modos do `eav7-core`, inclusive `ancora-init`.
 
-Os contratos de produto `SaleVault`, `PublicVault`, `PartnerTrancheVault` e `TimelockLpSeeder` / EAV20Factory permanecem o caminho pretendido; até a implantação, a custódia dia 1 usa os endereços publicados na Seção 12.2. `GENESIS_ACTIVE` e heights zero descrevem a mainnet; builds locais sem esse overlay podem ainda usar heights distantes.
+`PublicVault` e `TimelockLpSeeder` estão ao vivo na mainnet (endereços na Seção 12.2); o marketing público do LBP permanece condicionado operacionalmente até o anúncio de TGE. `SaleVault`, `PartnerTrancheVault` e EAV20Factory permanecem o caminho pretendido para os demais buckets; até a implantação desses, a custódia dia 1 usa os endereços publicados na Seção 12.2. `GENESIS_ACTIVE` e heights zero descrevem a mainnet; builds locais sem esse overlay podem ainda usar heights distantes.
 
 ### 13.3 Condicionado operacionalmente e roadmap
 
@@ -736,4 +736,4 @@ Estas são as alturas do perfil `GENESIS_ACTIVE` / altura zero da mainnet ao viv
 
 ---
 
-*EAV7 · Whitepaper Técnico v1.0 · 11 de agosto de 2026*
+*EAV7 · Whitepaper Técnico v1.0.1 · 15 de agosto de 2026*

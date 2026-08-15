@@ -419,7 +419,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "Buscar",
@@ -2369,10 +2369,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -3579,7 +3579,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governance",
       "governanceDesc": "Proposals, parameters and treasury",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Technical document v1.0 · PT/EN"
+      "whitepaperDesc": "Technical document v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "Search",
@@ -5529,10 +5529,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "EAV7 technical whitepaper v1.0 — eav20 protocol, post-quantum security, EAVM, tokenomics and risks.",
+      "metaDesc": "EAV7 technical whitepaper v1.0.1 — eav20 protocol, post-quantum security, EAVM, tokenomics and risks.",
       "kicker": "Technical document",
       "title": "EAV7 Whitepaper",
-      "lead": "Version 1.0 · August 11, 2026. Read the protocol, maturity status and risks before joining the public distribution.",
+      "lead": "Version 1.0.1 · August 15, 2026. Read the protocol, maturity status and risks before joining the public distribution.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Download .md",
@@ -6707,7 +6707,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "Buscar",
@@ -8653,10 +8653,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 de EAV7 — protocolo eav20, seguridad post-cuántica, EAVM, tokenomics y riesgos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 de EAV7 — protocolo eav20, seguridad post-cuántica, EAVM, tokenomics y riesgos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versión 1.0 · 11 de agosto de 2026. Lee el protocolo, el estado de madurez y los riesgos antes de participar en la distribución pública.",
+      "lead": "Versión 1.0.1 · 15 de agosto de 2026. Lee el protocolo, el estado de madurez y los riesgos antes de participar en la distribución pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Descargar .md",
@@ -9814,7 +9814,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "搜索",
@@ -11760,10 +11760,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -12921,7 +12921,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "Rechercher",
@@ -14867,10 +14867,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -16028,7 +16028,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "Suchen",
@@ -17974,10 +17974,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -19135,7 +19135,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "検索",
@@ -21081,10 +21081,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -22242,7 +22242,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "Поиск",
@@ -24188,10 +24188,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -25349,7 +25349,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "بحث",
@@ -27295,10 +27295,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -28456,7 +28456,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "खोजें",
@@ -30402,10 +30402,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -31563,7 +31563,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "검색",
@@ -33509,10 +33509,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -34670,7 +34670,7 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "nav_headerSearch": {
       "buscar": "Cerca",
@@ -36616,10 +36616,10 @@ export const generated: Record<LocaleCode, Record<string, unknown>> = {
     },
     "page_whitepaper": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",

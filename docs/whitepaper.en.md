@@ -1,12 +1,12 @@
 # EAV7 — A Layer 1 Blockchain with Post-Quantum Security and a Native Artificial Intelligence Layer
 
-**Technical Whitepaper · Version 1.0 · August 11, 2026**
+**Technical Whitepaper · Version 1.0.1 · August 15, 2026**
 
 Protocol `eav20` · Symbol `EAV7` · EAVM Chain ID `72020` (mainnet) / `72021` (testnet)
 
 ---
 
-> **Preliminary notice.** This document describes the EAV7 mainnet in operation as of August 11, 2026. Section 13 (Maturity Status) separates what is live on the network, what remains gated operationally or behind a fork height, and what is roadmap. Section 14 (Risk Factors) and Section 15 (Legal Disclaimer) are integral parts of this document and must not be read in isolation. Nothing in this whitepaper constitutes an offer, an investment recommendation, or a guarantee of outcome.
+> **Preliminary notice.** This document describes the EAV7 mainnet in operation as of August 15, 2026. Section 13 (Maturity Status) separates what is live on the network, what remains gated operationally or behind a fork height, and what is roadmap. Section 14 (Risk Factors) and Section 15 (Legal Disclaimer) are integral parts of this document and must not be read in isolation. Nothing in this whitepaper constitutes an offer, an investment recommendation, or a guarantee of outcome.
 
 ---
 
@@ -491,7 +491,7 @@ Genesis distribution prioritizes the open market: the public share is **45%**, w
 
 | Bucket | **EAV7** | Tokens | Launch destination |
 |---|---|---|---|
-| **Public distribution** | **45.00%** | 45,000,000,000 | Published custody / `PublicVault` — liquid at TGE / LBP |
+| **Public distribution** | **45.00%** | 45,000,000,000 | `PublicVault` on mainnet — liquid at TGE / LBP (marketing gated) |
 | **Foundation / Treasury** | **30.25%** | 30,250,000,000 | Anchor stakes + 12-part schedule (1/12 liquid; 11 vestings) |
 | **Private sale** | **14.75%** | 14,750,000,000 | Published custody / `SaleVault` — 12m cliff + 24m linear |
 | **Strategic partner** | **10.00%** | 10,000,000,000 | Published custody / `PartnerTrancheVault` — four private tranches |
@@ -501,11 +501,11 @@ The insider-controlled share (Foundation, private sale, and partner) totals **55
 
 #### Custody and delivery (mainnet)
 
-Buckets do **not** mint into a single operational wallet. On the live genesis, day-1 custody uses the published addresses below until vault contracts are deployed; the intended product path remains `PublicVault` / `SaleVault` / `PartnerTrancheVault` / protocol vesting.
+Buckets do **not** mint into a single operational wallet. On the live genesis, day-1 custody uses the published addresses below. `PublicVault` and `TimelockLpSeeder` are **deployed on mainnet**; `SaleVault` / `PartnerTrancheVault` remain the intended product path for the private and partner buckets until those vaults are live.
 
 | Bucket | Day-1 custody (published) | Release |
 |---|---|---|
-| Public (45%) | `E7AADB9206205894E8C8D7A9B6FE6C8320` | Liquid destination for public distribution / LBP; `PublicVault` remains the product path once deployed |
+| Public (45%) | Custody EOA `E7AADB9206205894E8C8D7A9B6FE6C8320` → vault `E7F27692A901B85A20A2B85F9BDF058A87` (`0x892a7e28d78c2bbff16cbc14c5b5712b8d1f97b0`) | `PublicVault` funded and `openLbp` prepared on-chain; **public marketing remains gated** (private sale first). `TimelockLpSeeder` at `0xb6ee4ba0ccf77d04f3ca6b409fc5345f6ce2bbeb` |
 | Private (14.75%) | `E7C66510442208FEA89FAFC30BE666CCB0` | Sale custody until `SaleVault`; Launch tier **$0.005** (USD-raised tiers through Last call $0.015), locked at intent |
 | Foundation (30.25%) | Protocol vesting + stakes → treasury `E7F2906EA4B2CD23D20180C8E813F2D126` | **Seven** Anchors each receive `GENESIS_STAKE` = **10,000 EAV7** staked. The remainder (**30,249,930,000 EAV7**) is split into **12 equal parts**: **1/12 liquid on day 1**; the other **11** as vestings with `cliff == duration` at **12, 18, 24, 30, 36, 42, 48, 54, 60, 66, and 72 months** (lump unlock at each tranche maturity — **not** “12-month cliff + 48-month linear”) |
 | Partner (10%) | `E72F728E69D24CFB91C167A805C6472D40` | Custody until `PartnerTrancheVault` (four **2.5B** tranches, 12-month cooldown between releases; anti self-deal) |
@@ -544,7 +544,7 @@ The source is public at [github.com/eav7-sys/eav7](https://github.com/eav7-sys/e
 
 Live from genesis on mainnet: DPoS rotation and BFT finality · strict producer, state root, and double-sign slashing · `eav7-hybrid-1` signatures and malleability-immune identifiers · GB · Free Signature accounting with delegation · staking, unbonding, voting, permissions v2, and owner-authorized Anchor governance (`GOVERNANCE_HEIGHT=0`) · treasury, vesting, and meta-transactions · value-carrying EAVM execution · base AI oracle phases (`AI_ACCOUNTABILITY` / `QUORUM` / `CHALLENGE` / `MARKET` / `PRIVATE` = 0) · EAV-NS names (including Anchor re-registration on day 0) · resilient block storage · and `eav7-core` operator modes, including `ancora-init`.
 
-Product contracts `SaleVault`, `PublicVault`, `PartnerTrancheVault`, and `TimelockLpSeeder` / EAV20Factory remain the intended path; until deployment, day-1 custody uses the published addresses in Section 12.2. `GENESIS_ACTIVE` and zeroed heights describe mainnet; local builds without that overlay may still use distant heights.
+`PublicVault` and `TimelockLpSeeder` are live on mainnet (addresses in Section 12.2); public LBP marketing stays operationally gated until TGE announcement. `SaleVault`, `PartnerTrancheVault`, and EAV20Factory remain the intended path for the remaining buckets; until those deploy, day-1 custody uses the published addresses in Section 12.2. `GENESIS_ACTIVE` and zeroed heights describe mainnet; local builds without that overlay may still use distant heights.
 
 ### 13.3 Operationally gated and roadmap
 
@@ -736,4 +736,4 @@ These are the live mainnet `GENESIS_ACTIVE` / height-zero profile settings. Loca
 
 ---
 
-*EAV7 · Technical Whitepaper v1.0 · August 11, 2026*
+*EAV7 · Technical Whitepaper v1.0.1 · August 15, 2026*

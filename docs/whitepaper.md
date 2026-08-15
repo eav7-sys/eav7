@@ -1,12 +1,12 @@
 # EAV7 — Uma Blockchain de Camada 1 com Segurança Pós-Quântica e Camada Nativa de Inteligência Artificial
 
-**Whitepaper Técnico · Versão 1.0 · 11 de agosto de 2026**
+**Whitepaper Técnico · Versão 1.0.1 · 15 de agosto de 2026**
 
 Protocolo `eav20` · Símbolo `EAV7` · EAVM Chain ID `72020` (mainnet) / `72021` (testnet)
 
 ---
 
-> **Aviso preliminar.** Este documento descreve a mainnet EAV7 em operação a partir de 11 de agosto de 2026. A Seção 13 (Estado de Maturidade) separa o que está ativo na rede ao vivo, o que permanece condicionado operacionalmente ou por altura de fork, e o que é roadmap. A Seção 14 (Fatores de Risco) e a Seção 15 (Aviso Legal) são partes integrantes deste documento e não devem ser lidas isoladamente. Nenhuma parte deste whitepaper constitui oferta, recomendação de investimento ou garantia de resultado.
+> **Aviso preliminar.** Este documento descreve a mainnet EAV7 em operação a partir de 15 de agosto de 2026. A Seção 13 (Estado de Maturidade) separa o que está ativo na rede ao vivo, o que permanece condicionado operacionalmente ou por altura de fork, e o que é roadmap. A Seção 14 (Fatores de Risco) e a Seção 15 (Aviso Legal) são partes integrantes deste documento e não devem ser lidas isoladamente. Nenhuma parte deste whitepaper constitui oferta, recomendação de investimento ou garantia de resultado.
 
 ---
 
@@ -491,7 +491,7 @@ A distribuição do gênese prioriza o mercado aberto: a parcela pública é **4
 
 | Bucket | **EAV7** | Tokens | Destino no lançamento |
 |---|---|---|---|
-| **Distribuição pública** | **45,00%** | 45.000.000.000 | Custódia publicada / `PublicVault` — líquido no TGE / LBP |
+| **Distribuição pública** | **45,00%** | 45.000.000.000 | `PublicVault` na mainnet — líquido no TGE / LBP (marketing condicionado) |
 | **Fundação / Tesouraria** | **30,25%** | 30.250.000.000 | Stake das Âncoras + 12 partes (1/12 líquido; 11 vestings) |
 | **Venda privada** | **14,75%** | 14.750.000.000 | Custódia publicada / `SaleVault` — cliff 12m + linear 24m |
 | **Parceiro estratégico** | **10,00%** | 10.000.000.000 | Custódia publicada / `PartnerTrancheVault` — 4 tranches |
@@ -501,11 +501,11 @@ A parcela sob controle de insiders (Fundação, venda privada e parceiro) soma *
 
 #### Custódia e entrega (mainnet)
 
-Os buckets **não** nascem numa carteira operacional única. No gênese ao vivo, a custódia dia 1 usa endereços publicados até a implantação dos contratos de vault; o caminho de produto pretendido permanece `PublicVault` / `SaleVault` / `PartnerTrancheVault` / vesting de protocolo.
+Os buckets **não** nascem numa carteira operacional única. No gênese ao vivo, a custódia dia 1 usa os endereços publicados abaixo. `PublicVault` e `TimelockLpSeeder` estão **implantados na mainnet**; `SaleVault` / `PartnerTrancheVault` permanecem o caminho de produto pretendido para os buckets privado e parceiro até esses vaults entrarem em produção.
 
 | Bucket | Custódia dia 1 (publicada) | Liberação |
 |---|---|---|
-| Público (45%) | `E7AADB9206205894E8C8D7A9B6FE6C8320` | Destino líquido da distribuição pública / LBP; o contrato `PublicVault` é o caminho de produto quando implantado |
+| Público (45%) | Custódia EOA `E7AADB9206205894E8C8D7A9B6FE6C8320` → vault `E7F27692A901B85A20A2B85F9BDF058A87` (`0x892a7e28d78c2bbff16cbc14c5b5712b8d1f97b0`) | `PublicVault` financiado e `openLbp` preparado on-chain; **marketing público permanece condicionado** (venda privada primeiro). `TimelockLpSeeder` em `0xb6ee4ba0ccf77d04f3ca6b409fc5345f6ce2bbeb` |
 | Privada (14,75%) | `E7C66510442208FEA89FAFC30BE666CCB0` | Custódia da venda até `SaleVault`; preço Launch **$0,005** (tiers por USD arrecadado até Last call $0,015), travado no intent |
 | Fundação (30,25%) | Vesting de protocolo + stakes → tesouraria `E7F2906EA4B2CD23D20180C8E813F2D126` | **7 Âncoras** recebem cada uma `GENESIS_STAKE` = **10.000 EAV7** em stake. O restante (**30.249.930.000 EAV7**) divide-se em **12 partes iguais**: **1/12 líquido no dia 1**; as **11** restantes em vestings com `cliff == duration` em **12, 18, 24, 30, 36, 42, 48, 54, 60, 66 e 72 meses** (liberação em lump no vencimento de cada tramo — **não** “cliff 12 + linear 48”) |
 | Parceiro (10%) | `E72F728E69D24CFB91C167A805C6472D40` | Custódia até `PartnerTrancheVault` (4 tranches de **2,5B**, cooldown de 12 meses entre liberações; anti self-deal) |
@@ -544,7 +544,7 @@ O código-fonte é público em [github.com/eav7-sys/eav7](https://github.com/eav
 
 Na mainnet estão ativos desde o gênese: rodízio DPoS e finalidade BFT · produtor estrito, raiz de estado e slashing por dupla assinatura · assinaturas híbridas e identificadores imunes a maleabilidade · contabilidade GB · Assinatura Livre com delegação · staking, unbonding, votação, permissões v2 e governança de Âncora autorizada por owner (`GOVERNANCE_HEIGHT=0`) · tesouraria, vesting e meta-transações · execução EAVM com valor · fases-base de oráculos de IA (`AI_ACCOUNTABILITY` / `QUORUM` / `CHALLENGE` / `MARKET` / `PRIVATE` = 0) · nomes EAV-NS (incluindo re-registro das Âncoras no dia 0) · armazenamento resiliente · e modos do `eav7-core`, inclusive `ancora-init`.
 
-Os contratos de produto `SaleVault`, `PublicVault`, `PartnerTrancheVault` e `TimelockLpSeeder` / EAV20Factory permanecem o caminho pretendido; até a implantação, a custódia dia 1 usa os endereços publicados na Seção 12.2. `GENESIS_ACTIVE` e heights zero descrevem a mainnet; builds locais sem esse overlay podem ainda usar heights distantes.
+`PublicVault` e `TimelockLpSeeder` estão ao vivo na mainnet (endereços na Seção 12.2); o marketing público do LBP permanece condicionado operacionalmente até o anúncio de TGE. `SaleVault`, `PartnerTrancheVault` e EAV20Factory permanecem o caminho pretendido para os demais buckets; até a implantação desses, a custódia dia 1 usa os endereços publicados na Seção 12.2. `GENESIS_ACTIVE` e heights zero descrevem a mainnet; builds locais sem esse overlay podem ainda usar heights distantes.
 
 ### 13.3 Condicionado operacionalmente e roadmap
 
@@ -736,4 +736,4 @@ Estas são as alturas do perfil `GENESIS_ACTIVE` / altura zero da mainnet ao viv
 
 ---
 
-*EAV7 · Whitepaper Técnico v1.0 · 11 de agosto de 2026*
+*EAV7 · Whitepaper Técnico v1.0.1 · 15 de agosto de 2026*

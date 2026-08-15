@@ -3,10 +3,10 @@
   "translations": {
     "pt": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 da EAV7 — protocolo eav20, segurança pós-quântica, EAVM, tokenomics e riscos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versão 1.0 · 11 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
+      "lead": "Versão 1.0.1 · 15 de agosto de 2026. Leia o protocolo, o estado de maturidade e os riscos antes de participar da distribuição pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Baixar .md",
@@ -14,10 +14,10 @@
     },
     "en": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "EAV7 technical whitepaper v1.0 — eav20 protocol, post-quantum security, EAVM, tokenomics and risks.",
+      "metaDesc": "EAV7 technical whitepaper v1.0.1 — eav20 protocol, post-quantum security, EAVM, tokenomics and risks.",
       "kicker": "Technical document",
       "title": "EAV7 Whitepaper",
-      "lead": "Version 1.0 · August 11, 2026. Read the protocol, maturity status and risks before joining the public distribution.",
+      "lead": "Version 1.0.1 · August 15, 2026. Read the protocol, maturity status and risks before joining the public distribution.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Download .md",
@@ -25,10 +25,10 @@
     },
     "es": {
       "metaTitle": "Whitepaper · EAV7",
-      "metaDesc": "Whitepaper técnico v1.0 de EAV7 — protocolo eav20, seguridad post-cuántica, EAVM, tokenomics y riesgos.",
+      "metaDesc": "Whitepaper técnico v1.0.1 de EAV7 — protocolo eav20, seguridad post-cuántica, EAVM, tokenomics y riesgos.",
       "kicker": "Documento técnico",
       "title": "Whitepaper EAV7",
-      "lead": "Versión 1.0 · 11 de agosto de 2026. Lee el protocolo, el estado de madurez y los riesgos antes de participar en la distribución pública.",
+      "lead": "Versión 1.0.1 · 15 de agosto de 2026. Lee el protocolo, el estado de madurez y los riesgos antes de participar en la distribución pública.",
       "switchEn": "English",
       "switchPt": "Português",
       "downloadMd": "Descargar .md",

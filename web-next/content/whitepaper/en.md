@@ -736,4 +736,4 @@ These are the live mainnet `GENESIS_ACTIVE` / height-zero profile settings. Loca
 
 ---
 
-*EAV7 · Technical Whitepaper v1.0 · August 11, 2026*
+*EAV7 · Technical Whitepaper v1.0.1 · August 15, 2026*

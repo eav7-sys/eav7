@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: lang === "en" ? "EAV7 Technical Whitepaper v1.0" : "Whitepaper técnico EAV7 v1.0",
+      title: lang === "en" ? "EAV7 Technical Whitepaper v1.0.1" : "Whitepaper técnico EAV7 v1.0.1",
       description: t("page_whitepaper.metaDesc"),
       url: "https://eavscan.com/whitepaper",
     },

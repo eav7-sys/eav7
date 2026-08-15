@@ -9,7 +9,7 @@
       "governance": "Governança",
       "governanceDesc": "Propostas, parâmetros e tesouraria",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Documento técnico v1.0 · PT/EN"
+      "whitepaperDesc": "Documento técnico v1.0.1 · PT/EN"
     },
     "en": {
       "nfts": "EAV721 NFTs",
@@ -19,7 +19,7 @@
       "governance": "Governance",
       "governanceDesc": "Proposals, parameters and treasury",
       "whitepaper": "Whitepaper",
-      "whitepaperDesc": "Technical document v1.0 · PT/EN"
+      "whitepaperDesc": "Technical document v1.0.1 · PT/EN"
     }
   }
 }
